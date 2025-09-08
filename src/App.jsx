@@ -8,6 +8,7 @@ import TripReport from "./pages/TripReport";
 import Vehicle from "./pages/Vehicle";
 import HistoryRecord from "./pages/HistoryRecord";
 import Employee from "./pages/Employee";
+import EmployeeInfo from "./pages/EmployeeInfo";
 import Client from "./pages/Client";
 import Archive from "./pages/Archive";
 
@@ -64,6 +65,14 @@ export default function App() {
           element={
             <PrivateRoute roles={["admin"]}>
               <Employee />
+            </PrivateRoute>
+          }
+        />
+        <Route
+          path="employee/:id"
+          element={
+            <PrivateRoute roles={["admin"]}>
+              <EmployeeInfo />
             </PrivateRoute>
           }
         />

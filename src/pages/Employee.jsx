@@ -1,12 +1,24 @@
 import { useState, useEffect, useRef } from "react";
 import { Eye, Pencil, Trash2 } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 import axios from "axios";
 
 function Employee() {
   const [employees, setEmployees] = useState([]);
+  const [filteredEmployees, setFilteredEmployees] = useState([]);
   const [showModal, setShowModal] = useState(false);
   const [editEmployee, setEditEmployee] = useState(null);
   const [step, setStep] = useState(1);
+  const [errors, setErrors] = useState({});
+  const navigate = useNavigate();
+
+
+  //search states
+  const [searchId, setSearchId] = useState("");
+  const [searchName, setSearchName] = useState("");
+  const [searchRole, setSearchRole] = useState("");
+  const [searchMobile, setSearchMobile] = useState("");
+  const [generalSearch, setGeneralSearch] = useState("");
 
   const [formData, setFormData] = useState({
     fullName: "",
@@ -20,7 +32,7 @@ function Employee() {
     emergencyContactNumber: "",
     dateHired: "",
     shift: "Morning",
-    username: "",
+    email: "",
     password: "",
   });
 
@@ -34,6 +46,7 @@ function Employee() {
     try {
       const res = await axios.get("http://localhost:5000/api/employees");
       setEmployees(res.data);
+      setFilteredEmployees(res.data);
     } catch (err) {
       console.error("Error fetching employees:", err);
     }
@@ -43,11 +56,46 @@ function Employee() {
     fetchEmployees();
   }, []);
 
+  // 🔍 filter function
+  useEffect(() => {
+    let results = employees;
+
+    if (searchId) {
+      results = results.filter((emp) =>
+        emp.employeeId?.toLowerCase().includes(searchId.toLowerCase())
+      );
+    }
+    if (searchName) {
+      results = results.filter((emp) =>
+        emp.fullName?.toLowerCase().includes(searchName.toLowerCase())
+      );
+    }
+    if (searchRole) {
+      results = results.filter((emp) => emp.role === searchRole);
+    }
+    if (searchMobile) {
+      results = results.filter((emp) =>
+        emp.mobileNumber?.includes(searchMobile)
+      );
+    }
+    if (generalSearch) {
+      results = results.filter(
+        (emp) =>
+          emp.employeeId?.toLowerCase().includes(generalSearch.toLowerCase()) ||
+          emp.fullName?.toLowerCase().includes(generalSearch.toLowerCase()) ||
+          emp.role?.toLowerCase().includes(generalSearch.toLowerCase()) ||
+          emp.mobileNumber?.includes(generalSearch) ||
+          emp.email?.toLowerCase().includes(generalSearch.toLowerCase())
+      );
+    }
+
+    setFilteredEmployees(results);
+  }, [searchId, searchName, searchRole, searchMobile, generalSearch, employees]);
+
   const openModal = (employee = null) => {
     if (employee) {
       setEditEmployee(employee);
-      // Exclude employeeId from formData
-      const { employeeId, ...data } = employee;
+      const { employeeId, ...data } = employee; // exclude ID
       setFormData(data);
     } else {
       setEditEmployee(null);
@@ -63,7 +111,7 @@ function Employee() {
         emergencyContactNumber: "",
         dateHired: "",
         shift: "Morning",
-        username: "",
+        email: "",
         password: "",
       });
     }
@@ -75,7 +123,13 @@ function Employee() {
 
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target;
-    if (name === "sameAsCurrent") {
+
+    if (name === "mobileNumber" || name === "emergencyContactNumber") {
+      // Allow only digits and max 11 characters
+      if (/^\d{0,11}$/.test(value)) {
+        setFormData({ ...formData, [name]: value });
+      }
+    } else if (name === "sameAsCurrent") {
       setFormData((prev) => ({
         ...prev,
         sameAsCurrent: checked,
@@ -90,34 +144,19 @@ function Employee() {
     e.preventDefault();
     try {
       if (editEmployee) {
-        // Keep the existing employeeId for editing
         await axios.put(
           `http://localhost:5000/api/employees/${editEmployee._id}`,
           { ...formData, employeeId: editEmployee.employeeId }
         );
       } else {
-        // Remove employeeId and sameAsCurrent when creating a new employee - let backend generate it
         const { employeed, sameAsCurrent, ...dataToSend } = formData;
-        console.log("Sending data to backend:", dataToSend);
-        await axios.post(
-          "http://localhost:5000/api/employees",
-          dataToSend
-        );
+        await axios.post("http://localhost:5000/api/employees", dataToSend);
       }
       closeModal();
       fetchEmployees();
     } catch (err) {
       console.error("Error adding/updating employee:", err);
-      console.error("Error response:", err.response?.data);
-      console.error("Error status:", err.response?.status);
-
-      // Display the specific error message from server
-      const errorMessage = err.response?.data?.message ||
-        err.response?.data?.error ||
-        err.message ||
-        "Error adding/updating employee";
-
-      alert(errorMessage);
+      alert(err.response?.data?.message || "Error adding/updating employee");
     }
   };
 
@@ -136,14 +175,49 @@ function Employee() {
   };
 
   const viewEmployee = (employee) => {
-    // Add your view logic here
-    console.log("Viewing employee:", employee);
-    // You could open a read-only modal or navigate to a detail page
+    navigate(`/dashboard/employee/${employee._id}`);
   };
 
+  // Validate fields before moving to next step or submitting
+  const validateStep = () => {
+    let newErrors = {};
+
+    if (step === 1) {
+      if (!(formData.fullName || "").trim()) newErrors.fullName = "Full name is required.";
+      if (!formData.role) newErrors.role = "Role is required.";
+      if (!formData.employmentType) newErrors.employmentType = "Employment type is required.";
+      if (!(formData.mobileNumber || "").trim()) {
+        newErrors.mobileNumber = "Mobile number is required.";
+      } else if (!/^\d{11}$/.test(formData.mobileNumber || "")) {
+        newErrors.mobileNumber = "Mobile number must be exactly 11 digits.";
+      }
+      if (!(formData.currentAddress || "").trim()) newErrors.currentAddress = "Current address is required.";
+      if (!(formData.permanentAddress || "").trim()) newErrors.permanentAddress = "Permanent address is required.";
+
+      if (!(formData.emergencyContactName || "").trim()) newErrors.emergencyContactName = "Emergency contact name is required.";
+      if (!(formData.emergencyContactNumber || "").trim()) {
+        newErrors.emergencyContactNumber = "Emergency contact number is required.";
+      } else if (!/^\d{11}$/.test(formData.emergencyContactNumber || "")) {
+        newErrors.emergencyContactNumber = "Emergency contact number must be exactly 11 digits.";
+      }
+      if (!formData.dateHired) newErrors.dateHired = "Date hired is required.";
+      if (!formData.shift) newErrors.shift = "Shift selection is required.";
+    }
+
+    if (step === 2) {
+      if (!formData.email.trim()) newErrors.email = "Email is required.";
+      if (!formData.password.trim()) {
+        newErrors.password = "Password is required.";
+      } else if (formData.password.length < 6) {
+        newErrors.password = "Password must be at least 6 characters.";
+      }
+    }
+
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
   return (
     <>
-      {/* Page Content */}
       <div
         ref={containerRef}
         className={`transition duration-200 ${showModal ? "filter blur-sm" : ""}`}
@@ -158,11 +232,52 @@ function Employee() {
           </button>
         </div>
 
+        {/* Filters */}
+        <div className="grid grid-cols-1 md:grid-cols-5 gap-4 mb-6">
+          <input
+            type="text"
+            placeholder="Search Employee ID"
+            value={searchId}
+            onChange={(e) => setSearchId(e.target.value)}
+            className="border rounded px-3 py-2"
+          />
+          <input
+            type="text"
+            placeholder="Search Name"
+            value={searchName}
+            onChange={(e) => setSearchName(e.target.value)}
+            className="border rounded px-3 py-2"
+          />
+          <select
+            value={searchRole}
+            onChange={(e) => setSearchRole(e.target.value)}
+            className="border rounded px-3 py-2"
+          >
+            <option value="">All Roles</option>
+            <option value="Driver">Driver</option>
+            <option value="Helper">Helper</option>
+          </select>
+          <input
+            type="text"
+            placeholder="Search Mobile"
+            value={searchMobile}
+            onChange={(e) => setSearchMobile(e.target.value)}
+            className="border rounded px-3 py-2"
+          />
+          <input
+            type="text"
+            placeholder="General Search"
+            value={generalSearch}
+            onChange={(e) => setGeneralSearch(e.target.value)}
+            className="border rounded px-3 py-2"
+          />
+        </div>
+
         {/* Table */}
         <div className="bg-white rounded-xl shadow-lg p-4">
           <div className="overflow-x-auto">
             <table className="w-full text-sm table-auto">
-              <thead className="bg-gray-100 rounded-t-lg">
+              <thead className="bg-gray-100">
                 <tr>
                   <th className="px-6 py-3 text-left font-semibold text-gray-700">#</th>
                   <th className="px-6 py-3 text-left font-semibold text-gray-700">Employee ID</th>
@@ -173,10 +288,10 @@ function Employee() {
                 </tr>
               </thead>
               <tbody>
-                {employees.map((emp, index) => (
+                {filteredEmployees.map((emp, index) => (
                   <tr
                     key={emp._id}
-                    className="border-b last:border-none hover:bg-gray-50 transition duration-150"
+                    className="border-b last:border-none hover:bg-gray-50 transition"
                   >
                     <td className="px-6 py-3">{index + 1}</td>
                     <td className="px-6 py-3">{getDisplayID(index, emp)}</td>
@@ -186,28 +301,32 @@ function Employee() {
                     <td className="px-6 py-3 space-x-2">
                       <button
                         onClick={() => viewEmployee(emp)}
-                        className="px-3 py-1 bg-blue-500 text-white rounded shadow hover:bg-blue-600 transition transform hover:scale-105 inline-flex items-center gap-1"
+                        className="px-3 py-1 bg-blue-500 text-white rounded shadow hover:bg-blue-600 inline-flex items-center gap-1"
                       >
-                        <Eye size={16} />
-                        View
+                        <Eye size={16} /> View
                       </button>
                       <button
                         onClick={() => openModal(emp)}
-                        className="px-3 py-1 bg-yellow-400 text-white rounded shadow hover:bg-yellow-500 transition transform hover:scale-105 inline-flex items-center gap-1"
+                        className="px-3 py-1 bg-yellow-400 text-white rounded shadow hover:bg-yellow-500 inline-flex items-center gap-1"
                       >
-                        <Pencil size={16} />
-                        Edit
+                        <Pencil size={16} /> Edit
                       </button>
                       <button
                         onClick={() => handleDelete(emp._id)}
-                        className="px-3 py-1 bg-red-500 text-white rounded shadow hover:bg-red-600 transition transform hover:scale-105 inline-flex items-center gap-1"
+                        className="px-3 py-1 bg-red-500 text-white rounded shadow hover:bg-red-600 inline-flex items-center gap-1"
                       >
-                        <Trash2 size={16} />
-                        Delete
+                        <Trash2 size={16} /> Delete
                       </button>
                     </td>
                   </tr>
                 ))}
+                {filteredEmployees.length === 0 && (
+                  <tr>
+                    <td colSpan="6" className="text-center py-4 text-gray-500">
+                      No employees found
+                    </td>
+                  </tr>
+                )}
               </tbody>
             </table>
           </div>
@@ -244,14 +363,16 @@ function Employee() {
                     value={formData.fullName}
                     onChange={handleChange}
                     required
-                    className="border p-2 rounded focus:ring-2 focus:ring-indigo-400"
+                    className={`border p-2 rounded focus:ring-2 focus:ring-indigo-400 ${errors.fullName ? "border-red-500" : ""}`}
                   />
+                  {errors.fullName && <p className="text-red-500 text-sm">{errors.fullName}</p>}
+
                   <select
                     name="role"
                     value={formData.role}
                     onChange={handleChange}
                     required
-                    className="border p-2 rounded focus:ring-2 focus:ring-indigo-400"
+                    className={`border p-2 rounded focus:ring-2 focus:ring-indigo-400 ${errors.role ? "border-red-500" : ""}`}
                   >
                     {roles.map((r) => (
                       <option key={r} value={r}>
@@ -259,12 +380,15 @@ function Employee() {
                       </option>
                     ))}
                   </select>
+                  {errors.role && <p className="text-red-500 text-sm">{errors.role}</p>}
+
+
                   <select
                     name="employmentType"
                     value={formData.employmentType}
                     onChange={handleChange}
                     required
-                    className="border p-2 rounded focus:ring-2 focus:ring-indigo-400"
+                    className={`border p-2 rounded focus:ring-2 focus:ring-indigo-400 ${errors.employmentType ? "border-red-500" : ""}`}
                   >
                     {employmentTypes.map((t) => (
                       <option key={t} value={t}>
@@ -272,31 +396,40 @@ function Employee() {
                       </option>
                     ))}
                   </select>
+                  {errors.employmentType && <p className="text-red-500 text-sm">{errors.employmentType}</p>}
+
                   <input
                     type="text"
                     name="mobileNumber"
                     placeholder="Mobile Number"
                     value={formData.mobileNumber}
                     onChange={handleChange}
+                    maxLength={11}
                     required
-                    className="border p-2 rounded focus:ring-2 focus:ring-indigo-400"
+                    className={`border p-2 rounded focus:ring-2 focus:ring-indigo-400 ${errors.mobileNumber ? "border-red-500" : ""}`}
                   />
+                  {errors.mobileNumber && <p className="text-red-500 text-sm">{errors.mobileNumber}</p>}
+
                   <input
                     type="text"
                     name="currentAddress"
                     placeholder="Current Address"
                     value={formData.currentAddress}
                     onChange={handleChange}
-                    className="border p-2 rounded focus:ring-2 focus:ring-indigo-400"
+                    className={`border p-2 rounded focus:ring-2 focus:ring-indigo-400 ${errors.currentAddress ? "border-red-500" : ""}`}
                   />
+                  {errors.currentAddress && <p className="text-red-500 text-sm">{errors.currentAddress}</p>}
+
                   <input
                     type="text"
                     name="permanentAddress"
                     placeholder="Permanent Address"
                     value={formData.permanentAddress}
                     onChange={handleChange}
-                    className="border p-2 rounded focus:ring-2 focus:ring-indigo-400"
+                    className={`border p-2 rounded focus:ring-2 focus:ring-indigo-400 ${errors.permanentAddress ? "border-red-500" : ""}`}
                   />
+                  {errors.permanentAddress && <p className="text-red-500 text-sm">{errors.permanentAddress}</p>}
+
                   <div className="col-span-2 flex items-center space-x-2">
                     <input
                       type="checkbox"
@@ -314,28 +447,36 @@ function Employee() {
                     placeholder="Emergency Contact Name"
                     value={formData.emergencyContactName}
                     onChange={handleChange}
-                    className="border p-2 rounded focus:ring-2 focus:ring-indigo-400"
+                    className={`border p-2 rounded focus:ring-2 focus:ring-indigo-400 ${errors.emergencyContactName ? "border-red-500" : ""}`}
                   />
+                  {errors.emergencyContactName && <p className="text-red-500 text-sm">{errors.emergencyContactName}</p>}
+
                   <input
                     type="text"
                     name="emergencyContactNumber"
                     placeholder="Emergency Contact Number"
                     value={formData.emergencyContactNumber}
                     onChange={handleChange}
-                    className="border p-2 rounded focus:ring-2 focus:ring-indigo-400"
+                    maxLength={11}
+                    className={`border p-2 rounded focus:ring-2 focus:ring-indigo-400 ${errors.emergencyContactNumber ? "border-red-500" : ""}`}
                   />
+                  {errors.emergencyContactNumber && <p className="text-red-500 text-sm">{errors.emergencyContactNumber}</p>}
+
                   <input
                     type="date"
                     name="dateHired"
                     value={formData.dateHired}
                     onChange={handleChange}
-                    className="border p-2 rounded focus:ring-2 focus:ring-indigo-400"
+                    className={`border p-2 rounded focus:ring-2 focus:ring-indigo-400 ${errors.dateHired ? "border-red-500" : ""}`}
                   />
+                  {errors.dateHired && <p className="text-red-500 text-sm">{errors.dateHired}</p>}
 
                   <div className="col-span-2 flex justify-end mt-2">
                     <button
                       type="button"
-                      onClick={() => setStep(2)}
+                      onClick={() => {
+                        if (validateStep()) setStep(2);
+                      }}
                       className="px-5 py-2 bg-blue-600 text-white rounded-lg shadow hover:scale-105 transform transition"
                     >
                       Next
@@ -360,12 +501,12 @@ function Employee() {
 
                   <input
                     type="text"
-                    name="username"
-                    placeholder="Username"
-                    value={formData.username}
+                    name="email"
+                    placeholder="email"
+                    value={formData.email}
                     onChange={handleChange}
                     required
-                    className="border p-2 rounded focus:ring-2 focus:ring-indigo-400"
+                    className={`border p-2 rounded focus:ring-2 focus:ring-indigo-400 ${errors.role ? "border-red-500" : ""}`}
                   />
                   <input
                     type="password"
@@ -374,7 +515,7 @@ function Employee() {
                     value={formData.password}
                     onChange={handleChange}
                     required
-                    className="border p-2 rounded focus:ring-2 focus:ring-indigo-400"
+                    className={`border p-2 rounded focus:ring-2 focus:ring-indigo-400 ${errors.role ? "border-red-500" : ""}`}
                   />
 
                   <div className="col-span-2 flex justify-between mt-2">
@@ -387,6 +528,10 @@ function Employee() {
                     </button>
                     <button
                       type="submit"
+                      onClick={(e) => {
+                        e.preventDefault();
+                        if (validateStep()) handleSubmit(e);
+                      }}
                       className="px-5 py-2 bg-blue-600 text-white rounded-lg shadow hover:scale-105 transform transition"
                     >
                       {editEmployee ? "Update" : "Add"}

@@ -106,6 +106,7 @@ function Client() {
               <thead className="bg-gray-100 rounded-t-lg">
                 <tr>
                   <th className="px-6 py-3 text-left font-semibold text-gray-700">#</th>
+                  <th className="px-6 py-3 text-left font-semibold text-gray-700">Client ID</th>
                   <th className="px-6 py-3 text-left font-semibold text-gray-700">Client Name</th>
                   <th className="px-6 py-3 text-left font-semibold text-gray-700">Location</th>
                   <th className="px-6 py-3 text-left font-semibold text-gray-700">Branch</th>
