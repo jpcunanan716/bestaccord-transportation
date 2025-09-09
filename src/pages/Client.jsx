@@ -108,6 +108,7 @@ function Client() {
     startIndex + itemsPerPage
   );
 
+  // Modal handlers
   const openModal = (client = null) => {
     if (client) {
       setEditClient(client);
@@ -163,6 +164,7 @@ function Client() {
     }
   };
 
+  // Navigate to client Info Page
   const viewCLient = (client) => {
     navigate(`/dashboard/client/${client._id}`);
   };
@@ -285,7 +287,7 @@ function Client() {
                     <td className="px-6 py-3">
                       {new Date(client.createdAt).toLocaleDateString()}
                     </td>
-                    <td className="px-6 py-3 text-right space-x-2">
+                    <td className="px-6 py-3 text-center space-x-2">
                       <button
                         onClick={() => viewCLient(client)}
                         className="px-3 py-1 bg-blue-500 text-white rounded shadow hover:bg-blue-600 inline-flex items-center gap-1 transition transform hover:scale-105"
@@ -317,8 +319,8 @@ function Client() {
               onClick={() => setCurrentPage((p) => Math.max(p - 1, 1))}
               disabled={currentPage === 1}
               className={`px-4 py-2 rounded-lg shadow ${currentPage === 1
-                  ? "bg-gray-300 text-gray-600 cursor-not-allowed"
-                  : "bg-blue-600 text-white hover:bg-blue-700"
+                ? "bg-gray-300 text-gray-600 cursor-not-allowed"
+                : "bg-blue-600 text-white hover:bg-blue-700"
                 }`}
             >
               Previous
@@ -330,8 +332,8 @@ function Client() {
               onClick={() => setCurrentPage((p) => Math.min(p + 1, totalPages))}
               disabled={currentPage === totalPages}
               className={`px-4 py-2 rounded-lg shadow ${currentPage === totalPages
-                  ? "bg-gray-300 text-gray-600 cursor-not-allowed"
-                  : "bg-blue-600 text-white hover:bg-blue-700"
+                ? "bg-gray-300 text-gray-600 cursor-not-allowed"
+                : "bg-blue-600 text-white hover:bg-blue-700"
                 }`}
             >
               Next
@@ -340,7 +342,7 @@ function Client() {
         </div>
       </div>
 
-      {/* Floating Modal (unchanged) */}
+      {/* Floating Modal */}
       {showModal && (
         <div className="fixed inset-0 z-50 flex justify-center items-center">
           <div

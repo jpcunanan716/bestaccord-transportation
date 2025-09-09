@@ -1,10 +1,33 @@
 import { useState, useEffect, useRef } from "react";
+import { Eye, Pencil, Trash2 } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 import axios from "axios";
 
 export default function Vehicle() {
   const [vehicles, setVehicles] = useState([]);
+  const [filteredVehicles, setFilteredVehicles] = useState([]);
   const [showModal, setShowModal] = useState(false);
   const [editVehicle, setEditVehicle] = useState(null);
+  const navigate = useNavigate();
+
+  // Pagination states
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 10;
+
+  //search states
+  const [searchDateRange, setSearchDateRange] = useState("");
+  const [searchVehicleType, setSearchVehicleType] = useState("");
+  const [searchStatus, setSearchStatus] = useState("");
+  const [searchManufacturedBy, setSearchManufacturedBy] = useState("");
+  const [generalSearch, setGeneralSearch] = useState("");
+
+  // Unique filter values
+  const [uniqueDates, setUniqueDates] = useState([]);
+  const [uniqueVehicleTypes, setuniqueVehicleTypes] = useState([]);
+  const [uniqueStatus, setuniqueStatus] = useState([]);
+  const [uniqueManufacturedBy, setuniqueManufacturedBy] = useState([]);
+
+  //Form state
   const [formData, setFormData] = useState({
     registrationNumber: "",
     manufacturedBy: "",
@@ -19,20 +42,74 @@ export default function Vehicle() {
   });
 
   const containerRef = useRef(null);
-
   const brands = ["Toyota", "Ford", "Mitsubishi", "Honda", "Isuzu", "Nissan"];
   const vehicleTypes = ["Truck", "Car"];
   const statuses = ["Available", "Not Available", "On Trip"];
 
   const fetchVehicles = async () => {
-    const res = await axios.get("http://localhost:5000/api/vehicles");
-    setVehicles(res.data);
+    try {
+      const res = await axios.get("http://localhost:5000/api/vehicles");
+      setVehicles(res.data);
+      setFilteredVehicles(res.data);
+
+      // Extract unique values
+      setuniqueManufacturedBy([...new Set(res.data.map((c) => c.manufacturedBy))]);
+      setuniqueVehicleTypes([...new Set(res.data.map((c) => c.vehicleType))]);
+      setuniqueStatus([...new Set(res.data.map((c) => c.status))]);
+      setUniqueDates([
+        ...new Set(
+          res.data.map((c) =>
+            new Date(c.registrationExpiryDate).toLocaleDateString()
+          )
+        ),
+      ]);
+    } catch (err) {
+      console.error(err);
+    }
   };
 
   useEffect(() => {
     fetchVehicles();
   }, []);
 
+  //Filter function
+  useEffect(() => {
+    let results = vehicles;
+
+    if (searchDateRange) {
+      results = results.filter((vhcl) => vhcl.registrationExpiryDate === searchDateRange);
+    }
+    if (searchVehicleType) {
+      results = results.filter((vhcl) => vhcl.vehicleType === searchVehicleType);
+    }
+    if (searchStatus) {
+      results = results.filter((vhcl) => vhcl.status === searchStatus);
+    }
+    if (searchManufacturedBy) {
+      results = results.filter((vhcl) => vhcl.manufacturedBy === searchManufacturedBy);
+    }
+    if (generalSearch) {
+      results = results.filter(
+        (vhcl) =>
+          vhcl.registrationExpiryDate?.toLowerCase().includes(generalSearch.toLowerCase()) ||
+          vhcl.vehicleType?.toLowerCase().includes(generalSearch.toLowerCase()) ||
+          vhcl.status?.includes(generalSearch) ||
+          vhcl.manufacturedBy?.toLowerCase().includes(generalSearch.toLowerCase())
+      );
+    }
+    setFilteredVehicles(results);
+    setCurrentPage(1);
+  }, [searchDateRange, searchVehicleType, searchStatus, searchManufacturedBy, generalSearch, vehicles]);
+
+  // Pagination logic
+  const totalPages = Math.ceil(filteredVehicles.length / itemsPerPage);
+  const startIndex = (currentPage - 1) * itemsPerPage;
+  const paginatedVehicles = filteredVehicles.slice(
+    startIndex,
+    startIndex + itemsPerPage
+  );
+
+  // Modal handlers
   const openModal = (vehicle = null) => {
     if (vehicle) {
       setEditVehicle(vehicle);
@@ -99,6 +176,12 @@ export default function Vehicle() {
     }
   };
 
+  //Navigate to Vehicle Info Page
+  const viewVehicle = (vehicle) => {
+    navigate(`/dashboard/vehicle/${vehicle._id}`);
+  };
+
+
   return (
     <>
       {/* Page Content */}
@@ -116,7 +199,69 @@ export default function Vehicle() {
           </button>
         </div>
 
-        {/* Rounded Container */}
+        {/* Filters */}
+        <div className="grid grid-cols-1 md:grid-cols-5 gap-4 mb-6">
+          <select
+            value={searchDateRange}
+            onChange={(e) => setSearchDateRange(e.target.value)}
+            className="border rounded px-3 py-2"
+          >
+            <option value="">All Dates</option>
+            {uniqueDates.map((registrationExpiryDate, i) => (
+              <option key={i} value={registrationExpiryDate}>
+                {registrationExpiryDate}
+              </option>
+            ))}
+          </select>
+
+          <select
+            value={searchVehicleType}
+            onChange={(e) => setSearchVehicleType(e.target.value)}
+            className="border rounded px-3 py-2"
+          >
+            <option value="">All Vehicle Types</option>
+            {uniqueVehicleTypes.map((vehicleType, i) => (
+              <option key={i} value={vehicleType}>
+                {vehicleType}
+              </option>
+            ))}
+          </select>
+
+          <select
+            value={searchStatus}
+            onChange={(e) => setSearchStatus(e.target.value)}
+            className="border rounded px-3 py-2"
+          >
+            <option value="">Status</option>
+            {uniqueStatus.map((status, i) => (
+              <option key={i} value={status}>
+                {status}
+              </option>
+            ))}
+          </select>
+
+          <select
+            value={searchManufacturedBy}
+            onChange={(e) => setSearchManufacturedBy(e.target.value)}
+            className="border rounded px-3 py-2"
+          >
+            <option value="">All Vehicle Brand</option>
+            {uniqueManufacturedBy.map((manufacturedBy, i) => (
+              <option key={i} value={manufacturedBy}>
+                {manufacturedBy}
+              </option>
+            ))}
+          </select>
+          <input
+            type="text"
+            placeholder="General Search"
+            value={generalSearch}
+            onChange={(e) => setGeneralSearch(e.target.value)}
+            className="border rounded px-3 py-2"
+          />
+        </div>
+
+        {/* Tables */}
         <div className="bg-white rounded-xl shadow-lg p-4">
           <div className="overflow-x-auto">
             <table className="w-full text-sm table-auto">
@@ -127,11 +272,11 @@ export default function Vehicle() {
                   <th className="px-6 py-3 text-left font-semibold text-gray-700">Wheels</th>
                   <th className="px-6 py-3 text-left font-semibold text-gray-700">Plate Number</th>
                   <th className="px-6 py-3 text-left font-semibold text-gray-700">Status</th>
-                  <th className="px-6 py-3 text-left font-semibold text-gray-700">Actions</th>
+                  <th className="px-6 py-3 text-center font-semibold text-gray-700">Actions</th>
                 </tr>
               </thead>
               <tbody>
-                {vehicles.map((v, index) => (
+                {paginatedVehicles.map((v, index) => (
                   <tr
                     key={v._id}
                     className="border-b last:border-none hover:bg-gray-50 transition duration-150"
@@ -142,29 +287,34 @@ export default function Vehicle() {
                     <td className="px-6 py-3">{v.plateNumber}</td>
                     <td className="px-6 py-3">
                       <span
-                        className={`px-2 py-1 rounded-full text-xs font-semibold ${
-                          v.status === "Available"
-                            ? "bg-green-100 text-green-800"
-                            : v.status === "On Trip"
+                        className={`px-2 py-1 rounded-full text-xs font-semibold ${v.status === "Available"
+                          ? "bg-green-100 text-green-800"
+                          : v.status === "On Trip"
                             ? "bg-yellow-100 text-yellow-800"
                             : "bg-red-100 text-red-800"
-                        }`}
+                          }`}
                       >
                         {v.status}
                       </span>
                     </td>
-                    <td className="px-6 py-3 space-x-2">
+                    <td className="px-6 py-3 text-center space-x-2">
+                      <button
+                        onClick={() => viewVehicle(v)}
+                        className="px-3 py-1 bg-blue-500 text-white rounded shadow hover:bg-blue-600 inline-flex items-center gap-1 transition transform hover:scale-105"
+                      >
+                        <Eye size={16} /> View
+                      </button>
                       <button
                         onClick={() => openModal(v)}
-                        className="px-3 py-1 bg-yellow-400 text-white rounded shadow hover:bg-yellow-500 transition transform hover:scale-105"
+                        className="px-3 py-1 bg-yellow-400 text-white rounded shadow hover:bg-yellow-500 inline-flex items-center gap-1 transition transform hover:scale-105"
                       >
-                        Edit
+                        <Pencil size={16} /> Edit
                       </button>
                       <button
                         onClick={() => handleDelete(v._id)}
-                        className="px-3 py-1 bg-red-500 text-white rounded shadow hover:bg-red-600 transition transform hover:scale-105"
+                        className="px-3 py-1 bg-red-500 text-white rounded shadow hover:bg-red-600 inline-flex items-center gap-1 transition transform hover:scale-105"
                       >
-                        Delete
+                        <Trash2 size={16} /> Delete
                       </button>
                     </td>
                   </tr>
@@ -172,6 +322,34 @@ export default function Vehicle() {
               </tbody>
             </table>
           </div>
+
+          {/* Pagination Controls */}
+          <div className="flex justify-between items-center mt-4">
+            <button
+              onClick={() => setCurrentPage((p) => Math.max(p - 1, 1))}
+              disabled={currentPage === 1}
+              className={`px-4 py-2 rounded-lg shadow ${currentPage === 1
+                ? "bg-gray-300 text-gray-600 cursor-not-allowed"
+                : "bg-blue-600 text-white hover:bg-blue-700"
+                }`}
+            >
+              Previous
+            </button>
+            <p className="text-gray-600 text-sm">
+              Page {currentPage} of {totalPages}
+            </p>
+            <button
+              onClick={() => setCurrentPage((p) => Math.min(p + 1, totalPages))}
+              disabled={currentPage === totalPages}
+              className={`px-4 py-2 rounded-lg shadow ${currentPage === totalPages
+                ? "bg-gray-300 text-gray-600 cursor-not-allowed"
+                : "bg-blue-600 text-white hover:bg-blue-700"
+                }`}
+            >
+              Next
+            </button>
+          </div>
+
         </div>
       </div>
 

@@ -12,14 +12,7 @@ function Employee() {
   const [errors, setErrors] = useState({});
   const navigate = useNavigate();
 
-
-  //search states
-  const [searchId, setSearchId] = useState("");
-  const [searchName, setSearchName] = useState("");
-  const [searchRole, setSearchRole] = useState("");
-  const [searchMobile, setSearchMobile] = useState("");
-  const [generalSearch, setGeneralSearch] = useState("");
-
+  //form states
   const [formData, setFormData] = useState({
     fullName: "",
     role: "Driver",
@@ -36,6 +29,12 @@ function Employee() {
     password: "",
   });
 
+  //search states
+  const [searchId, setSearchId] = useState("");
+  const [searchName, setSearchName] = useState("");
+  const [searchRole, setSearchRole] = useState("");
+  const [searchMobile, setSearchMobile] = useState("");
+  const [generalSearch, setGeneralSearch] = useState("");
   const containerRef = useRef(null);
 
   const roles = ["Driver", "Helper"];
@@ -298,7 +297,7 @@ function Employee() {
                     <td className="px-6 py-3">{emp.fullName}</td>
                     <td className="px-6 py-3">{emp.role}</td>
                     <td className="px-6 py-3">{emp.mobileNumber}</td>
-                    <td className="px-6 py-3 text-right space-x-2">
+                    <td className="px-6 py-3 text-center space-x-2">
                       <button
                         onClick={() => viewEmployee(emp)}
                         className="px-3 py-1 bg-blue-500 text-white rounded shadow hover:bg-blue-600 inline-flex items-center gap-1 transition transform hover:scale-105"
