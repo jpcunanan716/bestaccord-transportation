@@ -56,7 +56,7 @@ function Employee() {
     fetchEmployees();
   }, []);
 
-  // 🔍 filter function
+  //Filter function
   useEffect(() => {
     let results = employees;
 
@@ -279,12 +279,12 @@ function Employee() {
             <table className="w-full text-sm table-auto">
               <thead className="bg-gray-100">
                 <tr>
-                  <th className="px-6 py-3 text-left font-semibold text-gray-700">#</th>
+                  <th className="px-6 py-3 text-left font-semibold text-gray-700"></th>
                   <th className="px-6 py-3 text-left font-semibold text-gray-700">Employee ID</th>
                   <th className="px-6 py-3 text-left font-semibold text-gray-700">Full Name</th>
                   <th className="px-6 py-3 text-left font-semibold text-gray-700">Role</th>
                   <th className="px-6 py-3 text-left font-semibold text-gray-700">Mobile Number</th>
-                  <th className="px-6 py-3 text-left font-semibold text-gray-700">Actions</th>
+                  <th className="px-6 py-3 text-center font-semibold text-gray-700">Actions</th>
                 </tr>
               </thead>
               <tbody>
@@ -298,22 +298,22 @@ function Employee() {
                     <td className="px-6 py-3">{emp.fullName}</td>
                     <td className="px-6 py-3">{emp.role}</td>
                     <td className="px-6 py-3">{emp.mobileNumber}</td>
-                    <td className="px-6 py-3 space-x-2">
+                    <td className="px-6 py-3 text-right space-x-2">
                       <button
                         onClick={() => viewEmployee(emp)}
-                        className="px-3 py-1 bg-blue-500 text-white rounded shadow hover:bg-blue-600 inline-flex items-center gap-1"
+                        className="px-3 py-1 bg-blue-500 text-white rounded shadow hover:bg-blue-600 inline-flex items-center gap-1 transition transform hover:scale-105"
                       >
                         <Eye size={16} /> View
                       </button>
                       <button
                         onClick={() => openModal(emp)}
-                        className="px-3 py-1 bg-yellow-400 text-white rounded shadow hover:bg-yellow-500 inline-flex items-center gap-1"
+                        className="px-3 py-1 bg-yellow-400 text-white rounded shadow hover:bg-yellow-500 inline-flex items-center gap-1 transition transform hover:scale-105"
                       >
                         <Pencil size={16} /> Edit
                       </button>
                       <button
                         onClick={() => handleDelete(emp._id)}
-                        className="px-3 py-1 bg-red-500 text-white rounded shadow hover:bg-red-600 inline-flex items-center gap-1"
+                        className="px-3 py-1 bg-red-500 text-white rounded shadow hover:bg-red-600 inline-flex items-center gap-1 transition transform hover:scale-105"
                       >
                         <Trash2 size={16} /> Delete
                       </button>

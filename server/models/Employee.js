@@ -6,7 +6,6 @@ const employeeSchema = new mongoose.Schema({
   role: { type: String, required: true, enum: ["Driver", "Helper"] },
   employmentType: { type: String, required: true, enum: ["Part-time", "Full-time", "Contractual"] },
   mobileNumber: { type: String, required: true },
-  // Optional fields below
   email: { type: String },
   currentAddress: { type: String },
   permanentAddress: { type: String },

@@ -11,6 +11,7 @@ import Employee from "./pages/Employee";
 import EmployeeInfo from "./pages/EmployeeInfo";
 import Client from "./pages/Client";
 import Archive from "./pages/Archive";
+import ClientInfo from "./pages/ClientInfo";
 
 function PrivateRoute({ children, roles }) {
   const role = localStorage.getItem("role");
@@ -81,6 +82,14 @@ export default function App() {
           element={
             <PrivateRoute roles={["admin"]}>
               <Client />
+            </PrivateRoute>
+          }
+        />
+        <Route
+          path="client/:id"
+          element={
+            <PrivateRoute roles={["admin"]}>
+              <ClientInfo />
             </PrivateRoute>
           }
         />
