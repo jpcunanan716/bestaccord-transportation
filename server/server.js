@@ -19,7 +19,6 @@ app.use("/api/auth", authRoutes);
 app.use("/api/vehicles", vehicleRoutes);
 app.use("/api/employees", employeeRoutes);
 app.use("/api/clients", clientRoutes);
-app.use("/api/driver", driverAuthRoutes);
 
 const PORT = process.env.PORT || 5000;
 mongoose
