@@ -6,6 +6,7 @@ import vehicleRoutes from "./routes/vehicle.js";
 import employeeRoutes from "./routes/employees.js";
 import authRoutes from "./routes/Auth.js";
 import clientRoutes from "./routes/clients.js";
+import driverAuthRoutes from "./routes/driverAuth.js";
 
 dotenv.config();
 
@@ -18,6 +19,7 @@ app.use("/api/auth", authRoutes);
 app.use("/api/vehicles", vehicleRoutes);
 app.use("/api/employees", employeeRoutes);
 app.use("/api/clients", clientRoutes);
+app.use("/api/driver", driverAuthRoutes);
 
 const PORT = process.env.PORT || 5000;
 mongoose

@@ -6,14 +6,16 @@ const employeeSchema = new mongoose.Schema({
   role: { type: String, required: true, enum: ["Driver", "Helper"] },
   employmentType: { type: String, required: true, enum: ["Part-time", "Full-time", "Contractual"] },
   mobileNumber: { type: String, required: true },
-  email: { type: String },
   currentAddress: { type: String },
   permanentAddress: { type: String },
   emergencyContactName: { type: String },
   emergencyContactNumber: { type: String },
   dateHired: { type: Date },
   shift: { type: String, enum: ["Morning", "Afternoon", "Night"] },
-  username: { type: String },
+
+  // 🔹 New username field (unique + required)
+  email: { type: String, unique: true, required: true },
+
   password: { type: String },
 }, { timestamps: true });
 

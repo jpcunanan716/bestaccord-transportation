@@ -13,6 +13,11 @@ import Client from "./pages/Client";
 import Archive from "./pages/Archive";
 import ClientInfo from "./pages/ClientInfo";
 import VehicleInfo from "./pages/VehicleInfo";
+import DriverLogin from "./pages/DriverLogin";
+import DriverDashboard from "./pages/DriverDashboard";
+import DriverProfile from "./pages/DriverProfile";
+import DriverBookings from "./pages/DriverBookings";
+import DriverSchedule from "./pages/DriverSchedule";
 
 function PrivateRoute({ children, roles }) {
   const role = localStorage.getItem("role");
@@ -31,6 +36,13 @@ export default function App() {
   return (
     <Routes>
       <Route path="/login" element={<LoginPage />} />
+      <Route path="driver-login" element={<DriverLogin/>} />
+
+        <Route path="/driver/driver-login" element={<DriverLogin />} />
+        <Route path="/driver/dashboard" element={<DriverDashboard />} />
+        <Route path="/driver/profile" element={<DriverProfile />} />
+        <Route path="/driver/bookings" element={<DriverBookings />} />
+        <Route path="/driver/schedule" element={<DriverSchedule />} />
 
       <Route
         path="/dashboard"
@@ -44,6 +56,7 @@ export default function App() {
         <Route path="booking" element={<Booking />} />
         <Route path="monitoring" element={<Monitoring />} />
         <Route path="trip-report" element={<TripReport />} />
+
 
         {/* Admin-only */}
         <Route
