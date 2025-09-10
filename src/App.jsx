@@ -13,6 +13,7 @@ import Client from "./pages/Client";
 import Archive from "./pages/Archive";
 import ClientInfo from "./pages/ClientInfo";
 import VehicleInfo from "./pages/VehicleInfo";
+import BookingInfo from "./pages/BookingInfo";
 
 function PrivateRoute({ children, roles }) {
   const role = localStorage.getItem("role");
@@ -42,6 +43,7 @@ export default function App() {
       >
         <Route index element={<Dashboard />} />
         <Route path="booking" element={<Booking />} />
+        <Route path="booking/:id" element={<BookingInfo />} />
         <Route path="monitoring" element={<Monitoring />} />
         <Route path="trip-report" element={<TripReport />} />
 
