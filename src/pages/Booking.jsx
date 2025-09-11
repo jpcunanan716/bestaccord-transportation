@@ -84,7 +84,7 @@ function Booking() {
 
   const fetchClients = async () => {
     try {
-      const res = await axios.get("http://localhost:5000/api/clients");
+      const res = await axios.get("http://localhost:5000/api/clients/names");
       setClients(res.data);
     } catch (err) {
       console.error("Error fetching clients:", err);
@@ -239,10 +239,10 @@ function Booking() {
     const newEmployeeAssigned = [...formData.employeeAssigned];
     const newRoleOfEmployee = [...formData.roleOfEmployee];
 
-    newEmployeeAssigned[index] = employeeId;
+    newEmployeeAssigned[index] = employeeId; // This should now be employeeId
 
-    // Find the employee and auto-fill the role
-    const selectedEmployee = employees.find(emp => emp._id === employeeId);
+    // Find the employee by employeeId and auto-fill the role
+    const selectedEmployee = employees.find(emp => emp.employeeId === employeeId); // Change from _id to employeeId
     if (selectedEmployee) {
       newRoleOfEmployee[index] = selectedEmployee.role;
     } else {
@@ -276,8 +276,8 @@ function Booking() {
   };
 
   const getAvailableEmployees = (currentIndex) => {
-    const selectedEmployees = formData.employeeAssigned.filter((emp, index) => index !== currentIndex && emp !== "");
-    return employees.filter(emp => !selectedEmployees.includes(emp._id));
+    const selectedEmployeeIds = formData.employeeAssigned.filter((empId, index) => index !== currentIndex && empId !== "");
+    return employees.filter(emp => !selectedEmployeeIds.includes(emp.employeeId)); // Change from _id to employeeId
   };
 
   const nextStep = () => {
@@ -295,12 +295,25 @@ function Booking() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
-      // Prepare data for submission
       const submitData = {
         ...formData,
-        employeeAssigned: formData.employeeAssigned.filter(emp => emp !== ""),
-        roleOfEmployee: formData.roleOfEmployee.filter(role => role !== "")
+        quantity: parseInt(formData.quantity) || 0,
+        grossWeight: parseFloat(formData.grossWeight) || 0,
+        unitPerPackage: parseInt(formData.unitPerPackage) || 0,
+        numberOfPackages: parseInt(formData.numberOfPackages) || 0,
+        deliveryFee: parseFloat(formData.deliveryFee) || 0,
+        rateCost: parseFloat(formData.rateCost) || 0,
+        employeeAssigned: Array.isArray(formData.employeeAssigned)
+          ? formData.employeeAssigned.filter(emp => emp !== "")
+          : [formData.employeeAssigned].filter(emp => emp !== ""),
+        roleOfEmployee: Array.isArray(formData.roleOfEmployee)
+          ? formData.roleOfEmployee.filter(role => role !== "")
+          : [formData.roleOfEmployee].filter(role => role !== ""),
       };
+
+      console.log("Submitting data:", submitData);
+      console.log("employeeAssigned type:", typeof submitData.employeeAssigned, submitData.employeeAssigned);
+      console.log("roleOfEmployee type:", typeof submitData.roleOfEmployee, submitData.roleOfEmployee);
 
       if (editBooking) {
         await axios.put(
@@ -313,7 +326,8 @@ function Booking() {
       closeModal();
       fetchBookings();
     } catch (err) {
-      console.error(err);
+      console.error("Full error object:", err);
+      console.error("Error response:", err.response?.data);
       alert("Error adding/updating booking");
     }
   };
@@ -607,7 +621,7 @@ function Booking() {
                       <div>
                         <label className="block text-sm font-medium text-gray-700 mb-1">Quantity</label>
                         <input
-                          type="text"
+                          type="number"
                           name="quantity"
                           value={formData.quantity}
                           onChange={handleChange}
@@ -619,7 +633,7 @@ function Booking() {
                       <div>
                         <label className="block text-sm font-medium text-gray-700 mb-1">Gross Weight</label>
                         <input
-                          type="text"
+                          type="number"
                           name="grossWeight"
                           value={formData.grossWeight}
                           onChange={handleChange}
@@ -631,7 +645,7 @@ function Booking() {
                       <div>
                         <label className="block text-sm font-medium text-gray-700 mb-1">Units per package</label>
                         <input
-                          type="text"
+                          type="number"
                           name="unitPerPackage"
                           value={formData.unitPerPackage}
                           onChange={handleChange}
@@ -645,7 +659,7 @@ function Booking() {
                       <div>
                         <label className="block text-sm font-medium text-gray-700 mb-1">Number of Packages</label>
                         <input
-                          type="text"
+                          type="number"
                           name="numberOfPackages"
                           value={formData.numberOfPackages}
                           onChange={handleChange}
@@ -657,7 +671,7 @@ function Booking() {
                       <div>
                         <label className="block text-sm font-medium text-gray-700 mb-1">Delivery Fee Amount</label>
                         <input
-                          type="text"
+                          type="number"
                           name="deliveryFee"
                           value={formData.deliveryFee}
                           onChange={handleChange}
@@ -674,7 +688,9 @@ function Booking() {
                     <h3 className="text-lg font-semibold text-gray-700 mb-3">Customer Details & Shipment Route</h3>
 
                     <div className="mb-4">
-                      <label className="block text-sm font-medium text-gray-700 mb-1">Select company</label>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Select company
+                      </label>
                       <select
                         name="companyName"
                         value={formData.companyName}
@@ -846,7 +862,7 @@ function Booking() {
                           >
                             <option value="">Employee</option>
                             {getAvailableEmployees(index).map((employee) => (
-                              <option key={employee._id} value={employee._id}>
+                              <option key={employee._id} value={employee.employeeId}> {/* Use employeeId as value */}
                                 {employee.employeeName || employee.name || `Employee ${employee.employeeId}`}
                               </option>
                             ))}

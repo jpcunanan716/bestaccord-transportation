@@ -1,6 +1,7 @@
 import express from "express";
 import Booking from "../models/Booking.js";
 import Counter from "../models/Counter.js";
+import Client from "../models/Client.js";
 
 const router = express.Router();
 
@@ -86,7 +87,6 @@ router.get("/trip/:tripNumber", async (req, res) => {
   }
 });
 
-
 // GET single booking
 router.get("/:id", async (req, res) => {
   try {
@@ -98,6 +98,7 @@ router.get("/:id", async (req, res) => {
     res.status(500).json({ message: err.message });
   }
 });
+
 
 
 // POST create booking

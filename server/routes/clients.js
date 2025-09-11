@@ -14,7 +14,18 @@ router.get("/", async (req, res) => {
   }
 });
 
-// GET single client
+// ADD THIS ROUTE - and place it BEFORE the /:id route
+router.get("/names", async (req, res) => {
+  try {
+    const clients = await Client.find({}, "clientName"); // only return clientName field
+    res.json(clients);
+  } catch (err) {
+    console.error("Error fetching client names:", err);
+    res.status(500).json({ message: err.message });
+  }
+});
+
+// GET single client - KEEP THIS AFTER the /names route
 router.get("/:id", async (req, res) => {
   try {
     const client = await Client.findById(req.params.id);
