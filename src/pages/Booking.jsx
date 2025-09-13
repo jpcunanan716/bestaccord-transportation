@@ -280,6 +280,34 @@ function Booking() {
     return employees.filter(emp => !selectedEmployeeIds.includes(emp.employeeId)); // Change from _id to employeeId
   };
 
+  // Helper function to get employee display name
+  const getEmployeeDisplayName = (employeeId) => {
+    const employee = employees.find(emp => emp.employeeId === employeeId);
+    if (employee) {
+      return `${employee.employeeId} - ${employee.fullName || employee.name || ''}`.trim();
+    }
+    return employeeId; // fallback to just the ID if employee not found
+  };
+
+  // Helper function to get vehicle display name
+  const getVehicleDisplayName = (vehicleType) => {
+    const vehicle = vehicles.find(v => v.vehicleType === vehicleType);
+    if (vehicle) {
+      return `${vehicle.color || ''} ${vehicle.manufacturedBy || ''} ${vehicle.model || ''} - ${vehicle.vehicleType}`.replace(/ +/g, ' ').trim();
+    }
+    return vehicleType; // fallback to just the type if vehicle not found
+  };
+
+  // Helper function to format employee names for display
+  const formatEmployeeNames = (employeeAssigned) => {
+    if (Array.isArray(employeeAssigned)) {
+      return employeeAssigned
+        .map(empId => getEmployeeDisplayName(empId))
+        .join(", ");
+    }
+    return getEmployeeDisplayName(employeeAssigned);
+  };
+
   const nextStep = () => {
     if (currentStep < 2) {
       setCurrentStep(currentStep + 1);
@@ -486,17 +514,15 @@ function Booking() {
                     <td className="px-6 py-3 font-mono text-green-600">{booking.tripNumber}</td>
                     <td className="px-6 py-3">{booking.companyName}</td>
                     <td className="px-6 py-3">{booking.productName}</td>
-                    <td className="px-6 py-3">{booking.vehicleType}</td>
+                    <td className="px-6 py-3">{getVehicleDisplayName(booking.vehicleType)}</td>
                     <td className="px-6 py-3">
                       {new Date(booking.dateNeeded).toLocaleDateString()}
                     </td>
                     <td className="px-6 py-3">
-                      {Array.isArray(booking.employeeAssigned)
-                        ? booking.employeeAssigned.join(", ")
-                        : booking.employeeAssigned}
+                      {formatEmployeeNames(booking.employeeAssigned)}
                     </td>
-
                     <td className="px-6 py-3 text-center space-x-2">
+                      {/* Your existing action buttons remain the same */}
                       <button
                         onClick={() => viewBooking(booking)}
                         className="px-3 py-1 bg-blue-500 text-white rounded shadow hover:bg-blue-600 inline-flex items-center gap-1 transition transform hover:scale-105"
@@ -775,10 +801,10 @@ function Booking() {
                         required
                         className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-400"
                       >
-                        <option value="">Select vehicle type/ auto add Plate Number</option>
+                        <option value="">Select Vehicle</option>
                         {vehicles.map((vehicle) => (
                           <option key={vehicle._id} value={vehicle.vehicleType}>
-                            {vehicle.vehicleType}
+                            {`${vehicle.color || ''} ${vehicle.manufacturedBy || ''} ${vehicle.model || ''} - ${vehicle.vehicleType}`.replace(/ +/g, ' ').trim()}
                           </option>
                         ))}
                       </select>
@@ -862,8 +888,8 @@ function Booking() {
                           >
                             <option value="">Employee</option>
                             {getAvailableEmployees(index).map((employee) => (
-                              <option key={employee._id} value={employee.employeeId}> {/* Use employeeId as value */}
-                                {employee.employeeName || employee.name || `Employee ${employee.employeeId}`}
+                              <option key={employee._id} value={employee.employeeId}>
+                                {`${employee.employeeId} - ${employee.fullName || employee.name || ''}`.trim()}
                               </option>
                             ))}
                           </select>
