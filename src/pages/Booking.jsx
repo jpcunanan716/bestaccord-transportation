@@ -470,8 +470,8 @@ function Booking() {
 
         {/* Table */}
         <div className="bg-white rounded-xl shadow-lg p-4">
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm table-auto">
+          <div className="overflow-x-auto" style={{ zoom: 0.85 }}>
+            <table className="min-w-[1200px] text-xs table-auto">
               <thead className="bg-gray-100 rounded-t-lg">
                 <tr>
                   <th className="px-6 py-3 text-left font-semibold text-gray-700">
@@ -496,6 +496,9 @@ function Booking() {
                     Date Needed
                   </th>
                   <th className="px-6 py-3 text-left font-semibold text-gray-700">
+                    Status
+                  </th>
+                  <th className="px-6 py-3 text-left font-semibold text-gray-700">
                     Employee
                   </th>
                   <th className="px-6 py-3 text-center font-semibold text-gray-700">
@@ -517,6 +520,22 @@ function Booking() {
                     <td className="px-6 py-3">{getVehicleDisplayName(booking.vehicleType)}</td>
                     <td className="px-6 py-3">
                       {new Date(booking.dateNeeded).toLocaleDateString()}
+                    </td>
+                    <td className="px-6 py-3">
+                      <span
+                        className={`px-2 py-1 rounded-full text-xs font-semibold ${(booking.status || "Pending") === "Pending"
+                          ? "bg-yellow-100 text-yellow-800"
+                          : (booking.status || "Pending") === "In Transit"
+                            ? "bg-blue-100 text-blue-800"
+                            : (booking.status || "Pending") === "Delivered"
+                              ? "bg-green-100 text-green-800"
+                              : (booking.status || "Pending") === "Completed"
+                                ? "bg-gray-200 text-gray-800"
+                                : "bg-gray-100 text-gray-800"
+                          }`}
+                      >
+                        {booking.status || "Pending"}
+                      </span>
                     </td>
                     <td className="px-6 py-3">
                       {formatEmployeeNames(booking.employeeAssigned)}
@@ -804,7 +823,7 @@ function Booking() {
                         <option value="">Select Vehicle</option>
                         {vehicles.map((vehicle) => (
                           <option key={vehicle._id} value={vehicle.vehicleType}>
-                            {`${vehicle.color || ''} ${vehicle.manufacturedBy || ''} ${vehicle.model || ''} - ${vehicle.vehicleType}`.replace(/ +/g, ' ').trim()}
+                            {`${vehicle.color || ''} ${vehicle.manufacturedBy || ''} ${vehicle.model || ''} (${vehicle.vehicleType}) - ${vehicle.plateNumber}`.replace(/ +/g, ' ').trim()}
                           </option>
                         ))}
                       </select>
