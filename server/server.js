@@ -6,6 +6,7 @@ import vehicleRoutes from "./routes/vehicle.js";
 import employeeRoutes from "./routes/employees.js";
 import authRoutes from "./routes/Auth.js";
 import clientRoutes from "./routes/clients.js";
+import bookingRoutes from "./routes/bookings.js";
 import driverAuthRoutes from "./routes/driverAuth.js";
 import staffRoutes from "./routes/staff.js";
 
@@ -20,6 +21,7 @@ app.use("/api/auth", authRoutes);
 app.use("/api/vehicles", vehicleRoutes);
 app.use("/api/employees", employeeRoutes);
 app.use("/api/clients", clientRoutes);
+app.use("/api/bookings", bookingRoutes);
 app.use("/api/driver", driverAuthRoutes);
 app.use("/api/staff", staffRoutes);
 

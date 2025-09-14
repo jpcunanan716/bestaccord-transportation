@@ -1,6 +1,7 @@
 import express from "express";
 import Booking from "../models/Booking.js";
 import Counter from "../models/Counter.js";
+import Client from "../models/Client.js";
 
 const router = express.Router();
 
@@ -54,7 +55,38 @@ async function getNextTripNumber() {
 router.get("/", async (req, res) => {
   try {
     const bookings = await Booking.find();
-    res.json(bookings);
+    // Fetch employee and vehicle details for each booking
+    const Employee = (await import("../models/Employee.js")).default;
+    const Vehicle = (await import("../models/Vehicle.js")).default;
+
+    // Map bookings to include employeeDetails and vehicle
+    const bookingsWithDetails = await Promise.all(bookings.map(async (booking) => {
+      // Employee details
+      let employeeDetails = [];
+      if (Array.isArray(booking.employeeAssigned)) {
+        employeeDetails = await Employee.find({ employeeId: { $in: booking.employeeAssigned } });
+      }
+      // Vehicle details
+      let vehicle = null;
+      if (booking.vehicleType) {
+        vehicle = await Vehicle.findOne({ vehicleType: booking.vehicleType });
+      }
+      return {
+        ...booking.toObject(),
+        employeeDetails: employeeDetails.map(emp => ({
+          employeeId: emp.employeeId,
+          employeeName: emp.fullName,
+          role: emp.role
+        })),
+        vehicle: vehicle ? {
+          color: vehicle.color,
+          manufacturedBy: vehicle.manufacturedBy,
+          model: vehicle.model,
+          vehicleType: vehicle.vehicleType
+        } : null
+      };
+    }));
+    res.json(bookingsWithDetails);
   } catch (err) {
     console.error("Error fetching bookings:", err);
     res.status(500).json({ message: err.message });
@@ -86,7 +118,6 @@ router.get("/trip/:tripNumber", async (req, res) => {
   }
 });
 
-
 // GET single booking
 router.get("/:id", async (req, res) => {
   try {
@@ -98,6 +129,7 @@ router.get("/:id", async (req, res) => {
     res.status(500).json({ message: err.message });
   }
 });
+
 
 
 // POST create booking

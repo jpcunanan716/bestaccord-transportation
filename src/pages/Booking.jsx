@@ -84,7 +84,7 @@ function Booking() {
 
   const fetchClients = async () => {
     try {
-      const res = await axios.get("http://localhost:5000/api/clients");
+      const res = await axios.get("http://localhost:5000/api/clients/names");
       setClients(res.data);
     } catch (err) {
       console.error("Error fetching clients:", err);
@@ -239,10 +239,10 @@ function Booking() {
     const newEmployeeAssigned = [...formData.employeeAssigned];
     const newRoleOfEmployee = [...formData.roleOfEmployee];
 
-    newEmployeeAssigned[index] = employeeId;
+    newEmployeeAssigned[index] = employeeId; // This should now be employeeId
 
-    // Find the employee and auto-fill the role
-    const selectedEmployee = employees.find(emp => emp._id === employeeId);
+    // Find the employee by employeeId and auto-fill the role
+    const selectedEmployee = employees.find(emp => emp.employeeId === employeeId); // Change from _id to employeeId
     if (selectedEmployee) {
       newRoleOfEmployee[index] = selectedEmployee.role;
     } else {
@@ -276,8 +276,36 @@ function Booking() {
   };
 
   const getAvailableEmployees = (currentIndex) => {
-    const selectedEmployees = formData.employeeAssigned.filter((emp, index) => index !== currentIndex && emp !== "");
-    return employees.filter(emp => !selectedEmployees.includes(emp._id));
+    const selectedEmployeeIds = formData.employeeAssigned.filter((empId, index) => index !== currentIndex && empId !== "");
+    return employees.filter(emp => !selectedEmployeeIds.includes(emp.employeeId)); // Change from _id to employeeId
+  };
+
+  // Helper function to get employee display name
+  const getEmployeeDisplayName = (employeeId) => {
+    const employee = employees.find(emp => emp.employeeId === employeeId);
+    if (employee) {
+      return `${employee.employeeId} - ${employee.fullName || employee.name || ''}`.trim();
+    }
+    return employeeId; // fallback to just the ID if employee not found
+  };
+
+  // Helper function to get vehicle display name
+  const getVehicleDisplayName = (vehicleType) => {
+    const vehicle = vehicles.find(v => v.vehicleType === vehicleType);
+    if (vehicle) {
+      return `${vehicle.color || ''} ${vehicle.manufacturedBy || ''} ${vehicle.model || ''} - ${vehicle.vehicleType}`.replace(/ +/g, ' ').trim();
+    }
+    return vehicleType; // fallback to just the type if vehicle not found
+  };
+
+  // Helper function to format employee names for display
+  const formatEmployeeNames = (employeeAssigned) => {
+    if (Array.isArray(employeeAssigned)) {
+      return employeeAssigned
+        .map(empId => getEmployeeDisplayName(empId))
+        .join(", ");
+    }
+    return getEmployeeDisplayName(employeeAssigned);
   };
 
   const nextStep = () => {
@@ -295,12 +323,25 @@ function Booking() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
-      // Prepare data for submission
       const submitData = {
         ...formData,
-        employeeAssigned: formData.employeeAssigned.filter(emp => emp !== ""),
-        roleOfEmployee: formData.roleOfEmployee.filter(role => role !== "")
+        quantity: parseInt(formData.quantity) || 0,
+        grossWeight: parseFloat(formData.grossWeight) || 0,
+        unitPerPackage: parseInt(formData.unitPerPackage) || 0,
+        numberOfPackages: parseInt(formData.numberOfPackages) || 0,
+        deliveryFee: parseFloat(formData.deliveryFee) || 0,
+        rateCost: parseFloat(formData.rateCost) || 0,
+        employeeAssigned: Array.isArray(formData.employeeAssigned)
+          ? formData.employeeAssigned.filter(emp => emp !== "")
+          : [formData.employeeAssigned].filter(emp => emp !== ""),
+        roleOfEmployee: Array.isArray(formData.roleOfEmployee)
+          ? formData.roleOfEmployee.filter(role => role !== "")
+          : [formData.roleOfEmployee].filter(role => role !== ""),
       };
+
+      console.log("Submitting data:", submitData);
+      console.log("employeeAssigned type:", typeof submitData.employeeAssigned, submitData.employeeAssigned);
+      console.log("roleOfEmployee type:", typeof submitData.roleOfEmployee, submitData.roleOfEmployee);
 
       if (editBooking) {
         await axios.put(
@@ -313,7 +354,8 @@ function Booking() {
       closeModal();
       fetchBookings();
     } catch (err) {
-      console.error(err);
+      console.error("Full error object:", err);
+      console.error("Error response:", err.response?.data);
       alert("Error adding/updating booking");
     }
   };
@@ -428,8 +470,8 @@ function Booking() {
 
         {/* Table */}
         <div className="bg-white rounded-xl shadow-lg p-4">
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm table-auto">
+          <div className="overflow-x-auto" style={{ zoom: 0.85 }}>
+            <table className="min-w-[1200px] text-xs table-auto">
               <thead className="bg-gray-100 rounded-t-lg">
                 <tr>
                   <th className="px-6 py-3 text-left font-semibold text-gray-700">
@@ -454,6 +496,9 @@ function Booking() {
                     Date Needed
                   </th>
                   <th className="px-6 py-3 text-left font-semibold text-gray-700">
+                    Status
+                  </th>
+                  <th className="px-6 py-3 text-left font-semibold text-gray-700">
                     Employee
                   </th>
                   <th className="px-6 py-3 text-center font-semibold text-gray-700">
@@ -472,17 +517,31 @@ function Booking() {
                     <td className="px-6 py-3 font-mono text-green-600">{booking.tripNumber}</td>
                     <td className="px-6 py-3">{booking.companyName}</td>
                     <td className="px-6 py-3">{booking.productName}</td>
-                    <td className="px-6 py-3">{booking.vehicleType}</td>
+                    <td className="px-6 py-3">{getVehicleDisplayName(booking.vehicleType)}</td>
                     <td className="px-6 py-3">
                       {new Date(booking.dateNeeded).toLocaleDateString()}
                     </td>
                     <td className="px-6 py-3">
-                      {Array.isArray(booking.employeeAssigned)
-                        ? booking.employeeAssigned.join(", ")
-                        : booking.employeeAssigned}
+                      <span
+                        className={`px-2 py-1 rounded-full text-xs font-semibold ${(booking.status || "Pending") === "Pending"
+                          ? "bg-yellow-100 text-yellow-800"
+                          : (booking.status || "Pending") === "In Transit"
+                            ? "bg-blue-100 text-blue-800"
+                            : (booking.status || "Pending") === "Delivered"
+                              ? "bg-green-100 text-green-800"
+                              : (booking.status || "Pending") === "Completed"
+                                ? "bg-gray-200 text-gray-800"
+                                : "bg-gray-100 text-gray-800"
+                          }`}
+                      >
+                        {booking.status || "Pending"}
+                      </span>
                     </td>
-
+                    <td className="px-6 py-3">
+                      {formatEmployeeNames(booking.employeeAssigned)}
+                    </td>
                     <td className="px-6 py-3 text-center space-x-2">
+                      {/* Your existing action buttons remain the same */}
                       <button
                         onClick={() => viewBooking(booking)}
                         className="px-3 py-1 bg-blue-500 text-white rounded shadow hover:bg-blue-600 inline-flex items-center gap-1 transition transform hover:scale-105"
@@ -607,7 +666,7 @@ function Booking() {
                       <div>
                         <label className="block text-sm font-medium text-gray-700 mb-1">Quantity</label>
                         <input
-                          type="text"
+                          type="number"
                           name="quantity"
                           value={formData.quantity}
                           onChange={handleChange}
@@ -619,7 +678,7 @@ function Booking() {
                       <div>
                         <label className="block text-sm font-medium text-gray-700 mb-1">Gross Weight</label>
                         <input
-                          type="text"
+                          type="number"
                           name="grossWeight"
                           value={formData.grossWeight}
                           onChange={handleChange}
@@ -631,7 +690,7 @@ function Booking() {
                       <div>
                         <label className="block text-sm font-medium text-gray-700 mb-1">Units per package</label>
                         <input
-                          type="text"
+                          type="number"
                           name="unitPerPackage"
                           value={formData.unitPerPackage}
                           onChange={handleChange}
@@ -645,7 +704,7 @@ function Booking() {
                       <div>
                         <label className="block text-sm font-medium text-gray-700 mb-1">Number of Packages</label>
                         <input
-                          type="text"
+                          type="number"
                           name="numberOfPackages"
                           value={formData.numberOfPackages}
                           onChange={handleChange}
@@ -657,7 +716,7 @@ function Booking() {
                       <div>
                         <label className="block text-sm font-medium text-gray-700 mb-1">Delivery Fee Amount</label>
                         <input
-                          type="text"
+                          type="number"
                           name="deliveryFee"
                           value={formData.deliveryFee}
                           onChange={handleChange}
@@ -674,7 +733,9 @@ function Booking() {
                     <h3 className="text-lg font-semibold text-gray-700 mb-3">Customer Details & Shipment Route</h3>
 
                     <div className="mb-4">
-                      <label className="block text-sm font-medium text-gray-700 mb-1">Select company</label>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Select company
+                      </label>
                       <select
                         name="companyName"
                         value={formData.companyName}
@@ -759,10 +820,10 @@ function Booking() {
                         required
                         className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-400"
                       >
-                        <option value="">Select vehicle type/ auto add Plate Number</option>
+                        <option value="">Select Vehicle</option>
                         {vehicles.map((vehicle) => (
                           <option key={vehicle._id} value={vehicle.vehicleType}>
-                            {vehicle.vehicleType}
+                            {`${vehicle.color || ''} ${vehicle.manufacturedBy || ''} ${vehicle.model || ''} (${vehicle.vehicleType}) - ${vehicle.plateNumber}`.replace(/ +/g, ' ').trim()}
                           </option>
                         ))}
                       </select>
@@ -846,8 +907,8 @@ function Booking() {
                           >
                             <option value="">Employee</option>
                             {getAvailableEmployees(index).map((employee) => (
-                              <option key={employee._id} value={employee._id}>
-                                {employee.employeeName || employee.name || `Employee ${employee.employeeId}`}
+                              <option key={employee._id} value={employee.employeeId}>
+                                {`${employee.employeeId} - ${employee.fullName || employee.name || ''}`.trim()}
                               </option>
                             ))}
                           </select>
