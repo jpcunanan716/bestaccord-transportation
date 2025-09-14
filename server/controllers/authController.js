@@ -1,52 +1,67 @@
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
-import Admin from "../models/Admin.js";
-import Staff from "../models/Staff.js";
+import Staff from "../models/Staff.js"; // adjust path if needed
 
+// Register function
 export const register = async (req, res) => {
   try {
-    const { role, email, password, name } = req.body;
+    const { name, email, password, role } = req.body;
+
+    const existing = await Staff.findOne({ email });
+    if (existing) {
+      return res.status(400).json({ msg: "Email already registered" });
+    }
 
     const hashedPassword = await bcrypt.hash(password, 10);
 
-    if (role === "admin") {
-      // Only 1 admin allowed
-      const existingAdmin = await Admin.findOne({});
-      if (existingAdmin) {
-        return res.status(400).json({ msg: "Admin already exists" });
-      }
-      const admin = new Admin({ email, password: hashedPassword });
-      await admin.save();
-      return res.json({ msg: "Admin registered successfully" });
-    } else {
-      const staff = new Staff({ name, email, password: hashedPassword });
-      await staff.save();
-      return res.json({ msg: "Staff registered successfully" });
-    }
+    const newStaff = new Staff({
+      name,
+      email,
+      password: hashedPassword,
+      role: role || "staff",
+      isApproved: false, // new staff must wait for admin approval
+    });
+
+    await newStaff.save();
+
+    res.json({ msg: "Registration successful! Pending admin approval." });
   } catch (err) {
-    res.status(500).json({ msg: err.message });
+    console.error(err);
+    res.status(500).json({ msg: "Server error" });
   }
 };
 
+// Login function
 export const login = async (req, res) => {
   try {
     const { email, password } = req.body;
 
-    let user = await Admin.findOne({ email });
-    if (!user) user = await Staff.findOne({ email });
-    if (!user) return res.status(404).json({ msg: "User not found" });
+    const staff = await Staff.findOne({ email });
+    if (!staff) {
+      return res.status(400).json({ msg: "Invalid email or password" });
+    }
 
-    const isMatch = await bcrypt.compare(password, user.password);
-    if (!isMatch) return res.status(400).json({ msg: "Invalid credentials" });
+    // ✅ check approval before login
+    if (staff.role === "staff" && !staff.isApproved) {
+      return res.status(403).json({ msg: "Your account is not approved yet. Please contact Admin" });
+    }
 
-    const token = jwt.sign(
-      { id: user._id, role: user.role },
-      process.env.JWT_SECRET,
-      { expiresIn: "1d" }
-    );
+    const isMatch = await bcrypt.compare(password, staff.password);
+    if (!isMatch) {
+      return res.status(400).json({ msg: "Invalid email or password" });
+    }
 
-    res.json({ token, role: user.role });
+    const token = jwt.sign({ id: staff._id, role: staff.role }, process.env.JWT_SECRET, {
+      expiresIn: "1d",
+    });
+
+    res.json({
+      msg: "Login successful",
+      token,
+      role: staff.role,
+    });
   } catch (err) {
-    res.status(500).json({ msg: err.message });
+    console.error(err);
+    res.status(500).json({ msg: "Server error" });
   }
 };

@@ -19,6 +19,7 @@ import DriverProfile from "./pages/DriverProfile";
 import DriverBookings from "./pages/DriverBookings";
 import DriverSchedule from "./pages/DriverSchedule";
 import BookingInfo from "./pages/BookingInfo";
+import PendingStaff from "./pages/PendingStaff";
 
 function PrivateRoute({ children, roles }) {
   const role = localStorage.getItem("role");
@@ -69,6 +70,16 @@ export default function App() {
             </PrivateRoute>
           }
         />
+
+        <Route
+          path="pending-staff"
+          element={
+            <PrivateRoute roles={["admin"]}>
+              <PendingStaff />
+            </PrivateRoute>
+          }
+        />
+
         <Route
           path="vehicle/:id"
           element={

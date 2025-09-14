@@ -16,27 +16,28 @@ export default function LoginPage() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
-      if (isRegister) {
-        // Staff registration
-        await axios.post("http://localhost:5000/api/auth/register", {
-          name: formData.name,
-          email: formData.email,
-          password: formData.password,
-          role: "staff",
-        });
-        alert("Registration successful! You can now login.");
-        setIsRegister(false);
-        setFormData({ name: "", email: "", password: "" });
-      } else {
-        // Login
-        const res = await axios.post("http://localhost:5000/api/auth/login", {
-          email: formData.email,
-          password: formData.password,
-        });
-        localStorage.setItem("token", res.data.token);
-        localStorage.setItem("role", res.data.role);
-        navigate("/dashboard");
-      }
+    if (isRegister) {
+      // Staff registration
+      await axios.post("http://localhost:5000/api/auth/register", {
+        name: formData.name,
+        email: formData.email,
+        password: formData.password,
+        role: "staff",
+      });
+
+      alert("Registration successful! Your account is pending admin approval.");
+      setIsRegister(false);
+      setFormData({ name: "", email: "", password: "" });
+    } else {
+      // Login
+      const res = await axios.post("http://localhost:5000/api/auth/login", {
+        email: formData.email,
+        password: formData.password,
+      });
+      localStorage.setItem("token", res.data.token);
+      localStorage.setItem("role", res.data.role);
+      navigate("/dashboard");
+    }
     } catch (err) {
       setError(err.response?.data?.msg || "Something went wrong");
     }
