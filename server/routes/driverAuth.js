@@ -1,11 +1,14 @@
-// routes/driverAuth.js
+// server/routes/driverAuth.js (Complete version with all existing routes + count)
 import express from "express";
 import Employee from "../models/Employee.js";
 import jwt from "jsonwebtoken";
+import { driverLogin, getDriverProfile } from "../controllers/driverAuthController.js";
+import { getDriverBookings, getDriverBookingById, updateBookingStatus, getDriverBookingCount } from "../controllers/driverBookingsController.js";
+import driverAuth from "../middleware/driverAuth1.js";
 
 const router = express.Router();
 
-// POST /api/driver/login
+// POST /api/driver/driver-login (Original login route)
 router.post("/driver-login", async (req, res) => {
   try {
     const { employeeId, password } = req.body;
@@ -64,5 +67,15 @@ router.post("/driver-login", async (req, res) => {
     res.status(500).json({ msg: "Server error" });
   }
 });
+
+// Authentication routes from driverAuthController
+router.post("/login", driverLogin); // Alternative login route
+router.get("/profile", driverAuth, getDriverProfile);
+
+// Booking routes for drivers (Note: /count must come before /:id to avoid conflicts)
+router.get("/bookings/count", driverAuth, getDriverBookingCount);
+router.get("/bookings", driverAuth, getDriverBookings);
+router.get("/bookings/:id", driverAuth, getDriverBookingById);
+router.put("/bookings/:id/status", driverAuth, updateBookingStatus);
 
 export default router;

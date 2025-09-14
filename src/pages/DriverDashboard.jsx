@@ -1,3 +1,4 @@
+// src/pages/DriverDashboard.jsx (Complete version with notification badge)
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
@@ -10,13 +11,18 @@ import {
   Calendar,
   ClipboardList,
 } from "lucide-react";
-import DriverProfile from "./DriverProfile"; // 🔹 import profile component
-import logo from "../assets/bestaccord_logo_black.png"; // 🔹 import company logo
+import DriverProfile from "./DriverProfile";
+import DriverBookings from "./DriverBookings";
+import { useDriverBookingCount } from "../hooks/useDriverBookingCount";
+import logo from "../assets/bestaccord_logo_black.png";
 
 export default function DriverDashboard() {
   const [menuOpen, setMenuOpen] = useState(false);
   const [activePage, setActivePage] = useState("home"); // home | bookings | schedule | profile
   const navigate = useNavigate();
+  
+  // Get booking count for notification badge
+  const { bookingCount, loading: countLoading } = useDriverBookingCount();
 
   const handleLogout = () => {
     localStorage.removeItem("driverToken");
@@ -39,11 +45,11 @@ export default function DriverDashboard() {
         ) : (
           <div className="flex-1 flex justify-center">
             {/* 🔹 Company Logo instead of text */}
-        <img
-            src="/src/assets/bestaccord_logo_black.png"
-            alt="Company Logo"
-            className="h-16 w-auto object-contain mx-auto"
-/>
+            <img
+              src="/src/assets/bestaccord_logo_black.png"
+              alt="Company Logo"
+              className="h-16 w-auto object-contain mx-auto"
+            />
           </div>
         )}
 
@@ -56,7 +62,7 @@ export default function DriverDashboard() {
       </div>
 
       {/* Main Content */}
-      <div className="flex-1 flex items-center justify-center p-6">
+      <div className="flex-1">
         <AnimatePresence mode="wait">
           {activePage === "home" && (
             <motion.div
@@ -65,25 +71,46 @@ export default function DriverDashboard() {
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -30 }}
               transition={{ duration: 0.4 }}
-              className="grid gap-6 w-full max-w-sm"
+              className="flex items-center justify-center p-6 h-full"
             >
-              <motion.button
-                whileTap={{ scale: 0.95 }}
-                onClick={() => setActivePage("bookings")}
-                className="w-full py-6 bg-white rounded-xl shadow-lg text-xl font-semibold flex items-center justify-center space-x-2 text-blue-600"
-              >
-                <ClipboardList className="w-6 h-6" />
-                <span>Bookings</span>
-              </motion.button>
+              <div className="grid gap-6 w-full max-w-sm">
+                <motion.button
+                  whileTap={{ scale: 0.95 }}
+                  onClick={() => setActivePage("bookings")}
+                  className="relative w-full py-6 bg-white rounded-xl shadow-lg text-xl font-semibold flex items-center justify-center space-x-2 text-blue-600 hover:shadow-xl transition-shadow"
+                >
+                  <ClipboardList className="w-6 h-6" />
+                  <span>Bookings</span>
+                  
+                  {/* 🔴 Notification Badge */}
+                  {!countLoading && bookingCount > 0 && (
+                    <motion.div
+                      initial={{ scale: 0 }}
+                      animate={{ scale: 1 }}
+                      transition={{ type: "spring", stiffness: 500, damping: 30 }}
+                      className="absolute -top-2 -right-2 bg-red-500 text-white text-sm font-bold rounded-full h-6 w-6 flex items-center justify-center shadow-lg border-2 border-white"
+                    >
+                      {bookingCount > 99 ? '99+' : bookingCount}
+                    </motion.div>
+                  )}
+                  
+                  {/* Loading indicator for badge */}
+                  {countLoading && (
+                    <div className="absolute -top-2 -right-2 bg-gray-300 rounded-full h-6 w-6 flex items-center justify-center border-2 border-white">
+                      <div className="animate-pulse bg-gray-400 rounded-full h-3 w-3"></div>
+                    </div>
+                  )}
+                </motion.button>
 
-              <motion.button
-                whileTap={{ scale: 0.95 }}
-                onClick={() => setActivePage("schedule")}
-                className="w-full py-6 bg-white rounded-xl shadow-lg text-xl font-semibold flex items-center justify-center space-x-2 text-purple-600"
-              >
-                <Calendar className="w-6 h-6" />
-                <span>Schedule</span>
-              </motion.button>
+                <motion.button
+                  whileTap={{ scale: 0.95 }}
+                  onClick={() => setActivePage("schedule")}
+                  className="w-full py-6 bg-white rounded-xl shadow-lg text-xl font-semibold flex items-center justify-center space-x-2 text-purple-600 hover:shadow-xl transition-shadow"
+                >
+                  <Calendar className="w-6 h-6" />
+                  <span>Schedule</span>
+                </motion.button>
+              </div>
             </motion.div>
           )}
 
@@ -94,10 +121,10 @@ export default function DriverDashboard() {
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -30 }}
               transition={{ duration: 0.4 }}
-              className="text-white text-center"
+              className="h-full"
             >
-              <h2 className="text-2xl font-bold mb-2">Your Bookings</h2>
-              <p className="text-sm opacity-90">Booking details will show here.</p>
+              {/* Use the actual DriverBookings component */}
+              <DriverBookings />
             </motion.div>
           )}
 
@@ -108,10 +135,12 @@ export default function DriverDashboard() {
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -30 }}
               transition={{ duration: 0.4 }}
-              className="text-white text-center"
+              className="flex items-center justify-center text-white text-center p-6"
             >
-              <h2 className="text-2xl font-bold mb-2">Your Schedule</h2>
-              <p className="text-sm opacity-90">Schedule details will show here.</p>
+              <div>
+                <h2 className="text-2xl font-bold mb-2">Your Schedule</h2>
+                <p className="text-sm opacity-90">Schedule details will show here.</p>
+              </div>
             </motion.div>
           )}
 
@@ -122,7 +151,7 @@ export default function DriverDashboard() {
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -30 }}
               transition={{ duration: 0.4 }}
-              className="w-full max-w-md"
+              className="h-full"
             >
               <DriverProfile /> {/* 🔹 Show profile inside dashboard */}
             </motion.div>

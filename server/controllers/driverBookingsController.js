@@ -1,0 +1,339 @@
+// server/controllers/driverBookingsController.js (Complete with all functions)
+import Booking from "../models/Booking.js";
+import Employee from "../models/Employee.js";
+
+/**
+ * GET /api/driver/bookings/count
+ * Returns the count of bookings assigned to the logged-in driver/helper
+ */
+export const getDriverBookingCount = async (req, res) => {
+  try {
+    const driver = req.driver;
+
+    if (!driver) {
+      return res.status(404).json({ 
+        success: false, 
+        msg: "Driver not found" 
+      });
+    }
+
+    console.log("🔢 Fetching booking count for driver:", driver.employeeId);
+
+    // Count bookings assigned to this driver
+    const count = await Booking.countDocuments({
+      employeeAssigned: { $in: [driver.employeeId] }
+    });
+
+    console.log("📊 Booking count for driver", driver.employeeId, ":", count);
+
+    res.json({
+      success: true,
+      count,
+      driverEmployeeId: driver.employeeId
+    });
+
+  } catch (err) {
+    console.error("❌ Error fetching booking count:", err);
+    res.status(500).json({ 
+      success: false,
+      msg: "Server error while fetching booking count",
+      error: err.message
+    });
+  }
+};
+
+/**
+ * GET /api/driver/bookings
+ * Returns bookings assigned to the logged-in driver/helper
+ */
+export const getDriverBookings = async (req, res) => {
+  try {
+    // req.driver is set by the driverAuth middleware
+    const driver = req.driver;
+
+    console.log("🔍 DEBUG: Driver from middleware:", {
+      id: driver._id,
+      employeeId: driver.employeeId,
+      fullName: driver.fullName,
+      role: driver.role
+    });
+
+    if (!driver) {
+      console.log("❌ DEBUG: No driver found in request");
+      return res.status(404).json({ msg: "Driver not found" });
+    }
+
+    console.log("🔍 Fetching bookings for driver:", driver.employeeId);
+
+    // First, let's get ALL bookings to see what's in the database
+    const allBookings = await Booking.find({});
+    console.log("📋 DEBUG: Total bookings in database:", allBookings.length);
+    
+    // Log the employeeAssigned field for each booking
+    allBookings.forEach((booking, index) => {
+      console.log(`📋 DEBUG: Booking ${index + 1}:`, {
+        reservationId: booking.reservationId,
+        employeeAssigned: booking.employeeAssigned,
+        employeeAssignedType: typeof booking.employeeAssigned,
+        employeeAssignedIsArray: Array.isArray(booking.employeeAssigned)
+      });
+    });
+
+    // Try multiple query approaches
+    console.log("🔍 Searching for driver employeeId:", driver.employeeId);
+
+    // Query 1: Direct array search
+    const bookings1 = await Booking.find({
+      employeeAssigned: { $in: [driver.employeeId] }
+    });
+    console.log("📋 Query 1 ($in array) - Found bookings:", bookings1.length);
+
+    // Query 2: Direct element match
+    const bookings2 = await Booking.find({
+      employeeAssigned: driver.employeeId
+    });
+    console.log("📋 Query 2 (direct match) - Found bookings:", bookings2.length);
+
+    // Query 3: String contains (in case there are formatting issues)
+    const bookings3 = await Booking.find({
+      employeeAssigned: { $regex: driver.employeeId, $options: 'i' }
+    });
+    console.log("📋 Query 3 (regex) - Found bookings:", bookings3.length);
+
+    // Use the query that returns the most results
+    let bookings = bookings1.length > 0 ? bookings1 : 
+                  bookings2.length > 0 ? bookings2 : 
+                  bookings3.length > 0 ? bookings3 : [];
+
+    console.log("📋 Final bookings selected:", bookings.length);
+
+    // If still no bookings, let's check if the driver exists in any booking
+    if (bookings.length === 0) {
+      console.log("🔍 No bookings found. Checking if driver ID exists in any booking...");
+      
+      const bookingsWithDriver = await Booking.find({
+        $or: [
+          { employeeAssigned: { $elemMatch: { $eq: driver.employeeId } } },
+          { employeeAssigned: { $regex: driver.employeeId } }
+        ]
+      });
+      
+      console.log("📋 Bookings with driver ID (alternative search):", bookingsWithDriver.length);
+      bookings = bookingsWithDriver;
+    }
+
+    // Sort by date, newest first
+    bookings = bookings.sort((a, b) => new Date(b.dateNeeded) - new Date(a.dateNeeded));
+
+    console.log("📋 Found bookings for driver:", bookings.length);
+
+    // Enhance bookings with additional details
+    const enhancedBookings = await Promise.all(bookings.map(async (booking) => {
+      console.log("🔧 Processing booking:", booking.reservationId);
+      
+      // Get all assigned employees details
+      let employeeDetails = [];
+      if (Array.isArray(booking.employeeAssigned)) {
+        employeeDetails = await Employee.find({ 
+          employeeId: { $in: booking.employeeAssigned } 
+        }).select('employeeId fullName role');
+        console.log("👥 Employee details found:", employeeDetails.length);
+      } else if (booking.employeeAssigned) {
+        // Handle single employee assignment
+        const emp = await Employee.findOne({ employeeId: booking.employeeAssigned });
+        if (emp) {
+          employeeDetails = [{
+            employeeId: emp.employeeId,
+            fullName: emp.fullName,
+            role: emp.role
+          }];
+        }
+        console.log("👤 Single employee details found:", employeeDetails.length);
+      }
+
+      // Get vehicle details (if available)
+      let vehicleDetails = null;
+      try {
+        const Vehicle = (await import("../models/Vehicle.js")).default;
+        vehicleDetails = await Vehicle.findOne({ vehicleType: booking.vehicleType });
+        console.log("🚛 Vehicle details found:", !!vehicleDetails);
+      } catch (err) {
+        console.log("⚠️ Vehicle model not found, skipping vehicle details");
+      }
+
+      return {
+        ...booking.toObject(),
+        employeeDetails,
+        vehicleDetails: vehicleDetails ? {
+          color: vehicleDetails.color,
+          manufacturedBy: vehicleDetails.manufacturedBy,
+          model: vehicleDetails.model,
+          plateNumber: vehicleDetails.plateNumber,
+          vehicleType: vehicleDetails.vehicleType
+        } : null,
+        isCurrentDriver: true
+      };
+    }));
+
+    console.log("✅ Returning enhanced bookings:", enhancedBookings.length);
+
+    res.json({
+      success: true,
+      count: enhancedBookings.length,
+      bookings: enhancedBookings,
+      debug: {
+        driverEmployeeId: driver.employeeId,
+        totalBookingsInDB: allBookings.length,
+        queriedBookings: bookings.length
+      }
+    });
+
+  } catch (err) {
+    console.error("❌ Error fetching driver bookings:", err);
+    res.status(500).json({ 
+      success: false,
+      msg: "Server error while fetching bookings",
+      error: err.message
+    });
+  }
+};
+
+/**
+ * GET /api/driver/bookings/:id
+ * Get specific booking details for the logged-in driver
+ */
+export const getDriverBookingById = async (req, res) => {
+  try {
+    const driver = req.driver;
+    const bookingId = req.params.id;
+
+    console.log("🔍 DEBUG: Getting booking details for:", bookingId, "by driver:", driver.employeeId);
+
+    // Find the booking and verify the driver is assigned to it
+    const booking = await Booking.findOne({
+      _id: bookingId,
+      employeeAssigned: { $in: [driver.employeeId] }
+    });
+
+    if (!booking) {
+      console.log("❌ DEBUG: Booking not found or driver not assigned");
+      return res.status(404).json({ 
+        success: false,
+        msg: "Booking not found or you are not assigned to this booking" 
+      });
+    }
+
+    console.log("✅ DEBUG: Booking found:", booking.reservationId);
+
+    // Get employee details
+    const employeeDetails = await Employee.find({ 
+      employeeId: { $in: booking.employeeAssigned } 
+    }).select('employeeId fullName role');
+
+    // Get vehicle details
+    let vehicleDetails = null;
+    try {
+      const Vehicle = (await import("../models/Vehicle.js")).default;
+      vehicleDetails = await Vehicle.findOne({ vehicleType: booking.vehicleType });
+    } catch (err) {
+      console.log("⚠️ Vehicle model not found");
+    }
+
+    const enhancedBooking = {
+      ...booking.toObject(),
+      employeeDetails: employeeDetails.map(emp => ({
+        employeeId: emp.employeeId,
+        fullName: emp.fullName,
+        role: emp.role
+      })),
+      vehicleDetails: vehicleDetails ? {
+        color: vehicleDetails.color,
+        manufacturedBy: vehicleDetails.manufacturedBy,
+        model: vehicleDetails.model,
+        plateNumber: vehicleDetails.plateNumber,
+        vehicleType: vehicleDetails.vehicleType
+      } : null
+    };
+
+    res.json({
+      success: true,
+      booking: enhancedBooking
+    });
+
+  } catch (err) {
+    console.error("❌ Error fetching booking details:", err);
+    res.status(500).json({ 
+      success: false,
+      msg: "Server error while fetching booking details" 
+    });
+  }
+};
+
+/**
+ * PUT /api/driver/bookings/:id/status
+ * Update booking status (drivers can update status of their assigned bookings)
+ */
+export const updateBookingStatus = async (req, res) => {
+  try {
+    const driver = req.driver;
+    const bookingId = req.params.id;
+    const { status } = req.body;
+
+    console.log("🔄 DEBUG: Updating booking status:", {
+      bookingId,
+      driverId: driver.employeeId,
+      newStatus: status
+    });
+
+    // Validate status
+    const allowedStatuses = ["Pending", "In Transit", "Delivered", "Completed"];
+    if (!allowedStatuses.includes(status)) {
+      return res.status(400).json({ 
+        success: false,
+        msg: "Invalid status. Allowed: " + allowedStatuses.join(", ")
+      });
+    }
+
+    // Find and update the booking
+    const booking = await Booking.findOneAndUpdate(
+      {
+        _id: bookingId,
+        employeeAssigned: { $in: [driver.employeeId] }
+      },
+      { 
+        status,
+        updatedAt: new Date()
+      },
+      { new: true }
+    );
+
+    if (!booking) {
+      console.log("❌ DEBUG: Booking not found or driver not assigned for update");
+      return res.status(404).json({ 
+        success: false,
+        msg: "Booking not found or you are not assigned to this booking" 
+      });
+    }
+
+    console.log(`📝 Driver ${driver.employeeId} updated booking ${booking.reservationId} status to: ${status}`);
+
+    res.json({
+      success: true,
+      msg: "Booking status updated successfully",
+      booking: {
+        _id: booking._id,
+        reservationId: booking.reservationId,
+        tripNumber: booking.tripNumber,
+        status: booking.status,
+        updatedAt: booking.updatedAt
+      }
+    });
+
+  } catch (err) {
+    console.error("❌ Error updating booking status:", err);
+    res.status(500).json({ 
+      success: false,
+      msg: "Server error while updating booking status" 
+    });
+  }
+};
