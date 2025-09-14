@@ -179,9 +179,6 @@ export default function DriverBookings() {
                   <strong>Note:</strong> There are {debugInfo.totalBookingsInDB} bookings in the system, 
                   but none are assigned to your employee ID: <code className="bg-yellow-200 px-1 rounded">{debugInfo.driverEmployeeId}</code>
                 </p>
-                <p className="text-yellow-700 mt-2 text-xs">
-                  Make sure the booking was created with your exact employee ID in the "Employee Assigned" field.
-                </p>
               </div>
             )}
           </div>
