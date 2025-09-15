@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from "react";
 import { Eye, Pencil, Trash2, Plus, ChevronLeft, ChevronRight } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
+import addressDefaults from "../constants/addressDefaults";
 
 function Booking() {
   const [bookings, setBookings] = useState([]);
@@ -295,7 +296,7 @@ function Booking() {
     if (vehicle) {
       return `${vehicle.color || ''} ${vehicle.manufacturedBy || ''} ${vehicle.model || ''} - ${vehicle.vehicleType}`.replace(/ +/g, ' ').trim();
     }
-    return vehicleType; // fallback to just the type if vehicle not found
+    return vehicleType;
   };
 
   // Helper function to format employee names for display
@@ -320,6 +321,7 @@ function Booking() {
     }
   };
 
+  // Submit handler
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
@@ -374,6 +376,32 @@ function Booking() {
   const viewBooking = (booking) => {
     navigate(`/dashboard/booking/${booking._id}`);
   };
+
+
+  // Auto-fill defaults when origin or destination changes
+  useEffect(() => {
+    const key = `${formData.originAddress?.toLowerCase()} - ${formData.destinationAddress?.toLowerCase()}`;
+    const defaultsArr = addressDefaults[key];
+    if (Array.isArray(defaultsArr) && defaultsArr.length > 0) {
+      // If vehicleType is already selected, use its defaults
+      const selected = defaultsArr.find(def => def.vehicleType === formData.vehicleType);
+      if (selected) {
+        setFormData(prev => ({
+          ...prev,
+          areaLocationCode: selected.areaLocationCode,
+          rateCost: selected.rateCost
+        }));
+      } else {
+        // If not, use the first available
+        setFormData(prev => ({
+          ...prev,
+          vehicleType: defaultsArr[0].vehicleType,
+          areaLocationCode: defaultsArr[0].areaLocationCode,
+          rateCost: defaultsArr[0].rateCost
+        }));
+      }
+    }
+  }, [formData.originAddress, formData.destinationAddress, formData.vehicleType]);
 
   return (
     <>
@@ -782,27 +810,50 @@ function Booking() {
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
                       <div>
                         <label className="block text-sm font-medium text-gray-700 mb-1">Origin/From</label>
-                        <input
-                          type="text"
+                        <select
                           name="originAddress"
                           value={formData.originAddress}
                           onChange={handleChange}
-                          placeholder="Paranaque Quezon City"
                           required
                           className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-400"
-                        />
+                        >
+                          <option value="">Select Origin</option>
+                          {(() => {
+                            // Show all possible origins from addressDefaults
+                            const allOrigins = Object.keys(addressDefaults)
+                              .map(pair => pair.split(' - ')[0]);
+                            const uniqueOrigins = [...new Set(allOrigins)];
+                            return uniqueOrigins.map(origin => (
+                              <option key={origin} value={origin}>{origin.charAt(0).toUpperCase() + origin.slice(1)}</option>
+                            ));
+                          })()}
+                        </select>
                       </div>
                       <div>
                         <label className="block text-sm font-medium text-gray-700 mb-1">Destination/To</label>
-                        <input
-                          type="text"
+                        <select
                           name="destinationAddress"
                           value={formData.destinationAddress}
                           onChange={handleChange}
-                          placeholder="Quezon"
                           required
                           className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-400"
-                        />
+                        >
+                          <option value="">Select Destination</option>
+                          {(() => {
+                            // Get all possible destinations that have a match in addressDefaults for selected origin
+                            const possibleDestinations = Object.keys(addressDefaults)
+                              .filter(pair => {
+                                const [origin, destination] = pair.toLowerCase().split(' - ');
+                                return !formData.originAddress || origin === formData.originAddress.toLowerCase();
+                              })
+                              .map(pair => pair.split(' - ')[1]);
+                            // Remove duplicates
+                            const uniqueDestinations = [...new Set(possibleDestinations)];
+                            return uniqueDestinations.map(destination => (
+                              <option key={destination} value={destination}>{destination.charAt(0).toUpperCase() + destination.slice(1)}</option>
+                            ));
+                          })()}
+                        </select>
                       </div>
                     </div>
                   </div>
@@ -821,11 +872,20 @@ function Booking() {
                         className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-400"
                       >
                         <option value="">Select Vehicle</option>
-                        {vehicles.map((vehicle) => (
-                          <option key={vehicle._id} value={vehicle.vehicleType}>
-                            {`${vehicle.color || ''} ${vehicle.manufacturedBy || ''} ${vehicle.model || ''} (${vehicle.vehicleType}) - ${vehicle.plateNumber}`.replace(/ +/g, ' ').trim()}
-                          </option>
-                        ))}
+                        {(() => {
+                          const key = `${formData.originAddress?.toLowerCase()} - ${formData.destinationAddress?.toLowerCase()}`;
+                          const allowedVehiclesArr = addressDefaults[key];
+                          const allowedVehicleTypes = Array.isArray(allowedVehiclesArr)
+                            ? allowedVehiclesArr.map(def => def.vehicleType)
+                            : [];
+                          return vehicles
+                            .filter(vehicle => allowedVehicleTypes.length === 0 || allowedVehicleTypes.includes(vehicle.vehicleType))
+                            .map(vehicle => (
+                              <option key={vehicle._id} value={vehicle.vehicleType}>
+                                {`${vehicle.color || ''} ${vehicle.manufacturedBy || ''} ${vehicle.model || ''} (${vehicle.vehicleType === 'Car' ? '4-Wheels' : vehicle.vehicleType === 'Truck' ? '6-Wheels' : ''}) - ${vehicle.plateNumber}`.replace(/ +/g, ' ').trim()}
+                              </option>
+                            ));
+                        })()}
                       </select>
                     </div>
 
@@ -836,10 +896,10 @@ function Booking() {
                           type="text"
                           name="areaLocationCode"
                           value={formData.areaLocationCode}
-                          onChange={handleChange}
+                          readOnly
                           placeholder="1"
                           required
-                          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-400"
+                          className="w-full px-3 py-2 border border-gray-300 rounded-md bg-gray-100 focus:ring-2 focus:ring-blue-400"
                         />
                       </div>
                       <div>
@@ -848,10 +908,10 @@ function Booking() {
                           type="text"
                           name="rateCost"
                           value={formData.rateCost}
-                          onChange={handleChange}
+                          readOnly
                           placeholder="200 PHP"
                           required
-                          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-400"
+                          className="w-full px-3 py-2 border border-gray-300 rounded-md bg-gray-100 focus:ring-2 focus:ring-blue-400"
                         />
                       </div>
                     </div>
