@@ -1,4 +1,4 @@
-// src/pages/DriverBookings.jsx (Mobile-Optimized with CORS fix)
+// src/pages/DriverBookings.jsx (Mobile-Optimized with CORS fix and Completed status)
 import React, { useState, useEffect, useRef } from "react";
 import { 
   Package, 
@@ -19,7 +19,8 @@ import {
   ChevronDown,
   ChevronUp,
   Phone,
-  Weight
+  Weight,
+  Award
 } from "lucide-react";
 import axios from "axios";
 
@@ -31,7 +32,7 @@ export default function DriverBookings() {
   const [debugInfo, setDebugInfo] = useState(null);
   const [selectedBooking, setSelectedBooking] = useState(null);
   const [showModal, setShowModal] = useState(false);
-  const [startingTrip, setStartingTrip] = useState(false);
+  const [updating, setUpdating] = useState(false);
   const [expandedSections, setExpandedSections] = useState({
     route: true,
     cargo: false,
@@ -47,7 +48,7 @@ export default function DriverBookings() {
     "On Trip": { bg: "bg-purple-100", text: "text-purple-800", icon: PlayCircle },
     "In Transit": { bg: "bg-purple-100", text: "text-purple-800", icon: PlayCircle },
     "Delivered": { bg: "bg-green-100", text: "text-green-800", icon: CheckCircle2 },
-    "Completed": { bg: "bg-gray-100", text: "text-gray-800", icon: CheckCircle2 }
+    "Completed": { bg: "bg-gray-100", text: "text-gray-800", icon: Award }
   };
 
   const toggleSection = (section) => {
@@ -209,7 +210,7 @@ export default function DriverBookings() {
   const startTrip = async () => {
     if (!selectedBooking) return;
     
-    setStartingTrip(true);
+    setUpdating(true);
     try {
       const token = localStorage.getItem("driverToken");
       
@@ -244,8 +245,9 @@ export default function DriverBookings() {
     } catch (err) {
       console.error("❌ Error starting trip:", err);
       setError("Failed to start trip. Please try again.");
+      setTimeout(() => setError(""), 5000); // Clear error after 5 seconds
     } finally {
-      setStartingTrip(false);
+      setUpdating(false);
     }
   };
 
@@ -253,7 +255,7 @@ export default function DriverBookings() {
   const markAsDelivered = async () => {
     if (!selectedBooking) return;
     
-    setStartingTrip(true); // Reuse loading state
+    setUpdating(true);
     try {
       const token = localStorage.getItem("driverToken");
       
@@ -288,8 +290,59 @@ export default function DriverBookings() {
     } catch (err) {
       console.error("❌ Error marking as delivered:", err);
       setError("Failed to mark as delivered. Please try again.");
+      setTimeout(() => setError(""), 5000); // Clear error after 5 seconds
     } finally {
-      setStartingTrip(false);
+      setUpdating(false);
+    }
+  };
+
+  // NEW: Mark as completed function
+  const markAsCompleted = async () => {
+    if (!selectedBooking) return;
+    
+    setUpdating(true);
+    try {
+      const token = localStorage.getItem("driverToken");
+      
+      const response = await axios.put(
+        `http://localhost:5000/api/driver/bookings/${selectedBooking._id}/status`,
+        { status: "Completed" },
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+
+      if (response.data.success) {
+        // Update the booking in local state
+        setBookings(prevBookings => 
+          prevBookings.map(booking => 
+            booking._id === selectedBooking._id 
+              ? { ...booking, status: "Completed" }
+              : booking
+          )
+        );
+        
+        // Update selected booking
+        setSelectedBooking(prev => ({
+          ...prev,
+          status: "Completed"
+        }));
+
+        console.log("✅ Trip marked as completed");
+        
+        // Close modal after a brief delay to show completion message
+        setTimeout(() => {
+          closeModal();
+        }, 1500);
+      }
+    } catch (err) {
+      console.error("❌ Error marking as completed:", err);
+      setError("Failed to mark as completed. Please try again.");
+      setTimeout(() => setError(""), 5000); // Clear error after 5 seconds
+    } finally {
+      setUpdating(false);
     }
   };
 
@@ -429,6 +482,13 @@ export default function DriverBookings() {
             </button>
           </div>
 
+          {/* Error notification */}
+          {error && (
+            <div className="mb-4 p-3 bg-red-500 text-white rounded-lg text-sm">
+              {error}
+            </div>
+          )}
+
           {/* Bookings List */}
           {bookings.length === 0 ? (
             <div className="bg-white p-6 rounded-xl shadow-lg text-center">
@@ -499,15 +559,22 @@ export default function DriverBookings() {
           )}
         </div>
 
-        {/* Mobile-Optimized Modal */}
+        {/* Mobile-Optimized Modal with Blurred Background */}
         {showModal && selectedBooking && (
-          <div className="fixed inset-0 z-50 bg-black bg-opacity-50">
+          <div 
+            className="fixed inset-0 z-50"
+            style={{
+              backgroundColor: 'rgba(0, 0, 0, 0.1)',
+              backdropFilter: 'blur(8px)',
+              WebkitBackdropFilter: 'blur(8px)'
+            }}
+          >
             <div className="absolute inset-0 overflow-y-auto">
               <div className="min-h-screen flex items-end sm:items-center justify-center p-4">
-                <div className="bg-white rounded-t-xl sm:rounded-xl w-full max-w-lg max-h-[90vh] overflow-hidden">
+                <div className="bg-white rounded-t-xl sm:rounded-xl w-full max-w-lg max-h-[90vh] overflow-hidden shadow-2xl">
                   
                   {/* Modal Header - Sticky */}
-                  <div className="sticky top-0 bg-white border-b border-gray-200 px-4 py-3 flex items-center justify-between">
+                  <div className="sticky top-0 bg-white border-b border-gray-200 px-4 py-3 flex items-center justify-between z-10">
                     <div className="flex-1">
                       <h3 className="font-bold text-gray-900">{selectedBooking.reservationId}</h3>
                       <p className="text-sm text-gray-600">{selectedBooking.tripNumber}</p>
@@ -518,14 +585,14 @@ export default function DriverBookings() {
                     </div>
                     <button
                       onClick={closeModal}
-                      className="ml-2 p-1 text-gray-400 hover:text-gray-600"
+                      className="ml-2 p-1 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-full transition-colors"
                     >
                       <X className="w-5 h-5" />
                     </button>
                   </div>
 
                   {/* Modal Body - Scrollable */}
-                  <div className="overflow-y-auto" style={{ maxHeight: 'calc(90vh - 120px)' }}>
+                  <div className="overflow-y-auto" style={{ maxHeight: 'calc(90vh - 140px)' }}>
                     
                     {/* Map Section */}
                     <div className="p-4 border-b border-gray-100">
@@ -550,7 +617,7 @@ export default function DriverBookings() {
                     <div className="border-b border-gray-100">
                       <button
                         onClick={() => toggleSection('route')}
-                        className="w-full p-4 flex items-center justify-between text-left hover:bg-gray-50"
+                        className="w-full p-4 flex items-center justify-between text-left hover:bg-gray-50 transition-colors"
                       >
                         <div className="flex items-center gap-2">
                           <MapPin className="w-4 h-4 text-blue-600" />
@@ -593,7 +660,7 @@ export default function DriverBookings() {
                     <div className="border-b border-gray-100">
                       <button
                         onClick={() => toggleSection('cargo')}
-                        className="w-full p-4 flex items-center justify-between text-left hover:bg-gray-50"
+                        className="w-full p-4 flex items-center justify-between text-left hover:bg-gray-50 transition-colors"
                       >
                         <div className="flex items-center gap-2">
                           <Package className="w-4 h-4 text-purple-600" />
@@ -632,7 +699,7 @@ export default function DriverBookings() {
                     <div className="border-b border-gray-100">
                       <button
                         onClick={() => toggleSection('customer')}
-                        className="w-full p-4 flex items-center justify-between text-left hover:bg-gray-50"
+                        className="w-full p-4 flex items-center justify-between text-left hover:bg-gray-50 transition-colors"
                       >
                         <div className="flex items-center gap-2">
                           <Building className="w-4 h-4 text-green-600" />
@@ -662,7 +729,7 @@ export default function DriverBookings() {
                     <div className="border-b border-gray-100">
                       <button
                         onClick={() => toggleSection('team')}
-                        className="w-full p-4 flex items-center justify-between text-left hover:bg-gray-50"
+                        className="w-full p-4 flex items-center justify-between text-left hover:bg-gray-50 transition-colors"
                       >
                         <div className="flex items-center gap-2">
                           <Users className="w-4 h-4 text-orange-600" />
@@ -694,16 +761,16 @@ export default function DriverBookings() {
                   </div>
 
                   {/* Modal Footer - Sticky */}
-                  <div className="sticky bottom-0 bg-white border-t border-gray-200 p-4">
+                  <div className="sticky bottom-0 bg-white border-t border-gray-200 p-4 z-10">
                     {/* Show start trip button only if status is "Ready to go" */}
                     {selectedBooking.status === "Ready to go" && (
                       <button
                         onClick={startTrip}
-                        disabled={startingTrip}
+                        disabled={updating}
                         className="w-full py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 font-medium"
                       >
                         <Play className="w-4 h-4" />
-                        {startingTrip ? "Starting Trip..." : "Start Trip"}
+                        {updating ? "Starting Trip..." : "Start Trip"}
                       </button>
                     )}
 
@@ -711,11 +778,23 @@ export default function DriverBookings() {
                     {(selectedBooking.status === "In Transit" || selectedBooking.status === "On Trip") && (
                       <button
                         onClick={markAsDelivered}
-                        disabled={startingTrip}
+                        disabled={updating}
                         className="w-full py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 font-medium"
                       >
                         <CheckCircle2 className="w-4 h-4" />
-                        {startingTrip ? "Marking as Delivered..." : "Mark as Delivered"}
+                        {updating ? "Marking as Delivered..." : "Mark as Delivered"}
+                      </button>
+                    )}
+
+                    {/* NEW: Show mark as completed button if status is "Delivered" */}
+                    {selectedBooking.status === "Delivered" && (
+                      <button
+                        onClick={markAsCompleted}
+                        disabled={updating}
+                        className="w-full py-3 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 font-medium"
+                      >
+                        <Award className="w-4 h-4" />
+                        {updating ? "Marking as Completed..." : "Mark as Completed"}
                       </button>
                     )}
 
@@ -726,15 +805,10 @@ export default function DriverBookings() {
                       </div>
                     )}
 
-                    {selectedBooking.status === "Delivered" && (
-                      <div className="w-full py-3 bg-green-100 text-green-800 rounded-lg text-sm text-center font-medium">
-                        ✅ Package delivered - Awaiting completion
-                      </div>
-                    )}
-
                     {selectedBooking.status === "Completed" && (
-                      <div className="w-full py-3 bg-gray-100 text-gray-800 rounded-lg text-sm text-center font-medium">
-                        ✅ Trip completed
+                      <div className="w-full py-3 bg-green-100 text-green-800 rounded-lg text-sm text-center font-medium flex items-center justify-center gap-2">
+                        <Award className="w-4 h-4" />
+                        ✅ Trip completed successfully!
                       </div>
                     )}
                   </div>

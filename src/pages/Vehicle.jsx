@@ -3,7 +3,9 @@ import { Eye, Pencil, Trash2 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
 
+// Move the error state declaration after imports
 export default function Vehicle() {
+  // Error state for validation and backend errors
   const [errors, setErrors] = useState({});
   const [vehicles, setVehicles] = useState([]);
   const [filteredVehicles, setFilteredVehicles] = useState([]);
@@ -25,7 +27,7 @@ export default function Vehicle() {
   // Unique filter values
   const [uniqueDates, setUniqueDates] = useState([]);
   const [uniqueVehicleTypes, setuniqueVehicleTypes] = useState([]);
-  const [uniqueStatus, setuniqueStatus] = useState([]);
+  const [uniqueStatus, setUniqueStatus] = useState([]); // Fixed the casing here
   const [uniqueManufacturedBy, setuniqueManufacturedBy] = useState([]);
 
   //Form state
@@ -56,7 +58,7 @@ export default function Vehicle() {
       // Extract unique values
       setuniqueManufacturedBy([...new Set(res.data.map((c) => c.manufacturedBy))]);
       setuniqueVehicleTypes([...new Set(res.data.map((c) => c.vehicleType))]);
-      setuniqueStatus([...new Set(res.data.map((c) => c.status))]);
+      setUniqueStatus([...new Set(res.data.map((c) => c.status))]);
       setUniqueDates([
         ...new Set(
           res.data.map((c) =>
