@@ -1,11 +1,10 @@
-// Error state for validation and backend errors
-const [errors, setErrors] = useState({});
 import { useState, useEffect, useRef } from "react";
 import { Eye, Pencil, Trash2 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
 
 export default function Vehicle() {
+  const [errors, setErrors] = useState({});
   const [vehicles, setVehicles] = useState([]);
   const [filteredVehicles, setFilteredVehicles] = useState([]);
   const [showModal, setShowModal] = useState(false);
@@ -180,11 +179,11 @@ export default function Vehicle() {
       v.plateNumber.trim().toLowerCase() === formData.plateNumber.trim().toLowerCase() &&
       (!editVehicle || v._id !== editVehicle._id)
     );
+    let duplicateErrors = {};
+    if (isDuplicateReg) duplicateErrors.registrationNumber = "Registration number already exists.";
+    if (isDuplicatePlate) duplicateErrors.plateNumber = "Plate number already exists.";
     if (isDuplicateReg || isDuplicatePlate) {
-      let dupErrors = {};
-      if (isDuplicateReg) dupErrors.registrationNumber = "Registration number already exists.";
-      if (isDuplicatePlate) dupErrors.plateNumber = "Plate number already exists.";
-      setErrors(dupErrors);
+      setErrors(prev => ({ ...prev, ...duplicateErrors }));
       return;
     }
 
@@ -199,25 +198,12 @@ export default function Vehicle() {
       setErrors({});
     } catch (err) {
       let backendErrors = {};
-      // Parse MongoDB duplicate key error for specific fields
-      const rawMsg = err.response?.data?.msg || err.response?.data?.message || err.responseText || "";
-      if (rawMsg.includes("duplicate key error")) {
-        if (rawMsg.includes("registrationNumber")) {
-          backendErrors.registrationNumber = "Registration number already exists.";
-        }
-        if (rawMsg.includes("plateNumber")) {
-          backendErrors.plateNumber = "Plate number already exists.";
-        }
-      }
-      // If not a duplicate key error, fallback to general error handling
-      if (Object.keys(backendErrors).length === 0) {
-        if (err.response?.data?.errors) {
-          backendErrors = err.response.data.errors;
-        } else if (err.response?.data?.message) {
-          backendErrors.general = err.response.data.message;
-        } else {
-          backendErrors.general = "Error adding/updating vehicle.";
-        }
+      if (err.response?.data?.errors) {
+        backendErrors = err.response.data.errors;
+      } else if (err.response?.data?.message) {
+        backendErrors.general = err.response.data.message;
+      } else {
+        backendErrors.general = "Error adding/updating vehicle.";
       }
       setErrors(backendErrors);
       console.error(err);

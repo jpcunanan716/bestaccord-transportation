@@ -188,14 +188,14 @@ router.post("/", async (req, res) => {
 router.put("/:id", async (req, res) => {
   try {
     console.log("🔄 Updating booking:", req.params.id, "with data:", req.body);
-    
+
     // Don't allow updating auto-generated IDs through PUT request (except for status updates)
     const { reservationId, tripNumber, ...updateData } = req.body;
 
     // Special handling for status updates from admin
     if (updateData.status) {
       console.log("📝 Status update requested:", updateData.status);
-      
+
       // Validate status
       const allowedStatuses = ["Pending", "Ready to go", "In Transit", "Delivered", "Completed"];
       if (!allowedStatuses.includes(updateData.status)) {
@@ -257,7 +257,7 @@ router.patch("/:id/status", async (req, res) => {
 
     const updatedBooking = await Booking.findByIdAndUpdate(
       bookingId,
-      { 
+      {
         status,
         updatedAt: new Date()
       },
@@ -265,9 +265,9 @@ router.patch("/:id/status", async (req, res) => {
     );
 
     if (!updatedBooking) {
-      return res.status(404).json({ 
+      return res.status(404).json({
         success: false,
-        message: "Booking not found" 
+        message: "Booking not found"
       });
     }
 
@@ -286,9 +286,9 @@ router.patch("/:id/status", async (req, res) => {
     });
   } catch (err) {
     console.error("❌ Error updating booking status:", err);
-    res.status(500).json({ 
+    res.status(500).json({
       success: false,
-      message: "Server error while updating status" 
+      message: "Server error while updating status"
     });
   }
 });
