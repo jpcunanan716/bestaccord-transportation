@@ -141,6 +141,10 @@ function Employee() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    // Frontend validation before submit
+    if (!validateStep()) {
+      return;
+    }
     try {
       if (editEmployee) {
         await axios.put(
@@ -154,8 +158,19 @@ function Employee() {
       closeModal();
       fetchEmployees();
     } catch (err) {
+      // Backend error handling
+      let backendErrors = {};
+      if (err.response?.data?.errors) {
+        // If backend sends validation errors as an object
+        backendErrors = err.response.data.errors;
+      } else if (err.response?.data?.message) {
+        // If backend sends a single error message
+        backendErrors.general = err.response.data.message;
+      } else {
+        backendErrors.general = "Error adding/updating employee";
+      }
+      setErrors(backendErrors);
       console.error("Error adding/updating employee:", err);
-      alert(err.response?.data?.message || "Error adding/updating employee");
     }
   };
 
@@ -205,6 +220,7 @@ function Employee() {
 
     if (step === 2) {
       if (!formData.email.trim()) newErrors.email = "Email is required.";
+      else if (!/^\S+@\S+\.\S+$/.test(formData.email)) newErrors.email = "Invalid email format.";
       if (!formData.password.trim()) {
         newErrors.password = "Password is required.";
       } else if (formData.password.length < 6) {
@@ -283,6 +299,7 @@ function Employee() {
                   <th className="px-6 py-3 text-left font-semibold text-gray-700">Full Name</th>
                   <th className="px-6 py-3 text-left font-semibold text-gray-700">Role</th>
                   <th className="px-6 py-3 text-left font-semibold text-gray-700">Mobile Number</th>
+                  <th className="px-6 py-3 text-left font-semibold text-gray-700">Status</th>
                   <th className="px-6 py-3 text-center font-semibold text-gray-700">Actions</th>
                 </tr>
               </thead>
@@ -297,6 +314,18 @@ function Employee() {
                     <td className="px-6 py-3">{emp.fullName}</td>
                     <td className="px-6 py-3">{emp.role}</td>
                     <td className="px-6 py-3">{emp.mobileNumber}</td>
+                    <td className="px-6 py-3">
+                      <span
+                        className={`px-2 py-1 rounded-full text-xs font-semibold ${emp.status === "Available"
+                          ? "bg-green-100 text-green-800"
+                          : emp.status === "On Trip"
+                            ? "bg-yellow-100 text-yellow-800"
+                            : "bg-red-100 text-red-800"
+                          }`}
+                      >
+                        {emp.status}
+                      </span>
+                    </td>
                     <td className="px-6 py-3 text-center space-x-2">
                       <button
                         onClick={() => viewEmployee(emp)}

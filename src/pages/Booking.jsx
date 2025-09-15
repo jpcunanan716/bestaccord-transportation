@@ -278,7 +278,8 @@ function Booking() {
 
   const getAvailableEmployees = (currentIndex) => {
     const selectedEmployeeIds = formData.employeeAssigned.filter((empId, index) => index !== currentIndex && empId !== "");
-    return employees.filter(emp => !selectedEmployeeIds.includes(emp.employeeId)); // Change from _id to employeeId
+    // Only show employees with status 'Available'
+    return employees.filter(emp => emp.status === "Available" && !selectedEmployeeIds.includes(emp.employeeId));
   };
 
   // Helper function to get employee display name
@@ -297,6 +298,11 @@ function Booking() {
       return `${vehicle.color || ''} ${vehicle.manufacturedBy || ''} ${vehicle.model || ''} - ${vehicle.vehicleType}`.replace(/ +/g, ' ').trim();
     }
     return vehicleType;
+  };
+
+  // Only show vehicles with status 'Available' in dropdown
+  const getAvailableVehicles = () => {
+    return vehicles.filter(vehicle => vehicle.status === "Available");
   };
 
   // Helper function to format employee names for display
@@ -321,9 +327,95 @@ function Booking() {
     }
   };
 
-  // Submit handler
+  // Updated Submit handler for Option 2
   const handleSubmit = async (e) => {
-    e.preventDefault();
+    if (e) e.preventDefault();
+
+    // Only submit when on the final step (Step 2)
+    if (currentStep !== 2) {
+      return;
+    }
+
+    // Form validation - check required fields
+    const requiredFields = {
+      // Step 1 fields
+      productName: 'Product Name',
+      quantity: 'Quantity',
+      grossWeight: 'Gross Weight',
+      unitPerPackage: 'Units per Package',
+      numberOfPackages: 'Number of Packages',
+      deliveryFee: 'Delivery Fee',
+      companyName: 'Company Name',
+      shipperConsignorName: 'Shipper/Consignor',
+      customerEstablishmentName: 'Customer/Establishment',
+      originAddress: 'Origin Address',
+      destinationAddress: 'Destination Address',
+      vehicleType: 'Vehicle Type',
+      areaLocationCode: 'Area Code',
+      rateCost: 'Rate Cost',
+      // Step 2 fields
+      dateNeeded: 'Date Needed',
+      timeNeeded: 'Time Needed'
+    };
+
+    // Check for empty required fields
+    for (const [field, label] of Object.entries(requiredFields)) {
+      if (!formData[field] || formData[field].toString().trim() === '') {
+        alert(`Please fill in the ${label} field.`);
+        return;
+      }
+    }
+
+    // Validate that at least one employee is assigned
+    const validEmployees = formData.employeeAssigned.filter(emp => emp && emp.trim() !== "");
+    if (validEmployees.length === 0) {
+      alert('Please assign at least one employee.');
+      return;
+    }
+
+    // Validate that assigned employees have roles
+    const validRoles = formData.roleOfEmployee.filter(role => role && role.trim() !== "");
+    if (validRoles.length !== validEmployees.length) {
+      alert('All assigned employees must have roles.');
+      return;
+    }
+
+    // Validate numeric fields
+    if (isNaN(formData.quantity) || parseInt(formData.quantity) <= 0) {
+      alert('Please enter a valid quantity.');
+      return;
+    }
+    if (isNaN(formData.grossWeight) || parseFloat(formData.grossWeight) <= 0) {
+      alert('Please enter a valid gross weight.');
+      return;
+    }
+    if (isNaN(formData.unitPerPackage) || parseInt(formData.unitPerPackage) <= 0) {
+      alert('Please enter valid units per package.');
+      return;
+    }
+    if (isNaN(formData.numberOfPackages) || parseInt(formData.numberOfPackages) <= 0) {
+      alert('Please enter a valid number of packages.');
+      return;
+    }
+    if (isNaN(formData.deliveryFee) || parseFloat(formData.deliveryFee) <= 0) {
+      alert('Please enter a valid delivery fee.');
+      return;
+    }
+    if (isNaN(formData.rateCost) || parseFloat(formData.rateCost) <= 0) {
+      alert('Please enter a valid rate cost.');
+      return;
+    }
+
+    // Validate date is not in the past
+    const selectedDate = new Date(formData.dateNeeded);
+    const today = new Date();
+    today.setHours(0, 0, 0, 0); // Reset time to start of day for comparison
+
+    if (selectedDate < today) {
+      alert('Please select a date that is today or in the future.');
+      return;
+    }
+
     try {
       const submitData = {
         ...formData,
@@ -350,15 +442,27 @@ function Booking() {
           `http://localhost:5000/api/bookings/${editBooking._id}`,
           submitData
         );
+        alert('Booking updated successfully!');
       } else {
         await axios.post("http://localhost:5000/api/bookings", submitData);
+        alert('Booking created successfully!');
       }
       closeModal();
       fetchBookings();
     } catch (err) {
       console.error("Full error object:", err);
       console.error("Error response:", err.response?.data);
-      alert("Error adding/updating booking");
+
+      // More detailed error handling
+      if (err.response?.data?.message) {
+        alert(`Error: ${err.response.data.message}`);
+      } else if (err.response?.status === 400) {
+        alert("Bad request. Please check your input data.");
+      } else if (err.response?.status === 500) {
+        alert("Server error. Please try again later.");
+      } else {
+        alert("Error adding/updating booking. Please try again.");
+      }
     }
   };
 
@@ -376,7 +480,6 @@ function Booking() {
   const viewBooking = (booking) => {
     navigate(`/dashboard/booking/${booking._id}`);
   };
-
 
   // Auto-fill defaults when origin or destination changes
   useEffect(() => {
@@ -569,7 +672,6 @@ function Booking() {
                       {formatEmployeeNames(booking.employeeAssigned)}
                     </td>
                     <td className="px-6 py-3 text-center space-x-2">
-                      {/* Your existing action buttons remain the same */}
                       <button
                         onClick={() => viewBooking(booking)}
                         className="px-3 py-1 bg-blue-500 text-white rounded shadow hover:bg-blue-600 inline-flex items-center gap-1 transition transform hover:scale-105"
@@ -624,7 +726,7 @@ function Booking() {
         </div>
       </div>
 
-      {/* Multi-step Modal */}
+      {/* Multi-step Modal with Option 2 Navigation */}
       {showModal && (
         <div className="fixed inset-0 z-50 flex justify-center items-center">
           <div
@@ -635,7 +737,7 @@ function Booking() {
           <div className="relative bg-white rounded-xl shadow-xl w-full max-w-4xl ml-32 p-6 z-10 animate-fade-in max-h-[90vh] overflow-y-auto">
             <div className="flex justify-between items-center mb-6">
               <h2 className="text-xl font-bold">
-                Book a Trip
+                {editBooking ? "Edit Booking" : "Book a Trip"}
               </h2>
               <div className="flex space-x-2">
                 <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold ${currentStep >= 1 ? 'bg-blue-600 text-white' : 'bg-gray-200'}`}>
@@ -647,7 +749,8 @@ function Booking() {
               </div>
             </div>
 
-            <form onSubmit={handleSubmit}>
+            {/* Form (Navigation buttons moved outside) */}
+            <form>
               {/* Step 1: Booking Details */}
               {currentStep === 1 && (
                 <div className="space-y-6">
@@ -687,7 +790,6 @@ function Booking() {
                           value={formData.productName}
                           onChange={handleChange}
                           placeholder="Tasty Boy"
-                          required
                           className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-400"
                         />
                       </div>
@@ -699,7 +801,6 @@ function Booking() {
                           value={formData.quantity}
                           onChange={handleChange}
                           placeholder="2000pcs"
-                          required
                           className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-400"
                         />
                       </div>
@@ -711,7 +812,6 @@ function Booking() {
                           value={formData.grossWeight}
                           onChange={handleChange}
                           placeholder="5 tons"
-                          required
                           className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-400"
                         />
                       </div>
@@ -723,7 +823,6 @@ function Booking() {
                           value={formData.unitPerPackage}
                           onChange={handleChange}
                           placeholder="200pcs/box"
-                          required
                           className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-400"
                         />
                       </div>
@@ -737,7 +836,6 @@ function Booking() {
                           value={formData.numberOfPackages}
                           onChange={handleChange}
                           placeholder="10 box"
-                          required
                           className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-400"
                         />
                       </div>
@@ -749,7 +847,6 @@ function Booking() {
                           value={formData.deliveryFee}
                           onChange={handleChange}
                           placeholder="10000 PHP"
-                          required
                           className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-400"
                         />
                       </div>
@@ -768,7 +865,6 @@ function Booking() {
                         name="companyName"
                         value={formData.companyName}
                         onChange={handleChange}
-                        required
                         className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-400"
                       >
                         <option value="">Select from existing records</option>
@@ -789,7 +885,6 @@ function Booking() {
                           value={formData.shipperConsignorName}
                           onChange={handleChange}
                           placeholder="Ajinomoto Philippines Corp"
-                          required
                           className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-400"
                         />
                       </div>
@@ -801,7 +896,6 @@ function Booking() {
                           value={formData.customerEstablishmentName}
                           onChange={handleChange}
                           placeholder="Enter customer name"
-                          required
                           className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-400"
                         />
                       </div>
@@ -814,12 +908,10 @@ function Booking() {
                           name="originAddress"
                           value={formData.originAddress}
                           onChange={handleChange}
-                          required
                           className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-400"
                         >
                           <option value="">Select Origin</option>
                           {(() => {
-                            // Show all possible origins from addressDefaults
                             const allOrigins = Object.keys(addressDefaults)
                               .map(pair => pair.split(' - ')[0]);
                             const uniqueOrigins = [...new Set(allOrigins)];
@@ -835,19 +927,16 @@ function Booking() {
                           name="destinationAddress"
                           value={formData.destinationAddress}
                           onChange={handleChange}
-                          required
                           className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-400"
                         >
                           <option value="">Select Destination</option>
                           {(() => {
-                            // Get all possible destinations that have a match in addressDefaults for selected origin
                             const possibleDestinations = Object.keys(addressDefaults)
                               .filter(pair => {
                                 const [origin, destination] = pair.toLowerCase().split(' - ');
                                 return !formData.originAddress || origin === formData.originAddress.toLowerCase();
                               })
                               .map(pair => pair.split(' - ')[1]);
-                            // Remove duplicates
                             const uniqueDestinations = [...new Set(possibleDestinations)];
                             return uniqueDestinations.map(destination => (
                               <option key={destination} value={destination}>{destination.charAt(0).toUpperCase() + destination.slice(1)}</option>
@@ -868,7 +957,6 @@ function Booking() {
                         name="vehicleType"
                         value={formData.vehicleType}
                         onChange={handleChange}
-                        required
                         className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-400"
                       >
                         <option value="">Select Vehicle</option>
@@ -878,7 +966,7 @@ function Booking() {
                           const allowedVehicleTypes = Array.isArray(allowedVehiclesArr)
                             ? allowedVehiclesArr.map(def => def.vehicleType)
                             : [];
-                          return vehicles
+                          return getAvailableVehicles()
                             .filter(vehicle => allowedVehicleTypes.length === 0 || allowedVehicleTypes.includes(vehicle.vehicleType))
                             .map(vehicle => (
                               <option key={vehicle._id} value={vehicle.vehicleType}>
@@ -898,7 +986,6 @@ function Booking() {
                           value={formData.areaLocationCode}
                           readOnly
                           placeholder="1"
-                          required
                           className="w-full px-3 py-2 border border-gray-300 rounded-md bg-gray-100 focus:ring-2 focus:ring-blue-400"
                         />
                       </div>
@@ -910,7 +997,6 @@ function Booking() {
                           value={formData.rateCost}
                           readOnly
                           placeholder="200 PHP"
-                          required
                           className="w-full px-3 py-2 border border-gray-300 rounded-md bg-gray-100 focus:ring-2 focus:ring-blue-400"
                         />
                       </div>
@@ -933,7 +1019,6 @@ function Booking() {
                           name="dateNeeded"
                           value={formData.dateNeeded}
                           onChange={handleChange}
-                          required
                           className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-400"
                         />
                       </div>
@@ -944,7 +1029,6 @@ function Booking() {
                           name="timeNeeded"
                           value={formData.timeNeeded}
                           onChange={handleChange}
-                          required
                           className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-400"
                         />
                       </div>
@@ -962,7 +1046,6 @@ function Booking() {
                           <select
                             value={employeeId}
                             onChange={(e) => handleEmployeeChange(index, e.target.value)}
-                            required
                             className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-400"
                           >
                             <option value="">Employee</option>
@@ -990,7 +1073,7 @@ function Booking() {
                             <button
                               type="button"
                               onClick={() => removeEmployee(index)}
-                              className="px-3 py-2 bg-red-500 text-white rounded-md hover:bg-red-600 transition"
+                              className="px-3 py-2 bg-red-100 text-red-600 rounded shadow hover:bg-red-200"
                             >
                               Remove
                             </button>
@@ -998,60 +1081,70 @@ function Booking() {
                         </div>
                       </div>
                     ))}
-
                     <button
                       type="button"
                       onClick={addEmployee}
-                      className="px-4 py-2 bg-green-500 text-white rounded-md hover:bg-green-600 transition inline-flex items-center gap-1"
+                      className="px-4 py-2 bg-blue-100 text-blue-600 rounded shadow hover:bg-blue-200"
                     >
-                      <Plus size={16} /> Add Employee
+                      Add Employee
                     </button>
                   </div>
                 </div>
               )}
-
-              {/* Navigation Buttons */}
-              <div className="flex justify-between mt-8">
-                <div>
-                  {currentStep > 1 && (
-                    <button
-                      type="button"
-                      onClick={prevStep}
-                      className="px-6 py-2 bg-gray-500 text-white rounded-lg shadow hover:bg-gray-600 inline-flex items-center gap-2 transition"
-                    >
-                      <ChevronLeft size={16} /> Previous
-                    </button>
-                  )}
-                </div>
-
-                <div className="flex space-x-2">
-                  <button
-                    type="button"
-                    onClick={closeModal}
-                    className="px-6 py-2 bg-gray-300 text-gray-700 rounded-lg shadow hover:bg-gray-400 transition"
-                  >
-                    Cancel
-                  </button>
-
-                  {currentStep < 2 ? (
-                    <button
-                      type="button"
-                      onClick={nextStep}
-                      className="px-6 py-2 bg-blue-600 text-white rounded-lg shadow hover:bg-blue-700 inline-flex items-center gap-2 transition"
-                    >
-                      Next <ChevronRight size={16} />
-                    </button>
-                  ) : (
-                    <button
-                      type="submit"
-                      className="px-6 py-2 bg-green-600 text-white rounded-lg shadow hover:bg-green-700 transition"
-                    >
-                      {editBooking ? "Update Booking" : "Create Booking"}
-                    </button>
-                  )}
-                </div>
-              </div>
             </form>
+            {/* Navigation and Submit Buttons */}
+            <div className="flex space-x-2 mt-8 justify-end">
+              <button
+                type="button"
+                onClick={closeModal}
+                className="px-6 py-2 bg-gray-300 text-gray-700 rounded-lg shadow hover:bg-gray-400 transition"
+              >
+                Cancel
+              </button>
+              {currentStep < 2 ? (
+                <button
+                  type="button"
+                  onClick={nextStep}
+                  className="px-6 py-2 bg-blue-600 text-white rounded-lg shadow hover:bg-blue-700 inline-flex items-center gap-2 transition"
+                >
+                  Next <ChevronRight size={16} />
+                </button>
+              ) : (
+                <button
+                  type="button"
+                  onClick={async () => {
+                    // Move status update logic here for submit
+                    await handleSubmit();
+                    // After booking is created, update vehicle and employees status
+                    try {
+                      const submitData = {
+                        ...formData,
+                        employeeAssigned: Array.isArray(formData.employeeAssigned)
+                          ? formData.employeeAssigned.filter(emp => emp !== "")
+                          : [formData.employeeAssigned].filter(emp => emp !== ""),
+                      };
+                      // Update vehicle status
+                      const selectedVehicle = vehicles.find(v => v.vehicleType === submitData.vehicleType);
+                      if (selectedVehicle && selectedVehicle.status === "Available") {
+                        await axios.put(`http://localhost:5000/api/vehicles/${selectedVehicle._id}`, { ...selectedVehicle, status: "On Trip" });
+                      }
+                      // Update employees status
+                      for (const empId of submitData.employeeAssigned) {
+                        const emp = employees.find(e => e.employeeId === empId);
+                        if (emp && emp.status === "Available") {
+                          await axios.put(`http://localhost:5000/api/employees/${emp._id}`, { ...emp, status: "On Trip" });
+                        }
+                      }
+                    } catch (err) {
+                      console.error("Error updating vehicle/employee status:", err);
+                    }
+                  }}
+                  className="px-6 py-2 bg-green-600 text-white rounded-lg shadow hover:bg-green-700 transition"
+                >
+                  {editBooking ? "Update Booking" : "Create Booking"}
+                </button>
+              )}
+            </div>
           </div>
         </div>
       )}

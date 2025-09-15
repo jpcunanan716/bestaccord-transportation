@@ -12,6 +12,7 @@ const employeeSchema = new mongoose.Schema({
   emergencyContactNumber: { type: String },
   dateHired: { type: Date },
   shift: { type: String, enum: ["Morning", "Afternoon", "Night"] },
+  status: { type: String, enum: ["Available", "On Trip"], default: "Available" },
 
   // 🔹 New username field (unique + required)
   email: { type: String, unique: true, required: true },
