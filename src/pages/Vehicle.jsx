@@ -1,3 +1,5 @@
+// Error state for validation and backend errors
+const [errors, setErrors] = useState({});
 import { useState, useEffect, useRef } from "react";
 import { Eye, Pencil, Trash2 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
@@ -151,8 +153,41 @@ export default function Vehicle() {
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
 
+  // Frontend validation for vehicle form
+  const validateForm = () => {
+    let newErrors = {};
+    if (!(formData.registrationNumber || "").trim()) newErrors.registrationNumber = "Registration number is required.";
+    if (!formData.manufacturedBy) newErrors.manufacturedBy = "Manufacturer is required.";
+    if (!(formData.model || "").trim()) newErrors.model = "Model is required.";
+    if (!(formData.plateNumber || "").trim()) newErrors.plateNumber = "Plate number is required.";
+    if (!formData.vehicleType) newErrors.vehicleType = "Vehicle type is required.";
+    if (!formData.status) newErrors.status = "Status is required.";
+    if (formData.registrationExpiryDate && isNaN(Date.parse(formData.registrationExpiryDate))) newErrors.registrationExpiryDate = "Invalid expiry date.";
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
+    if (!validateForm()) return;
+
+    // Duplicate checker for registrationNumber and plateNumber
+    const isDuplicateReg = vehicles.some(v =>
+      v.registrationNumber.trim().toLowerCase() === formData.registrationNumber.trim().toLowerCase() &&
+      (!editVehicle || v._id !== editVehicle._id)
+    );
+    const isDuplicatePlate = vehicles.some(v =>
+      v.plateNumber.trim().toLowerCase() === formData.plateNumber.trim().toLowerCase() &&
+      (!editVehicle || v._id !== editVehicle._id)
+    );
+    if (isDuplicateReg || isDuplicatePlate) {
+      let dupErrors = {};
+      if (isDuplicateReg) dupErrors.registrationNumber = "Registration number already exists.";
+      if (isDuplicatePlate) dupErrors.plateNumber = "Plate number already exists.";
+      setErrors(dupErrors);
+      return;
+    }
+
     try {
       if (editVehicle) {
         await axios.put(`http://localhost:5000/api/vehicles/${editVehicle._id}`, formData);
@@ -161,7 +196,30 @@ export default function Vehicle() {
       }
       closeModal();
       fetchVehicles();
+      setErrors({});
     } catch (err) {
+      let backendErrors = {};
+      // Parse MongoDB duplicate key error for specific fields
+      const rawMsg = err.response?.data?.msg || err.response?.data?.message || err.responseText || "";
+      if (rawMsg.includes("duplicate key error")) {
+        if (rawMsg.includes("registrationNumber")) {
+          backendErrors.registrationNumber = "Registration number already exists.";
+        }
+        if (rawMsg.includes("plateNumber")) {
+          backendErrors.plateNumber = "Plate number already exists.";
+        }
+      }
+      // If not a duplicate key error, fallback to general error handling
+      if (Object.keys(backendErrors).length === 0) {
+        if (err.response?.data?.errors) {
+          backendErrors = err.response.data.errors;
+        } else if (err.response?.data?.message) {
+          backendErrors.general = err.response.data.message;
+        } else {
+          backendErrors.general = "Error adding/updating vehicle.";
+        }
+      }
+      setErrors(backendErrors);
       console.error(err);
     }
   };
@@ -376,14 +434,16 @@ export default function Vehicle() {
                 value={formData.registrationNumber}
                 onChange={handleChange}
                 required
-                className="border p-2 rounded focus:ring-2 focus:ring-indigo-400"
+                className={`border p-2 rounded focus:ring-2 focus:ring-indigo-400 ${errors.registrationNumber ? "border-red-500" : ""}`}
               />
+              {errors.registrationNumber && <p className="text-red-500 text-xs col-span-2">{errors.registrationNumber}</p>}
+
               <select
                 name="manufacturedBy"
                 value={formData.manufacturedBy}
                 onChange={handleChange}
                 required
-                className="border p-2 rounded focus:ring-2 focus:ring-indigo-400"
+                className={`border p-2 rounded focus:ring-2 focus:ring-indigo-400 ${errors.manufacturedBy ? "border-red-500" : ""}`}
               >
                 <option value="">Select Manufacturer</option>
                 {brands.map((b) => (
@@ -392,6 +452,8 @@ export default function Vehicle() {
                   </option>
                 ))}
               </select>
+              {errors.manufacturedBy && <p className="text-red-500 text-xs col-span-2">{errors.manufacturedBy}</p>}
+
               <input
                 type="text"
                 name="model"
@@ -399,8 +461,10 @@ export default function Vehicle() {
                 value={formData.model}
                 onChange={handleChange}
                 required
-                className="border p-2 rounded focus:ring-2 focus:ring-indigo-400"
+                className={`border p-2 rounded focus:ring-2 focus:ring-indigo-400 ${errors.model ? "border-red-500" : ""}`}
               />
+              {errors.model && <p className="text-red-500 text-xs col-span-2">{errors.model}</p>}
+
               <input
                 type="text"
                 name="plateNumber"
@@ -408,14 +472,16 @@ export default function Vehicle() {
                 value={formData.plateNumber}
                 onChange={handleChange}
                 required
-                className="border p-2 rounded focus:ring-2 focus:ring-indigo-400"
+                className={`border p-2 rounded focus:ring-2 focus:ring-indigo-400 ${errors.plateNumber ? "border-red-500" : ""}`}
               />
+              {errors.plateNumber && <p className="text-red-500 text-xs col-span-2">{errors.plateNumber}</p>}
+
               <select
                 name="vehicleType"
                 value={formData.vehicleType}
                 onChange={handleChange}
                 required
-                className="border p-2 rounded focus:ring-2 focus:ring-indigo-400"
+                className={`border p-2 rounded focus:ring-2 focus:ring-indigo-400 ${errors.vehicleType ? "border-red-500" : ""}`}
               >
                 {vehicleTypes.map((v) => (
                   <option key={v} value={v}>
@@ -423,6 +489,8 @@ export default function Vehicle() {
                   </option>
                 ))}
               </select>
+              {errors.vehicleType && <p className="text-red-500 text-xs col-span-2">{errors.vehicleType}</p>}
+
               <input
                 type="text"
                 name="color"
@@ -452,14 +520,16 @@ export default function Vehicle() {
                 name="registrationExpiryDate"
                 value={formData.registrationExpiryDate}
                 onChange={handleChange}
-                className="border p-2 rounded focus:ring-2 focus:ring-indigo-400"
+                className={`border p-2 rounded focus:ring-2 focus:ring-indigo-400 ${errors.registrationExpiryDate ? "border-red-500" : ""}`}
               />
+              {errors.registrationExpiryDate && <p className="text-red-500 text-xs col-span-2">{errors.registrationExpiryDate}</p>}
+
               <select
                 name="status"
                 value={formData.status}
                 onChange={handleChange}
                 required
-                className="border p-2 rounded focus:ring-2 focus:ring-indigo-400"
+                className={`border p-2 rounded focus:ring-2 focus:ring-indigo-400 ${errors.status ? "border-red-500" : ""}`}
               >
                 {statuses.map((s) => (
                   <option key={s} value={s}>
@@ -467,6 +537,7 @@ export default function Vehicle() {
                   </option>
                 ))}
               </select>
+              {errors.status && <p className="text-red-500 text-xs col-span-2">{errors.status}</p>}
 
               <div className="col-span-2 flex justify-end mt-2 space-x-2">
                 <button
@@ -483,6 +554,7 @@ export default function Vehicle() {
                   Cancel
                 </button>
               </div>
+              {errors.general && <p className="text-red-500 text-sm col-span-2 text-center mt-2">{errors.general}</p>}
             </form>
           </div>
         </div>
