@@ -21,7 +21,7 @@ const bookingSchema = new mongoose.Schema({
     timeNeeded: { type: String, required: true },
     employeeAssigned: [{ type: String }], // Change to array of strings for employeeId
     roleOfEmployee: [{ type: String }],
-    status: { type: String, enum: ["Pending", "In Transit", "Delivered", "Completed"], default: "Pending" },
+    status: { type: String, enum: ["Pending", "Ready to go", "In Transit", "Delivered", "Completed"], default: "Pending" },
 }, { timestamps: true });
 
 export default mongoose.model("Booking", bookingSchema);

@@ -105,7 +105,6 @@ router.get("/reservation/:reservationId", async (req, res) => {
   }
 });
 
-
 // GET booking by trip number
 router.get("/trip/:tripNumber", async (req, res) => {
   try {
@@ -129,8 +128,6 @@ router.get("/:id", async (req, res) => {
     res.status(500).json({ message: err.message });
   }
 });
-
-
 
 // POST create booking
 router.post("/", async (req, res) => {
@@ -190,8 +187,23 @@ router.post("/", async (req, res) => {
 // PUT update booking
 router.put("/:id", async (req, res) => {
   try {
-    // Don't allow updating auto-generated IDs through PUT request
+    console.log("🔄 Updating booking:", req.params.id, "with data:", req.body);
+    
+    // Don't allow updating auto-generated IDs through PUT request (except for status updates)
     const { reservationId, tripNumber, ...updateData } = req.body;
+
+    // Special handling for status updates from admin
+    if (updateData.status) {
+      console.log("📝 Status update requested:", updateData.status);
+      
+      // Validate status
+      const allowedStatuses = ["Pending", "Ready to go", "In Transit", "Delivered", "Completed"];
+      if (!allowedStatuses.includes(updateData.status)) {
+        return res.status(400).json({
+          message: `Invalid status. Allowed statuses: ${allowedStatuses.join(", ")}`
+        });
+      }
+    }
 
     const updatedBooking = await Booking.findByIdAndUpdate(
       req.params.id,
@@ -202,6 +214,12 @@ router.put("/:id", async (req, res) => {
     if (!updatedBooking) {
       return res.status(404).json({ message: "Booking not found" });
     }
+
+    console.log("✅ Booking updated successfully:", {
+      id: updatedBooking._id,
+      reservationId: updatedBooking.reservationId,
+      status: updatedBooking.status
+    });
 
     res.json(updatedBooking);
   } catch (err) {
@@ -217,6 +235,61 @@ router.put("/:id", async (req, res) => {
     }
 
     res.status(500).json({ message: err.message });
+  }
+});
+
+// PATCH update booking status only (optimized route for status updates)
+router.patch("/:id/status", async (req, res) => {
+  try {
+    const { status } = req.body;
+    const bookingId = req.params.id;
+
+    console.log("🔄 Status update request:", { bookingId, status });
+
+    // Validate status
+    const allowedStatuses = ["Pending", "Ready to go", "In Transit", "Delivered", "Completed"];
+    if (!allowedStatuses.includes(status)) {
+      return res.status(400).json({
+        success: false,
+        message: `Invalid status. Allowed statuses: ${allowedStatuses.join(", ")}`
+      });
+    }
+
+    const updatedBooking = await Booking.findByIdAndUpdate(
+      bookingId,
+      { 
+        status,
+        updatedAt: new Date()
+      },
+      { new: true }
+    );
+
+    if (!updatedBooking) {
+      return res.status(404).json({ 
+        success: false,
+        message: "Booking not found" 
+      });
+    }
+
+    console.log(`✅ Booking ${updatedBooking.reservationId} status updated to: ${status}`);
+
+    res.json({
+      success: true,
+      message: "Status updated successfully",
+      booking: {
+        _id: updatedBooking._id,
+        reservationId: updatedBooking.reservationId,
+        tripNumber: updatedBooking.tripNumber,
+        status: updatedBooking.status,
+        updatedAt: updatedBooking.updatedAt
+      }
+    });
+  } catch (err) {
+    console.error("❌ Error updating booking status:", err);
+    res.status(500).json({ 
+      success: false,
+      message: "Server error while updating status" 
+    });
   }
 });
 

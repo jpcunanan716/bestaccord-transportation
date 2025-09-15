@@ -26,6 +26,7 @@ export default function Monitoring() {
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("All");
   const [error, setError] = useState("");
+  const [updating, setUpdating] = useState(false);
   const mapRef = useRef(null);
   const mapInstance = useRef(null);
 
@@ -34,21 +35,35 @@ export default function Monitoring() {
     "Pending": { 
       color: "bg-yellow-100 text-yellow-800", 
       icon: AlertCircle, 
-      progress: 25,
+      progress: 20,
       bgColor: "bg-yellow-500",
       step: 0
     },
-    "In Transit": { 
+    "Ready to go": { 
       color: "bg-blue-100 text-blue-800", 
-      icon: PlayCircle, 
-      progress: 50,
+      icon: CheckCircle, 
+      progress: 40,
       bgColor: "bg-blue-500",
+      step: 1
+    },
+    "On Trip": { 
+      color: "bg-purple-100 text-purple-800", 
+      icon: PlayCircle, 
+      progress: 60,
+      bgColor: "bg-purple-500",
+      step: 2
+    },
+    "In Transit": { 
+      color: "bg-purple-100 text-purple-800", 
+      icon: PlayCircle, 
+      progress: 60,
+      bgColor: "bg-purple-500",
       step: 2
     },
     "Delivered": { 
       color: "bg-green-100 text-green-800", 
       icon: CheckCircle, 
-      progress: 75,
+      progress: 80,
       bgColor: "bg-green-500",
       step: 3
     },
@@ -63,12 +78,54 @@ export default function Monitoring() {
 
   // Timeline steps
   const timelineSteps = [
-    { name: "Preparing", status: "Preparing" },
+    { name: "Preparing", status: "Pending" },
     { name: "Ready to go", status: "Ready to go" },
-    { name: "On Trip", status: "In Transit" },
+    { name: "On Trip", status: "On Trip" },
     { name: "Delivered", status: "Delivered" },
     { name: "Completed", status: "Completed" }
   ];
+
+  // Update booking status
+  const updateBookingStatus = async (bookingId, newStatus) => {
+    setUpdating(true);
+    try {
+      const response = await fetch(`http://localhost:5000/api/bookings/${bookingId}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ status: newStatus }),
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      const updatedBooking = await response.json();
+      
+      // Update local state
+      setBookings(prevBookings => 
+        prevBookings.map(booking => 
+          booking._id === bookingId 
+            ? { ...booking, status: newStatus }
+            : booking
+        )
+      );
+
+      setSelectedBooking(prev => ({
+        ...prev,
+        status: newStatus
+      }));
+
+      console.log("✅ Booking status updated successfully:", updatedBooking);
+      
+    } catch (err) {
+      console.error("❌ Error updating booking status:", err);
+      setError(`Failed to update status: ${err.message}`);
+    } finally {
+      setUpdating(false);
+    }
+  };
 
   // Fetch bookings data from MongoDB
   const fetchBookings = async () => {
@@ -269,6 +326,13 @@ export default function Monitoring() {
       return emp ? (emp.employeeName || emp.fullName || emp.name) : employeeId;
     }
     return employeeId || 'Unknown';
+  };
+
+  // Handle confirm ready to go
+  const handleConfirmReadyToGo = () => {
+    if (selectedBooking) {
+      updateBookingStatus(selectedBooking._id, "Ready to go");
+    }
   };
 
   return (
@@ -820,15 +884,41 @@ export default function Monitoring() {
                       >
                         Back to the List
                       </button>
-                      <button 
-                        className="flex-1 px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors"
-                        onClick={() => {
-                          // Handle status update functionality here
-                          console.log("Confirm Ready to go clicked for booking:", selectedBooking._id);
-                        }}
-                      >
-                        Confirm Ready to go
-                      </button>
+                      
+                      {/* Show different buttons based on status */}
+                      {selectedBooking.status === "Pending" && (
+                        <button 
+                          onClick={handleConfirmReadyToGo}
+                          disabled={updating}
+                          className="flex-1 px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
+                          {updating ? "Updating..." : "Confirm Ready to go"}
+                        </button>
+                      )}
+                      
+                      {selectedBooking.status === "Ready to go" && (
+                        <div className="flex-1 px-4 py-2 bg-green-100 text-green-800 rounded-lg text-center">
+                          ✓ Ready for Driver to Start Trip
+                        </div>
+                      )}
+                      
+                      {(selectedBooking.status === "On Trip" || selectedBooking.status === "In Transit") && (
+                        <div className="flex-1 px-4 py-2 bg-blue-100 text-blue-800 rounded-lg text-center">
+                          🚛 Trip in Progress
+                        </div>
+                      )}
+                      
+                      {selectedBooking.status === "Delivered" && (
+                        <div className="flex-1 px-4 py-2 bg-green-100 text-green-800 rounded-lg text-center">
+                          ✓ Package Delivered
+                        </div>
+                      )}
+                      
+                      {selectedBooking.status === "Completed" && (
+                        <div className="flex-1 px-4 py-2 bg-gray-100 text-gray-800 rounded-lg text-center">
+                          ✓ Trip Completed
+                        </div>
+                      )}
                     </div>
 
                   </div>
