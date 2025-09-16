@@ -1,6 +1,6 @@
-// server/controllers/driverBookingsController.js (Complete with all functions)
 import Booking from "../models/Booking.js";
 import Employee from "../models/Employee.js";
+import Vehicle from "../models/Vehicle.js";
 
 /**
  * GET /api/driver/bookings/count
@@ -11,9 +11,9 @@ export const getDriverBookingCount = async (req, res) => {
     const driver = req.driver;
 
     if (!driver) {
-      return res.status(404).json({ 
-        success: false, 
-        msg: "Driver not found" 
+      return res.status(404).json({
+        success: false,
+        msg: "Driver not found"
       });
     }
 
@@ -34,7 +34,7 @@ export const getDriverBookingCount = async (req, res) => {
 
   } catch (err) {
     console.error("❌ Error fetching booking count:", err);
-    res.status(500).json({ 
+    res.status(500).json({
       success: false,
       msg: "Server error while fetching booking count",
       error: err.message
@@ -68,7 +68,7 @@ export const getDriverBookings = async (req, res) => {
     // First, let's get ALL bookings to see what's in the database
     const allBookings = await Booking.find({});
     console.log("📋 DEBUG: Total bookings in database:", allBookings.length);
-    
+
     // Log the employeeAssigned field for each booking
     allBookings.forEach((booking, index) => {
       console.log(`📋 DEBUG: Booking ${index + 1}:`, {
@@ -101,23 +101,23 @@ export const getDriverBookings = async (req, res) => {
     console.log("📋 Query 3 (regex) - Found bookings:", bookings3.length);
 
     // Use the query that returns the most results
-    let bookings = bookings1.length > 0 ? bookings1 : 
-                  bookings2.length > 0 ? bookings2 : 
-                  bookings3.length > 0 ? bookings3 : [];
+    let bookings = bookings1.length > 0 ? bookings1 :
+      bookings2.length > 0 ? bookings2 :
+        bookings3.length > 0 ? bookings3 : [];
 
     console.log("📋 Final bookings selected:", bookings.length);
 
     // If still no bookings, let's check if the driver exists in any booking
     if (bookings.length === 0) {
       console.log("🔍 No bookings found. Checking if driver ID exists in any booking...");
-      
+
       const bookingsWithDriver = await Booking.find({
         $or: [
           { employeeAssigned: { $elemMatch: { $eq: driver.employeeId } } },
           { employeeAssigned: { $regex: driver.employeeId } }
         ]
       });
-      
+
       console.log("📋 Bookings with driver ID (alternative search):", bookingsWithDriver.length);
       bookings = bookingsWithDriver;
     }
@@ -130,12 +130,12 @@ export const getDriverBookings = async (req, res) => {
     // Enhance bookings with additional details
     const enhancedBookings = await Promise.all(bookings.map(async (booking) => {
       console.log("🔧 Processing booking:", booking.reservationId);
-      
+
       // Get all assigned employees details
       let employeeDetails = [];
       if (Array.isArray(booking.employeeAssigned)) {
-        employeeDetails = await Employee.find({ 
-          employeeId: { $in: booking.employeeAssigned } 
+        employeeDetails = await Employee.find({
+          employeeId: { $in: booking.employeeAssigned }
         }).select('employeeId fullName role');
         console.log("👥 Employee details found:", employeeDetails.length);
       } else if (booking.employeeAssigned) {
@@ -154,7 +154,6 @@ export const getDriverBookings = async (req, res) => {
       // Get vehicle details (if available)
       let vehicleDetails = null;
       try {
-        const Vehicle = (await import("../models/Vehicle.js")).default;
         vehicleDetails = await Vehicle.findOne({ vehicleType: booking.vehicleType });
         console.log("🚛 Vehicle details found:", !!vehicleDetails);
       } catch (err) {
@@ -190,7 +189,7 @@ export const getDriverBookings = async (req, res) => {
 
   } catch (err) {
     console.error("❌ Error fetching driver bookings:", err);
-    res.status(500).json({ 
+    res.status(500).json({
       success: false,
       msg: "Server error while fetching bookings",
       error: err.message
@@ -217,23 +216,22 @@ export const getDriverBookingById = async (req, res) => {
 
     if (!booking) {
       console.log("❌ DEBUG: Booking not found or driver not assigned");
-      return res.status(404).json({ 
+      return res.status(404).json({
         success: false,
-        msg: "Booking not found or you are not assigned to this booking" 
+        msg: "Booking not found or you are not assigned to this booking"
       });
     }
 
     console.log("✅ DEBUG: Booking found:", booking.reservationId);
 
     // Get employee details
-    const employeeDetails = await Employee.find({ 
-      employeeId: { $in: booking.employeeAssigned } 
+    const employeeDetails = await Employee.find({
+      employeeId: { $in: booking.employeeAssigned }
     }).select('employeeId fullName role');
 
     // Get vehicle details
     let vehicleDetails = null;
     try {
-      const Vehicle = (await import("../models/Vehicle.js")).default;
       vehicleDetails = await Vehicle.findOne({ vehicleType: booking.vehicleType });
     } catch (err) {
       console.log("⚠️ Vehicle model not found");
@@ -262,9 +260,9 @@ export const getDriverBookingById = async (req, res) => {
 
   } catch (err) {
     console.error("❌ Error fetching booking details:", err);
-    res.status(500).json({ 
+    res.status(500).json({
       success: false,
-      msg: "Server error while fetching booking details" 
+      msg: "Server error while fetching booking details"
     });
   }
 };
@@ -279,7 +277,7 @@ export const updateBookingStatus = async (req, res) => {
     const bookingId = req.params.id;
     const { status } = req.body;
 
-    console.log("🔄 DEBUG: Updating booking status:", {
+    console.log("🔄 Updating booking status:", {
       bookingId,
       driverId: driver.employeeId,
       newStatus: status
@@ -288,32 +286,39 @@ export const updateBookingStatus = async (req, res) => {
     // Validate status
     const allowedStatuses = ["Pending", "In Transit", "Delivered", "Completed"];
     if (!allowedStatuses.includes(status)) {
-      return res.status(400).json({ 
+      return res.status(400).json({
         success: false,
         msg: "Invalid status. Allowed: " + allowedStatuses.join(", ")
       });
     }
 
-    // Find and update the booking
-    const booking = await Booking.findOneAndUpdate(
-      {
-        _id: bookingId,
-        employeeAssigned: { $in: [driver.employeeId] }
-      },
-      { 
-        status,
-        updatedAt: new Date()
-      },
-      { new: true }
-    );
+    // Find the booking first
+    const booking = await Booking.findOne({
+      _id: bookingId,
+      employeeAssigned: { $in: [driver.employeeId] }
+    });
 
     if (!booking) {
-      console.log("❌ DEBUG: Booking not found or driver not assigned for update");
-      return res.status(404).json({ 
+      return res.status(404).json({
         success: false,
-        msg: "Booking not found or you are not assigned to this booking" 
+        msg: "Booking not found or you are not assigned to this booking"
       });
     }
+
+    // If status is being set to "Completed", update vehicle and employee status
+    if (status === "Completed") {
+      try {
+        await updateVehicleAndEmployeeStatus(booking, "Available");
+      } catch (error) {
+        console.error("Failed to update vehicle/employee status:", error);
+        // Continue with booking update even if vehicle/employee updates fail
+      }
+    }
+
+    // Update booking status
+    booking.status = status;
+    booking.updatedAt = new Date();
+    await booking.save();
 
     console.log(`📝 Driver ${driver.employeeId} updated booking ${booking.reservationId} status to: ${status}`);
 
@@ -331,9 +336,35 @@ export const updateBookingStatus = async (req, res) => {
 
   } catch (err) {
     console.error("❌ Error updating booking status:", err);
-    res.status(500).json({ 
+    res.status(500).json({
       success: false,
-      msg: "Server error while updating booking status" 
+      msg: "Server error while updating status"
     });
   }
 };
+
+// Helper function to update vehicle and employee status
+async function updateVehicleAndEmployeeStatus(booking, newStatus) {
+  try {
+    // Update vehicle status
+    if (booking.vehicleType) {
+      const vehicle = await Vehicle.findOneAndUpdate(
+        { vehicleType: booking.vehicleType },
+        { status: newStatus }
+      );
+      console.log(`✅ Vehicle ${booking.vehicleType} status updated to ${newStatus}`);
+    }
+
+    // Update employees status
+    if (Array.isArray(booking.employeeAssigned) && booking.employeeAssigned.length > 0) {
+      const result = await Employee.updateMany(
+        { employeeId: { $in: booking.employeeAssigned } },
+        { status: newStatus }
+      );
+      console.log(`✅ ${result.modifiedCount} employees updated to ${newStatus}`);
+    }
+  } catch (error) {
+    console.error("❌ Error updating statuses:", error);
+    throw error;
+  }
+}

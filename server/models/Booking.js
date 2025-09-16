@@ -16,8 +16,7 @@ const bookingSchema = new mongoose.Schema({
     destinationAddress: { type: String, required: true },
 
     vehicleId: {
-        type: mongoose.Schema.Types.ObjectId,
-        ref: 'Vehicle',
+        type: String,
         required: true
     },
     vehicleType: { type: String, required: true },

@@ -16,7 +16,6 @@ async function getNextReservationID() {
       { new: true, upsert: true, setDefaultsOnInsert: true }
     );
 
-    // If seq is somehow missing, set it to 1
     if (!counter.seq) {
       counter.seq = 1;
       await counter.save();
@@ -57,18 +56,14 @@ async function getNextTripNumber() {
 router.get("/", async (req, res) => {
   try {
     const bookings = await Booking.find();
-    // Fetch employee and vehicle details for each booking
     const Employee = (await import("../models/Employee.js")).default;
     const Vehicle = (await import("../models/Vehicle.js")).default;
 
-    // Map bookings to include employeeDetails and vehicle
     const bookingsWithDetails = await Promise.all(bookings.map(async (booking) => {
-      // Employee details
       let employeeDetails = [];
       if (Array.isArray(booking.employeeAssigned)) {
         employeeDetails = await Employee.find({ employeeId: { $in: booking.employeeAssigned } });
       }
-      // Vehicle details
       let vehicle = null;
       if (booking.vehicleType) {
         vehicle = await Vehicle.findOne({ vehicleType: booking.vehicleType });
@@ -131,13 +126,38 @@ router.get("/:id", async (req, res) => {
   }
 });
 
+// Add these helper functions at the top of the file
+async function updateVehicleAndEmployeeStatus(booking, newStatus) {
+  try {
+    if (booking.vehicleId) {
+      const vehicleResult = await Vehicle.findOneAndUpdate(
+        { vehicleId: booking.vehicleId },
+        { status: newStatus },
+        { new: true }
+      );
+      console.log(`✅ Vehicle ${booking.vehicleId} status updated to ${newStatus}`);
+    }
+
+    // Update employees status
+    if (Array.isArray(booking.employeeAssigned) && booking.employeeAssigned.length > 0) {
+      const employeeResult = await Employee.updateMany(
+        { employeeId: { $in: booking.employeeAssigned } },
+        { status: newStatus }
+      );
+      console.log(`✅ ${employeeResult.modifiedCount} employees updated to ${newStatus}`);
+    }
+  } catch (error) {
+    console.error("❌ Error updating statuses:", error);
+    throw error;
+  }
+}
+
 // POST create booking
 router.post("/", async (req, res) => {
   try {
-    // Remove auto-generated IDs from request body if present (we'll generate them)
     const { reservationId, tripNumber, ...bookingData } = req.body;
 
-    // Generate new reservation ID and trip number
+    // Generate new IDs
     const newReservationId = await getNextReservationID();
     const newTripNumber = await getNextTripNumber();
 
@@ -145,14 +165,20 @@ router.post("/", async (req, res) => {
       return res.status(500).json({ message: "Failed to generate booking IDs" });
     }
 
-    // Create new booking with generated IDs
+    // Create new booking
     const newBooking = new Booking({
       ...bookingData,
       reservationId: newReservationId,
-      tripNumber: newTripNumber
+      tripNumber: newTripNumber,
+      status: "Pending"
     });
 
     const savedBooking = await newBooking.save();
+
+
+    // Update vehicle and employee statuses to "On Trip"
+    await updateVehicleAndEmployeeStatus(savedBooking, "On Trip");
+
     res.status(201).json(savedBooking);
   } catch (err) {
     console.error("Error creating booking:", err);
@@ -160,9 +186,7 @@ router.post("/", async (req, res) => {
       return res.status(409).json({ message: "Duplicate booking ID. Please retry." });
     }
 
-    // If it's a duplicate key error, try to handle it gracefully
     if (err.code === 11000) {
-      // Check if it's reservationId or tripNumber duplicate
       if (err.keyPattern && (err.keyPattern.reservationId || err.keyPattern.tripNumber)) {
         return res.status(400).json({
           message: "Booking ID generation conflict. Please try again."
@@ -240,7 +264,7 @@ router.put("/:id", async (req, res) => {
   }
 });
 
-// PATCH update booking status only (optimized route for status updates)
+// PATCH update booking status only
 router.patch("/:id/status", async (req, res) => {
   try {
     const { status } = req.body;
@@ -248,60 +272,30 @@ router.patch("/:id/status", async (req, res) => {
 
     console.log("🔄 Status update request:", { bookingId, status });
 
-    // Validate status
-    const allowedStatuses = ["Pending", "Ready to go", "In Transit", "Delivered", "Completed"];
-    if (!allowedStatuses.includes(status)) {
-      return res.status(400).json({
-        success: false,
-        message: `Invalid status. Allowed statuses: ${allowedStatuses.join(", ")}`
-      });
-    }
-
-    const updatedBooking = await Booking.findByIdAndUpdate(
-      bookingId,
-      {
-        status,
-        updatedAt: new Date()
-      },
-      { new: true }
-    );
-
-    if (!updatedBooking) {
+    const booking = await Booking.findById(bookingId);
+    if (!booking) {
       return res.status(404).json({
         success: false,
         message: "Booking not found"
       });
     }
 
-    // If status is "Completed", update vehicle and employee statuses
-    if (status === "Completed") {
-      // Update vehicle status
-      if (updatedBooking.vehicleType) {
-        await Vehicle.updateOne(
-          { vehicleType: updatedBooking.vehicleType },
-          { status: "Available" }
-        );
-      }
-      // Update employees status
-      if (Array.isArray(updatedBooking.employeeAssigned)) {
-        await Employee.updateMany(
-          { employeeId: { $in: updatedBooking.employeeAssigned } },
-          { status: "Available" }
-        );
-      }
-    }
+    booking.status = status;
+    booking.updatedAt = new Date();
+    await booking.save();
 
     res.json({
       success: true,
       message: "Status updated successfully",
       booking: {
-        _id: updatedBooking._id,
-        reservationId: updatedBooking.reservationId,
-        tripNumber: updatedBooking.tripNumber,
-        status: updatedBooking.status,
-        updatedAt: updatedBooking.updatedAt
+        _id: booking._id,
+        reservationId: booking.reservationId,
+        tripNumber: booking.tripNumber,
+        status: booking.status,
+        updatedAt: booking.updatedAt
       }
     });
+
   } catch (err) {
     console.error("❌ Error updating booking status:", err);
     res.status(500).json({

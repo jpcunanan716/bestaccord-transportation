@@ -307,24 +307,19 @@ function Booking() {
 
   // Updated vehicle change handler to auto-fill vehicleType
   const handleVehicleChange = (e) => {
-    const selectedVehicleId = e.target.value;
-
-    if (selectedVehicleId) {
-      const selectedVehicle = vehicles.find(vehicle => vehicle._id === selectedVehicleId);
-
-      if (selectedVehicle) {
-        setFormData({
-          ...formData,
-          vehicleId: selectedVehicle._id,
-          vehicleType: selectedVehicle.vehicleType
-        });
-      }
+    const selectedVehicle = vehicles.find(v => v._id === e.target.value);
+    if (selectedVehicle) {
+      setFormData(prev => ({
+        ...prev,
+        vehicleId: selectedVehicle._id, // Store the _id for the dropdown value
+        vehicleType: selectedVehicle.vehicleType
+      }));
     } else {
-      setFormData({
-        ...formData,
+      setFormData(prev => ({
+        ...prev,
         vehicleId: "",
         vehicleType: ""
-      });
+      }));
     }
   };
 
@@ -999,7 +994,7 @@ function Booking() {
                             .filter(vehicle => allowedVehicleTypes.length === 0 || allowedVehicleTypes.includes(vehicle.vehicleType))
                             .map(vehicle => (
                               <option key={vehicle._id} value={vehicle._id}>
-                                {`${vehicle.vehicleId || ''} - ${vehicle.color || ''} ${vehicle.manufacturedBy || ''} ${vehicle.model || ''} (${vehicle.vehicleType}) - ${vehicle.plateNumber}`.replace(/ +/g, ' ').trim()}
+                                {`${vehicle.vehicleId} - ${vehicle.manufacturedBy} ${vehicle.model} (${vehicle.vehicleType}) - ${vehicle.plateNumber}`}
                               </option>
                             ));
                         })()}
@@ -1152,18 +1147,18 @@ function Booking() {
                           ? formData.employeeAssigned.filter(emp => emp !== "")
                           : [formData.employeeAssigned].filter(emp => emp !== ""),
                       };
-                      // Update vehicle status
-                      const selectedVehicle = vehicles.find(v => v.vehicleType === submitData.vehicleType);
-                      if (selectedVehicle && selectedVehicle.status === "Available") {
-                        await axios.put(`http://localhost:5000/api/vehicles/${selectedVehicle._id}`, { ...selectedVehicle, status: "On Trip" });
-                      }
-                      // Update employees status
-                      for (const empId of submitData.employeeAssigned) {
-                        const emp = employees.find(e => e.employeeId === empId);
-                        if (emp && emp.status === "Available") {
-                          await axios.put(`http://localhost:5000/api/employees/${emp._id}`, { ...emp, status: "On Trip" });
-                        }
-                      }
+                      // // Update vehicle status
+                      // const selectedVehicle = vehicles.find(v => v.vehicleType === submitData.vehicleType);
+                      // if (selectedVehicle && selectedVehicle.status === "Available") {
+                      //   await axios.put(`http://localhost:5000/api/vehicles/${selectedVehicle._id}`, { ...selectedVehicle, status: "On Trip" });
+                      // }
+                      // // Update employees status
+                      // for (const empId of submitData.employeeAssigned) {
+                      //   const emp = employees.find(e => e.employeeId === empId);
+                      //   if (emp && emp.status === "Available") {
+                      //     await axios.put(`http://localhost:5000/api/employees/${emp._id}`, { ...emp, status: "On Trip" });
+                      //   }
+                      // }
                     } catch (err) {
                       console.error("Error updating vehicle/employee status:", err);
                     }

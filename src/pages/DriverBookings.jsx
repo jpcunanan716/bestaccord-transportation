@@ -1,12 +1,11 @@
-// src/pages/DriverBookings.jsx (Mobile-Optimized with CORS fix and Completed status)
 import React, { useState, useEffect, useRef } from "react";
-import { 
-  Package, 
-  MapPin, 
-  Calendar, 
-  Clock, 
-  Users, 
-  Truck, 
+import {
+  Package,
+  MapPin,
+  Calendar,
+  Clock,
+  Users,
+  Truck,
   RefreshCw,
   AlertCircle,
   CheckCircle2,
@@ -86,12 +85,12 @@ export default function DriverBookings() {
 
   const createMap = async () => {
     if (!mapRef.current) return;
-    
+
     const L = window.L;
-    
+
     // Initialize map
     const map = L.map(mapRef.current).setView([14.5995, 120.9842], 10);
-    
+
     // Add OpenStreetMap tiles
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
       attribution: '© OpenStreetMap contributors'
@@ -103,7 +102,7 @@ export default function DriverBookings() {
         // Use a CORS proxy or alternative geocoding service
         const cleanAddress = address.replace(/,?\s*Philippines\s*,?/gi, '');
         const query = encodeURIComponent(`${cleanAddress}, Philippines`);
-        
+
         // Try multiple geocoding approaches
         const geocodingServices = [
           `https://api.allorigins.win/get?url=${encodeURIComponent(`https://nominatim.openstreetmap.org/search?format=json&q=${query}&limit=1`)}`,
@@ -116,7 +115,7 @@ export default function DriverBookings() {
             if (response.ok) {
               const data = await response.json();
               let results = data.contents ? JSON.parse(data.contents) : data;
-              
+
               if (results && results.length > 0 && results[0].lat && results[0].lon) {
                 return [parseFloat(results[0].lat), parseFloat(results[0].lon)];
               }
@@ -126,7 +125,7 @@ export default function DriverBookings() {
             continue;
           }
         }
-        
+
         // Fallback coordinates for major Philippine cities
         const philippinesCities = {
           'manila': [14.5995, 120.9842],
@@ -136,18 +135,18 @@ export default function DriverBookings() {
           'makati': [14.5547, 121.0244],
           'pasig': [14.5764, 121.0851]
         };
-        
-        const cityKey = Object.keys(philippinesCities).find(city => 
+
+        const cityKey = Object.keys(philippinesCities).find(city =>
           address.toLowerCase().includes(city)
         );
-        
+
         if (cityKey) {
           return philippinesCities[cityKey];
         }
-        
+
         // Default to Manila area if no match found
         return [14.5995, 120.9842];
-        
+
       } catch (error) {
         console.warn('Geocoding error, using default coordinates:', error);
         return [14.5995, 120.9842]; // Default to Manila
@@ -209,11 +208,11 @@ export default function DriverBookings() {
   // Start trip function
   const startTrip = async () => {
     if (!selectedBooking) return;
-    
+
     setUpdating(true);
     try {
       const token = localStorage.getItem("driverToken");
-      
+
       const response = await axios.put(
         `http://localhost:5000/api/driver/bookings/${selectedBooking._id}/status`,
         { status: "In Transit" },
@@ -226,14 +225,14 @@ export default function DriverBookings() {
 
       if (response.data.success) {
         // Update the booking in local state
-        setBookings(prevBookings => 
-          prevBookings.map(booking => 
-            booking._id === selectedBooking._id 
+        setBookings(prevBookings =>
+          prevBookings.map(booking =>
+            booking._id === selectedBooking._id
               ? { ...booking, status: "In Transit" }
               : booking
           )
         );
-        
+
         // Update selected booking
         setSelectedBooking(prev => ({
           ...prev,
@@ -254,11 +253,11 @@ export default function DriverBookings() {
   // Mark as delivered function
   const markAsDelivered = async () => {
     if (!selectedBooking) return;
-    
+
     setUpdating(true);
     try {
       const token = localStorage.getItem("driverToken");
-      
+
       const response = await axios.put(
         `http://localhost:5000/api/driver/bookings/${selectedBooking._id}/status`,
         { status: "Delivered" },
@@ -271,14 +270,14 @@ export default function DriverBookings() {
 
       if (response.data.success) {
         // Update the booking in local state
-        setBookings(prevBookings => 
-          prevBookings.map(booking => 
-            booking._id === selectedBooking._id 
+        setBookings(prevBookings =>
+          prevBookings.map(booking =>
+            booking._id === selectedBooking._id
               ? { ...booking, status: "Delivered" }
               : booking
           )
         );
-        
+
         // Update selected booking
         setSelectedBooking(prev => ({
           ...prev,
@@ -299,11 +298,11 @@ export default function DriverBookings() {
   // NEW: Mark as completed function
   const markAsCompleted = async () => {
     if (!selectedBooking) return;
-    
+
     setUpdating(true);
     try {
       const token = localStorage.getItem("driverToken");
-      
+
       const response = await axios.put(
         `http://localhost:5000/api/driver/bookings/${selectedBooking._id}/status`,
         { status: "Completed" },
@@ -316,14 +315,14 @@ export default function DriverBookings() {
 
       if (response.data.success) {
         // Update the booking in local state
-        setBookings(prevBookings => 
-          prevBookings.map(booking => 
-            booking._id === selectedBooking._id 
+        setBookings(prevBookings =>
+          prevBookings.map(booking =>
+            booking._id === selectedBooking._id
               ? { ...booking, status: "Completed" }
               : booking
           )
         );
-        
+
         // Update selected booking
         setSelectedBooking(prev => ({
           ...prev,
@@ -331,7 +330,7 @@ export default function DriverBookings() {
         }));
 
         console.log("✅ Trip marked as completed");
-        
+
         // Close modal after a brief delay to show completion message
         setTimeout(() => {
           closeModal();
@@ -371,7 +370,7 @@ export default function DriverBookings() {
       }
     } catch (err) {
       console.error("❌ Frontend DEBUG: Error fetching bookings:", err);
-      
+
       if (err.response?.status === 401) {
         setError("Session expired. Please log in again.");
         localStorage.removeItem("driverToken");
@@ -460,7 +459,7 @@ export default function DriverBookings() {
     <>
       {/* Add Leaflet CSS */}
       <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-      
+
       <div className="min-h-screen bg-gradient-to-br from-blue-500 to-purple-600 p-4">
         <div className="max-w-md mx-auto">
           {/* Header */}
@@ -501,8 +500,8 @@ export default function DriverBookings() {
               {bookings.map((booking) => {
                 const StatusIcon = statusColors[booking.status]?.icon || AlertCircle;
                 return (
-                  <div 
-                    key={booking._id} 
+                  <div
+                    key={booking._id}
                     className="bg-white rounded-xl shadow-lg p-4 cursor-pointer hover:shadow-xl transition-shadow active:scale-95"
                     onClick={() => openBookingDetails(booking)}
                   >
@@ -561,7 +560,7 @@ export default function DriverBookings() {
 
         {/* Mobile-Optimized Modal with Blurred Background */}
         {showModal && selectedBooking && (
-          <div 
+          <div
             className="fixed inset-0 z-50"
             style={{
               backgroundColor: 'rgba(0, 0, 0, 0.1)',
@@ -572,7 +571,7 @@ export default function DriverBookings() {
             <div className="absolute inset-0 overflow-y-auto">
               <div className="min-h-screen flex items-end sm:items-center justify-center p-4">
                 <div className="bg-white rounded-t-xl sm:rounded-xl w-full max-w-lg max-h-[90vh] overflow-hidden shadow-2xl">
-                  
+
                   {/* Modal Header - Sticky */}
                   <div className="sticky top-0 bg-white border-b border-gray-200 px-4 py-3 flex items-center justify-between z-10">
                     <div className="flex-1">
@@ -593,12 +592,12 @@ export default function DriverBookings() {
 
                   {/* Modal Body - Scrollable */}
                   <div className="overflow-y-auto" style={{ maxHeight: 'calc(90vh - 140px)' }}>
-                    
+
                     {/* Map Section */}
                     <div className="p-4 border-b border-gray-100">
                       <div className="bg-gray-100 rounded-lg overflow-hidden">
-                        <div 
-                          ref={mapRef} 
+                        <div
+                          ref={mapRef}
                           className="w-full h-48"
                         >
                           <div className="flex items-center justify-center h-full bg-gray-100">
@@ -612,7 +611,7 @@ export default function DriverBookings() {
                     </div>
 
                     {/* Collapsible Sections */}
-                    
+
                     {/* Route Section */}
                     <div className="border-b border-gray-100">
                       <button
