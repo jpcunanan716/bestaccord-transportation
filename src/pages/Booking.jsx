@@ -48,6 +48,7 @@ function Booking() {
     customerEstablishmentName: "",
     originAddress: "",
     destinationAddress: "",
+    vehicleId: "",
     vehicleType: "",
     areaLocationCode: "",
     rateCost: "",
@@ -192,6 +193,7 @@ function Booking() {
         customerEstablishmentName: booking.customerEstablishmentName,
         originAddress: booking.originAddress,
         destinationAddress: booking.destinationAddress,
+        vehicleId: booking.vehicleId || "",
         vehicleType: booking.vehicleType,
         areaLocationCode: booking.areaLocationCode,
         rateCost: booking.rateCost,
@@ -214,6 +216,7 @@ function Booking() {
         customerEstablishmentName: "",
         originAddress: "",
         destinationAddress: "",
+        vehicleId: "",
         vehicleType: "",
         areaLocationCode: "",
         rateCost: "",
@@ -240,10 +243,8 @@ function Booking() {
     const newEmployeeAssigned = [...formData.employeeAssigned];
     const newRoleOfEmployee = [...formData.roleOfEmployee];
 
-    newEmployeeAssigned[index] = employeeId; // This should now be employeeId
-
-    // Find the employee by employeeId and auto-fill the role
-    const selectedEmployee = employees.find(emp => emp.employeeId === employeeId); // Change from _id to employeeId
+    newEmployeeAssigned[index] = employeeId;
+    const selectedEmployee = employees.find(emp => emp.employeeId === employeeId);
     if (selectedEmployee) {
       newRoleOfEmployee[index] = selectedEmployee.role;
     } else {
@@ -288,7 +289,7 @@ function Booking() {
     if (employee) {
       return `${employee.employeeId} - ${employee.fullName || employee.name || ''}`.trim();
     }
-    return employeeId; // fallback to just the ID if employee not found
+    return employeeId;
   };
 
   // Helper function to get vehicle display name
@@ -300,9 +301,31 @@ function Booking() {
     return vehicleType;
   };
 
-  // Only show vehicles with status 'Available' in dropdown
   const getAvailableVehicles = () => {
     return vehicles.filter(vehicle => vehicle.status === "Available");
+  };
+
+  // Updated vehicle change handler to auto-fill vehicleType
+  const handleVehicleChange = (e) => {
+    const selectedVehicleId = e.target.value;
+
+    if (selectedVehicleId) {
+      const selectedVehicle = vehicles.find(vehicle => vehicle._id === selectedVehicleId);
+
+      if (selectedVehicle) {
+        setFormData({
+          ...formData,
+          vehicleId: selectedVehicle._id,
+          vehicleType: selectedVehicle.vehicleType
+        });
+      }
+    } else {
+      setFormData({
+        ...formData,
+        vehicleId: "",
+        vehicleType: ""
+      });
+    }
   };
 
   // Helper function to format employee names for display
@@ -327,12 +350,16 @@ function Booking() {
     }
   };
 
-  // Updated Submit handler for Option 2
+  // Form submission handler with validation
   const handleSubmit = async (e) => {
     if (e) e.preventDefault();
 
-    // Only submit when on the final step (Step 2)
     if (currentStep !== 2) {
+      return;
+    }
+
+    if (!formData.vehicleId || formData.vehicleId.trim() === '') {
+      alert('Please select a vehicle.');
       return;
     }
 
@@ -350,6 +377,7 @@ function Booking() {
       customerEstablishmentName: 'Customer/Establishment',
       originAddress: 'Origin Address',
       destinationAddress: 'Destination Address',
+      vehicleId: 'Vehicle',
       vehicleType: 'Vehicle Type',
       areaLocationCode: 'Area Code',
       rateCost: 'Rate Cost',
@@ -453,7 +481,7 @@ function Booking() {
       console.error("Full error object:", err);
       console.error("Error response:", err.response?.data);
 
-      // More detailed error handling
+      //Error handling
       if (err.response?.data?.message) {
         alert(`Error: ${err.response.data.message}`);
       } else if (err.response?.status === 400) {
@@ -952,11 +980,11 @@ function Booking() {
                     <h3 className="text-lg font-semibold text-gray-700 mb-3">Area Rate & Vehicle Info</h3>
 
                     <div className="mb-4">
-                      <label className="block text-sm font-medium text-gray-700 mb-1">Vehicle Type</label>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">Select Vehicle</label>
                       <select
-                        name="vehicleType"
-                        value={formData.vehicleType}
-                        onChange={handleChange}
+                        name="vehicleId"
+                        value={formData.vehicleId}
+                        onChange={handleVehicleChange}
                         className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-400"
                       >
                         <option value="">Select Vehicle</option>
@@ -966,11 +994,12 @@ function Booking() {
                           const allowedVehicleTypes = Array.isArray(allowedVehiclesArr)
                             ? allowedVehiclesArr.map(def => def.vehicleType)
                             : [];
+
                           return getAvailableVehicles()
                             .filter(vehicle => allowedVehicleTypes.length === 0 || allowedVehicleTypes.includes(vehicle.vehicleType))
                             .map(vehicle => (
-                              <option key={vehicle._id} value={vehicle.vehicleType}>
-                                {`${vehicle.color || ''} ${vehicle.manufacturedBy || ''} ${vehicle.model || ''} (${vehicle.vehicleType === 'Car' ? '4-Wheels' : vehicle.vehicleType === 'Truck' ? '6-Wheels' : ''}) - ${vehicle.plateNumber}`.replace(/ +/g, ' ').trim()}
+                              <option key={vehicle._id} value={vehicle._id}>
+                                {`${vehicle.vehicleId || ''} - ${vehicle.color || ''} ${vehicle.manufacturedBy || ''} ${vehicle.model || ''} (${vehicle.vehicleType}) - ${vehicle.plateNumber}`.replace(/ +/g, ' ').trim()}
                               </option>
                             ));
                         })()}

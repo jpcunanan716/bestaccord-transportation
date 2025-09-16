@@ -3,9 +3,7 @@ import { Eye, Pencil, Trash2 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
 
-// Move the error state declaration after imports
 export default function Vehicle() {
-  // Error state for validation and backend errors
   const [errors, setErrors] = useState({});
   const [vehicles, setVehicles] = useState([]);
   const [filteredVehicles, setFilteredVehicles] = useState([]);
@@ -27,7 +25,7 @@ export default function Vehicle() {
   // Unique filter values
   const [uniqueDates, setUniqueDates] = useState([]);
   const [uniqueVehicleTypes, setuniqueVehicleTypes] = useState([]);
-  const [uniqueStatus, setUniqueStatus] = useState([]); // Fixed the casing here
+  const [uniqueStatus, setUniqueStatus] = useState([]);
   const [uniqueManufacturedBy, setuniqueManufacturedBy] = useState([]);
 
   //Form state
@@ -172,28 +170,15 @@ export default function Vehicle() {
     e.preventDefault();
     if (!validateForm()) return;
 
-    // Duplicate checker for registrationNumber and plateNumber
-    const isDuplicateReg = vehicles.some(v =>
-      v.registrationNumber.trim().toLowerCase() === formData.registrationNumber.trim().toLowerCase() &&
-      (!editVehicle || v._id !== editVehicle._id)
-    );
-    const isDuplicatePlate = vehicles.some(v =>
-      v.plateNumber.trim().toLowerCase() === formData.plateNumber.trim().toLowerCase() &&
-      (!editVehicle || v._id !== editVehicle._id)
-    );
-    let duplicateErrors = {};
-    if (isDuplicateReg) duplicateErrors.registrationNumber = "Registration number already exists.";
-    if (isDuplicatePlate) duplicateErrors.plateNumber = "Plate number already exists.";
-    if (isDuplicateReg || isDuplicatePlate) {
-      setErrors(prev => ({ ...prev, ...duplicateErrors }));
-      return;
-    }
-
     try {
       if (editVehicle) {
-        await axios.put(`http://localhost:5000/api/vehicles/${editVehicle._id}`, formData);
+        await axios.put(
+          `http://localhost:5000/api/vehicles/${editVehicle._id}`,
+          { ...formData, vehicleId: editVehicle.vehicleId }
+        );
       } else {
-        await axios.post("http://localhost:5000/api/vehicles", formData);
+        const { vehicleId, ...dataToSend } = formData;
+        await axios.post("http://localhost:5000/api/vehicles", dataToSend);
       }
       closeModal();
       fetchVehicles();
@@ -227,6 +212,10 @@ export default function Vehicle() {
     navigate(`/dashboard/vehicle/${vehicle._id}`);
   };
 
+  // Add this helper function at the top of your component
+  const getDisplayID = (index, vehicle) => {
+    return vehicle.vehicleId ? vehicle.vehicleId : `V${String(index + 1).padStart(3, "0")}`;
+  };
 
   return (
     <>
@@ -314,6 +303,7 @@ export default function Vehicle() {
               <thead className="bg-gray-100 rounded-t-lg">
                 <tr>
                   <th className="px-6 py-3 text-left font-semibold text-gray-700">#</th>
+                  <th className="px-6 py-3 text-left font-semibold text-gray-700">Vehicle ID</th>
                   <th className="px-6 py-3 text-left font-semibold text-gray-700">Vehicle</th>
                   <th className="px-6 py-3 text-left font-semibold text-gray-700">Wheels</th>
                   <th className="px-6 py-3 text-left font-semibold text-gray-700">Plate Number</th>
@@ -328,6 +318,7 @@ export default function Vehicle() {
                     className="border-b last:border-none hover:bg-gray-50 transition duration-150"
                   >
                     <td className="px-6 py-3">{index + 1}</td>
+                    <td className="px-6 py-3 font-mono text-blue-600">{getDisplayID(index, v)}</td>
                     <td className="px-6 py-3">{v.manufacturedBy} {v.model}</td>
                     <td className="px-6 py-3">{v.vehicleType === "Truck" ? 6 : 4}</td>
                     <td className="px-6 py-3">{v.plateNumber}</td>

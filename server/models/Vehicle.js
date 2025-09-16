@@ -2,6 +2,7 @@ import mongoose from "mongoose";
 
 const VehicleSchema = new mongoose.Schema(
   {
+    vehicleId: { type: String, unique: true },
     registrationNumber: { type: String, required: true, unique: true },
     manufacturedBy: { type: String, required: true },
     model: { type: String, required: true },

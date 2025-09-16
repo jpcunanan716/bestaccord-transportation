@@ -2,6 +2,8 @@ import express from "express";
 import Booking from "../models/Booking.js";
 import Counter from "../models/Counter.js";
 import Client from "../models/Client.js";
+import Vehicle from "../models/Vehicle.js";
+import Employee from "../models/Employee.js";
 
 const router = express.Router();
 
@@ -271,7 +273,23 @@ router.patch("/:id/status", async (req, res) => {
       });
     }
 
-    console.log(`✅ Booking ${updatedBooking.reservationId} status updated to: ${status}`);
+    // If status is "Completed", update vehicle and employee statuses
+    if (status === "Completed") {
+      // Update vehicle status
+      if (updatedBooking.vehicleType) {
+        await Vehicle.updateOne(
+          { vehicleType: updatedBooking.vehicleType },
+          { status: "Available" }
+        );
+      }
+      // Update employees status
+      if (Array.isArray(updatedBooking.employeeAssigned)) {
+        await Employee.updateMany(
+          { employeeId: { $in: updatedBooking.employeeAssigned } },
+          { status: "Available" }
+        );
+      }
+    }
 
     res.json({
       success: true,

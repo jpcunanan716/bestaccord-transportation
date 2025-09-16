@@ -14,14 +14,25 @@ const bookingSchema = new mongoose.Schema({
     customerEstablishmentName: { type: String, required: true },
     originAddress: { type: String, required: true },
     destinationAddress: { type: String, required: true },
+
+    vehicleId: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'Vehicle',
+        required: true
+    },
     vehicleType: { type: String, required: true },
+
     areaLocationCode: { type: String, required: true },
     rateCost: { type: Number, required: true },
     dateNeeded: { type: Date, required: true },
     timeNeeded: { type: String, required: true },
-    employeeAssigned: [{ type: String }], // Change to array of strings for employeeId
+    employeeAssigned: [{ type: String }],
     roleOfEmployee: [{ type: String }],
-    status: { type: String, enum: ["Pending", "Ready to go", "In Transit", "Delivered", "Completed"], default: "Pending" },
+    status: {
+        type: String,
+        enum: ["Pending", "Ready to go", "In Transit", "Delivered", "Completed"],
+        default: "Pending"
+    },
 }, { timestamps: true });
 
 export default mongoose.model("Booking", bookingSchema);
