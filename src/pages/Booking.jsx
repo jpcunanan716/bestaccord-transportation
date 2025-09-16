@@ -58,6 +58,8 @@ function Booking() {
     roleOfEmployee: [],
   });
 
+  const [errors, setErrors] = useState({});
+
   const containerRef = useRef(null);
 
   // Fetch all required data
@@ -234,9 +236,31 @@ function Booking() {
     setCurrentStep(1);
   };
 
+  const validateField = (name, value) => {
+    if (!value || value.toString().trim() === '') {
+      setErrors(prev => ({
+        ...prev,
+        [name]: 'This field is required'
+      }));
+      return false;
+    }
+
+    // Clear error if field is valid
+    setErrors(prev => ({
+      ...prev,
+      [name]: ''
+    }));
+    return true;
+  };
+
+  // Update handleChange to include validation
   const handleChange = (e) => {
     const { name, value } = e.target;
-    setFormData({ ...formData, [name]: value });
+    setFormData(prev => ({
+      ...prev,
+      [name]: value
+    }));
+    validateField(name, value);
   };
 
   const handleEmployeeChange = (index, employeeId) => {
@@ -333,10 +357,74 @@ function Booking() {
     return getEmployeeDisplayName(employeeAssigned);
   };
 
-  const nextStep = () => {
-    if (currentStep < 2) {
-      setCurrentStep(currentStep + 1);
+  // Add this validation function after your existing state declarations
+  const validateStep1 = () => {
+    const requiredFields = {
+      productName: 'Product Name',
+      quantity: 'Quantity',
+      grossWeight: 'Gross Weight',
+      unitPerPackage: 'Units per Package',
+      numberOfPackages: 'Number of Packages',
+      deliveryFee: 'Delivery Fee',
+      companyName: 'Company Name',
+      shipperConsignorName: 'Shipper/Consignor',
+      customerEstablishmentName: 'Customer/Establishment',
+      originAddress: 'Origin Address',
+      destinationAddress: 'Destination Address',
+      vehicleId: 'Vehicle',
+      areaLocationCode: 'Area Code',
+      rateCost: 'Rate Cost'
+    };
+
+    // Check for empty required fields
+    for (const [field, label] of Object.entries(requiredFields)) {
+      if (!formData[field] || formData[field].toString().trim() === '') {
+        alert(`Please fill in the ${label} field.`);
+        return false;
+      }
     }
+
+    // Validate numeric fields
+    if (isNaN(formData.quantity) || parseInt(formData.quantity) <= 0) {
+      alert('Please enter a valid quantity.');
+      return false;
+    }
+    if (isNaN(formData.grossWeight) || parseFloat(formData.grossWeight) <= 0) {
+      alert('Please enter a valid gross weight.');
+      return false;
+    }
+    if (isNaN(formData.unitPerPackage) || parseInt(formData.unitPerPackage) <= 0) {
+      alert('Please enter valid units per package.');
+      return false;
+    }
+    if (isNaN(formData.numberOfPackages) || parseInt(formData.numberOfPackages) <= 0) {
+      alert('Please enter a valid number of packages.');
+      return false;
+    }
+    if (isNaN(formData.deliveryFee) || parseFloat(formData.deliveryFee) <= 0) {
+      alert('Please enter a valid delivery fee.');
+      return false;
+    }
+    if (isNaN(formData.rateCost) || parseFloat(formData.rateCost) <= 0) {
+      alert('Please enter a valid rate cost.');
+      return false;
+    }
+
+    return true;
+  };
+
+  // Update the nextStep function to include validation
+  const nextStep = () => {
+    if (currentStep === 1) {
+      // Get the form element
+      const form = document.querySelector('form');
+      if (!form.checkValidity()) {
+        // Trigger the browser's default validation UI
+        form.reportValidity();
+        return;
+      }
+    }
+    setCurrentStep(currentStep + 1);
   };
 
   const prevStep = () => {
@@ -773,7 +861,12 @@ function Booking() {
             </div>
 
             {/* Form (Navigation buttons moved outside) */}
-            <form>
+            <form onSubmit={(e) => {
+              e.preventDefault();
+              if (currentStep === 2) {
+                handleSubmit();
+              }
+            }}>
               {/* Step 1: Booking Details */}
               {currentStep === 1 && (
                 <div className="space-y-6">
@@ -806,48 +899,68 @@ function Booking() {
                     <h3 className="text-lg font-semibold text-gray-700 mb-3">Type of Order</h3>
                     <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
                       <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">Enter Product Name</label>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                          Enter Product Name *
+                        </label>
                         <input
                           type="text"
                           name="productName"
                           value={formData.productName}
                           onChange={handleChange}
                           placeholder="Tasty Boy"
+                          required
                           className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-400"
                         />
+                        {errors.productName && <p className="text-red-500 text-xs mt-1">{errors.productName}</p>}
                       </div>
                       <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">Quantity</label>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                          Quantity *
+                        </label>
                         <input
                           type="number"
                           name="quantity"
                           value={formData.quantity}
                           onChange={handleChange}
                           placeholder="2000pcs"
+                          required
+                          min="1"
                           className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-400"
                         />
+                        {errors.quantity && <p className="text-red-500 text-xs mt-1">{errors.quantity}</p>}
                       </div>
                       <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">Gross Weight</label>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                          Gross Weight *
+                        </label>
                         <input
                           type="number"
                           name="grossWeight"
                           value={formData.grossWeight}
                           onChange={handleChange}
                           placeholder="5 tons"
+                          required
+                          min="0.1"
+                          step="0.1"
                           className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-400"
                         />
+                        {errors.grossWeight && <p className="text-red-500 text-xs mt-1">{errors.grossWeight}</p>}
                       </div>
                       <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">Units per package</label>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                          Units per package
+                        </label>
                         <input
                           type="number"
                           name="unitPerPackage"
                           value={formData.unitPerPackage}
                           onChange={handleChange}
+                          required
+                          min="1"
                           placeholder="200pcs/box"
                           className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-400"
                         />
+                        {errors.unitPerPackage && <p className="text-red-500 text-xs mt-1">{errors.unitPerPackage}</p>}
                       </div>
                     </div>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
@@ -858,9 +971,11 @@ function Booking() {
                           name="numberOfPackages"
                           value={formData.numberOfPackages}
                           onChange={handleChange}
+                          required
                           placeholder="10 box"
                           className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-400"
                         />
+                        {errors.numberOfPackages && <p className="text-red-500 text-xs mt-1">{errors.numberOfPackages}</p>}
                       </div>
                       <div>
                         <label className="block text-sm font-medium text-gray-700 mb-1">Delivery Fee Amount</label>
@@ -869,25 +984,29 @@ function Booking() {
                           name="deliveryFee"
                           value={formData.deliveryFee}
                           onChange={handleChange}
+                          required
                           placeholder="10000 PHP"
                           className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-400"
                         />
+                        {errors.deliveryFee && <p className="text-red-500 text-xs mt-1">{errors.deliveryFee}</p>}
                       </div>
                     </div>
                   </div>
 
                   {/* Customer Details & Shipment Route */}
                   <div>
-                    <h3 className="text-lg font-semibold text-gray-700 mb-3">Customer Details & Shipment Route</h3>
-
+                    <h3 className="text-lg font-semibold text-gray-700 mb-3">
+                      Customer Details & Shipment Route
+                    </h3>
                     <div className="mb-4">
                       <label className="block text-sm font-medium text-gray-700 mb-1">
-                        Select company
+                        Select company *
                       </label>
                       <select
                         name="companyName"
                         value={formData.companyName}
                         onChange={handleChange}
+                        required
                         className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-400"
                       >
                         <option value="">Select from existing records</option>
@@ -907,9 +1026,11 @@ function Booking() {
                           name="shipperConsignorName"
                           value={formData.shipperConsignorName}
                           onChange={handleChange}
+                          required
                           placeholder="Ajinomoto Philippines Corp"
                           className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-400"
                         />
+                        {errors.shipperConsignorName && <p className="text-red-500 text-xs mt-1">{errors.shipperConsignorName}</p>}
                       </div>
                       <div>
                         <label className="block text-sm font-medium text-gray-700 mb-1">Customer/Establishment</label>
@@ -918,9 +1039,11 @@ function Booking() {
                           name="customerEstablishmentName"
                           value={formData.customerEstablishmentName}
                           onChange={handleChange}
+                          required
                           placeholder="Enter customer name"
                           className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-400"
                         />
+                        {errors.customerEstablishmentName && <p className="text-red-500 text-xs mt-1">{errors.customerEstablishmentName}</p>}
                       </div>
                     </div>
 
@@ -931,6 +1054,7 @@ function Booking() {
                           name="originAddress"
                           value={formData.originAddress}
                           onChange={handleChange}
+                          required
                           className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-400"
                         >
                           <option value="">Select Origin</option>
@@ -950,6 +1074,7 @@ function Booking() {
                           name="destinationAddress"
                           value={formData.destinationAddress}
                           onChange={handleChange}
+                          required
                           className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-400"
                         >
                           <option value="">Select Destination</option>
@@ -972,14 +1097,19 @@ function Booking() {
 
                   {/* Area Rate & Vehicle Info */}
                   <div>
-                    <h3 className="text-lg font-semibold text-gray-700 mb-3">Area Rate & Vehicle Info</h3>
+                    <h3 className="text-lg font-semibold text-gray-700 mb-3">
+                      Area Rate & Vehicle Info
+                    </h3>
 
                     <div className="mb-4">
-                      <label className="block text-sm font-medium text-gray-700 mb-1">Select Vehicle</label>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Select Vehicle *
+                      </label>
                       <select
                         name="vehicleId"
                         value={formData.vehicleId}
                         onChange={handleVehicleChange}
+                        required
                         className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-400"
                       >
                         <option value="">Select Vehicle</option>
@@ -999,6 +1129,7 @@ function Booking() {
                             ));
                         })()}
                       </select>
+                      {errors.vehicleId && <p className="text-red-500 text-xs mt-1">{errors.vehicleId}</p>}
                     </div>
 
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -1043,8 +1174,10 @@ function Booking() {
                           name="dateNeeded"
                           value={formData.dateNeeded}
                           onChange={handleChange}
+                          required
                           className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-400"
                         />
+                        {errors.dateNeeded && <p className="text-red-500 text-xs mt-1">{errors.dateNeeded}</p>}
                       </div>
                       <div>
                         <label className="block text-sm font-medium text-gray-700 mb-1">Time</label>
@@ -1053,8 +1186,10 @@ function Booking() {
                           name="timeNeeded"
                           value={formData.timeNeeded}
                           onChange={handleChange}
+                          required
                           className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-400"
                         />
+                        {errors.timeNeeded && <p className="text-red-500 text-xs mt-1">{errors.timeNeeded}</p>}
                       </div>
                     </div>
                   </div>
@@ -1070,6 +1205,7 @@ function Booking() {
                           <select
                             value={employeeId}
                             onChange={(e) => handleEmployeeChange(index, e.target.value)}
+                            required
                             className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-400"
                           >
                             <option value="">Employee</option>
@@ -1082,7 +1218,7 @@ function Booking() {
                         </div>
 
                         <div>
-                          <label className="block text-sm font-medium text-gray-700 mb-1">Select Role</label>
+                          <label className="block text-sm font-medium text-gray-700 mb-1">Role</label>
                           <input
                             type="text"
                             value={formData.roleOfEmployee[index] || ""}
@@ -1116,6 +1252,7 @@ function Booking() {
                 </div>
               )}
             </form>
+
             {/* Navigation and Submit Buttons */}
             <div className="flex space-x-2 mt-8 justify-end">
               <button
@@ -1125,6 +1262,15 @@ function Booking() {
               >
                 Cancel
               </button>
+              {currentStep === 2 && (
+                <button
+                  type="button"
+                  onClick={() => setCurrentStep(1)}
+                  className="px-6 py-2 bg-gray-500 text-white rounded-lg shadow hover:bg-gray-600 inline-flex items-center gap-2 transition"
+                >
+                  <ChevronLeft size={16} /> Back
+                </button>
+              )}
               {currentStep < 2 ? (
                 <button
                   type="button"
@@ -1136,33 +1282,7 @@ function Booking() {
               ) : (
                 <button
                   type="button"
-                  onClick={async () => {
-                    // Move status update logic here for submit
-                    await handleSubmit();
-                    // After booking is created, update vehicle and employees status
-                    try {
-                      const submitData = {
-                        ...formData,
-                        employeeAssigned: Array.isArray(formData.employeeAssigned)
-                          ? formData.employeeAssigned.filter(emp => emp !== "")
-                          : [formData.employeeAssigned].filter(emp => emp !== ""),
-                      };
-                      // // Update vehicle status
-                      // const selectedVehicle = vehicles.find(v => v.vehicleType === submitData.vehicleType);
-                      // if (selectedVehicle && selectedVehicle.status === "Available") {
-                      //   await axios.put(`http://localhost:5000/api/vehicles/${selectedVehicle._id}`, { ...selectedVehicle, status: "On Trip" });
-                      // }
-                      // // Update employees status
-                      // for (const empId of submitData.employeeAssigned) {
-                      //   const emp = employees.find(e => e.employeeId === empId);
-                      //   if (emp && emp.status === "Available") {
-                      //     await axios.put(`http://localhost:5000/api/employees/${emp._id}`, { ...emp, status: "On Trip" });
-                      //   }
-                      // }
-                    } catch (err) {
-                      console.error("Error updating vehicle/employee status:", err);
-                    }
-                  }}
+                  onClick={handleSubmit}
                   className="px-6 py-2 bg-green-600 text-white rounded-lg shadow hover:bg-green-700 transition"
                 >
                   {editBooking ? "Update Booking" : "Create Booking"}
