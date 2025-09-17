@@ -66,17 +66,19 @@ function Booking() {
   const fetchBookings = async () => {
     try {
       const res = await axios.get("http://localhost:5000/api/bookings");
-      setBookings(res.data);
-      setFilteredBookings(res.data);
+      // Filter out archived bookings
+      const activeBookings = res.data.filter(booking => !booking.isArchived);
+      setBookings(activeBookings);
+      setFilteredBookings(activeBookings);
 
-      // Extract unique values
-      setUniqueReservationIds([...new Set(res.data.map((b) => b.reservationId))]);
-      setUniqueCompanyNames([...new Set(res.data.map((b) => b.companyName))]);
-      setUniqueProductNames([...new Set(res.data.map((b) => b.productName))]);
-      setUniqueVehicleTypes([...new Set(res.data.map((b) => b.vehicleType))]);
+      // Extract unique values from active bookings only
+      setUniqueReservationIds([...new Set(activeBookings.map((b) => b.reservationId))]);
+      setUniqueCompanyNames([...new Set(activeBookings.map((b) => b.companyName))]);
+      setUniqueProductNames([...new Set(activeBookings.map((b) => b.productName))]);
+      setUniqueVehicleTypes([...new Set(activeBookings.map((b) => b.vehicleType))]);
       setUniqueDates([
         ...new Set(
-          res.data.map((b) =>
+          activeBookings.map((b) =>
             new Date(b.dateNeeded).toLocaleDateString()
           )
         ),
@@ -577,13 +579,19 @@ function Booking() {
     }
   };
 
+  //Archive handler
   const handleDelete = async (id) => {
-    if (!window.confirm("Are you sure you want to delete this booking?")) return;
+    if (!window.confirm("Are you sure you want to archive this booking?")) return;
+
     try {
-      await axios.delete(`http://localhost:5000/api/bookings/${id}`);
+      await axios.patch(`http://localhost:5000/api/bookings/${id}/archive`, {
+        isArchived: true
+      });
+      alert('Booking archived successfully');
       fetchBookings();
     } catch (err) {
-      console.error(err);
+      console.error('Error archiving booking:', err);
+      alert('Error archiving booking. Please try again.');
     }
   };
 
@@ -799,7 +807,7 @@ function Booking() {
                         onClick={() => handleDelete(booking._id)}
                         className="px-3 py-1 bg-red-500 text-white rounded shadow hover:bg-red-600 inline-flex items-center gap-1 transition transform hover:scale-105"
                       >
-                        <Trash2 size={16} /> Delete
+                        <Trash2 size={16} /> Archive
                       </button>
                     </td>
                   </tr>

@@ -197,6 +197,39 @@ router.patch("/:id/status", async (req, res) => {
   }
 });
 
+// PATCH archive vehicle
+router.patch('/:id/archive', async (req, res) => {
+  try {
+    const vehicle = await Vehicle.findByIdAndUpdate(
+      req.params.id,
+      {
+        isArchived: true,
+        updatedAt: new Date()
+      },
+      { new: true }
+    );
+
+    if (!vehicle) {
+      return res.status(404).json({
+        success: false,
+        message: "Vehicle not found"
+      });
+    }
+
+    res.json({
+      success: true,
+      message: "Vehicle archived successfully",
+      vehicle
+    });
+  } catch (err) {
+    console.error('Error archiving vehicle:', err);
+    res.status(500).json({
+      success: false,
+      message: "Error archiving vehicle"
+    });
+  }
+});
+
 // DELETE vehicle
 router.delete("/:id", async (req, res) => {
   try {

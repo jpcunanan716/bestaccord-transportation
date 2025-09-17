@@ -14,7 +14,7 @@ router.get("/", async (req, res) => {
   }
 });
 
-// ADD THIS ROUTE - and place it BEFORE the /:id route
+// GET all client names (for dropdowns, etc.)
 router.get("/names", async (req, res) => {
   try {
     const clients = await Client.find({}, "clientName"); // only return clientName field
@@ -25,7 +25,7 @@ router.get("/names", async (req, res) => {
   }
 });
 
-// GET single client - KEEP THIS AFTER the /names route
+// GET single client
 router.get("/:id", async (req, res) => {
   try {
     const client = await Client.findById(req.params.id);
@@ -58,6 +58,39 @@ router.put("/:id", async (req, res) => {
   } catch (err) {
     console.error("Error updating client:", err);
     res.status(500).json({ message: err.message });
+  }
+});
+
+// PATCH archive client
+router.patch('/:id/archive', async (req, res) => {
+  try {
+    const client = await Client.findByIdAndUpdate(
+      req.params.id,
+      {
+        isArchived: true,
+        updatedAt: new Date()
+      },
+      { new: true }
+    );
+
+    if (!client) {
+      return res.status(404).json({
+        success: false,
+        message: "Client not found"
+      });
+    }
+
+    res.json({
+      success: true,
+      message: "Client archived successfully",
+      client
+    });
+  } catch (err) {
+    console.error('Error archiving client:', err);
+    res.status(500).json({
+      success: false,
+      message: "Error archiving client"
+    });
   }
 });
 

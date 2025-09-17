@@ -17,6 +17,7 @@ const VehicleSchema = new mongoose.Schema(
       enum: ["Available", "Not Available", "On Trip"],
       default: "Available",
     },
+    isArchived: { type: Boolean, default: false },
   },
   { timestamps: true }
 );

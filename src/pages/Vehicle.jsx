@@ -50,8 +50,11 @@ export default function Vehicle() {
   const fetchVehicles = async () => {
     try {
       const res = await axios.get("http://localhost:5000/api/vehicles");
-      setVehicles(res.data);
-      setFilteredVehicles(res.data);
+      // Filter out archived Vehicles
+      const activeVehicles = res.data.filter(vehicle => !vehicle.isArchived);
+      setVehicles(activeVehicles);
+      setFilteredVehicles(activeVehicles);
+
 
       // Extract unique values
       setuniqueManufacturedBy([...new Set(res.data.map((c) => c.manufacturedBy))]);
@@ -197,13 +200,18 @@ export default function Vehicle() {
     }
   };
 
+  //Archive handler
   const handleDelete = async (id) => {
     if (!window.confirm("Are you sure you want to delete this vehicle?")) return;
     try {
-      await axios.delete(`http://localhost:5000/api/vehicles/${id}`);
+      await axios.patch(`http://localhost:5000/api/vehicles/${id}/archive`, {
+        isArchived: true
+      });
+      alert('Vehicle archived successfully');
       fetchVehicles();
     } catch (err) {
-      console.error(err);
+      console.error('Error archiving vehicle:', err);
+      alert('Error archiving vehicle. Please try again.');
     }
   };
 
@@ -351,7 +359,7 @@ export default function Vehicle() {
                         onClick={() => handleDelete(v._id)}
                         className="px-3 py-1 bg-red-500 text-white rounded shadow hover:bg-red-600 inline-flex items-center gap-1 transition transform hover:scale-105"
                       >
-                        <Trash2 size={16} /> Delete
+                        <Trash2 size={16} /> Archive
                       </button>
                     </td>
                   </tr>

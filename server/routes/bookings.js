@@ -1,7 +1,6 @@
 import express from "express";
 import Booking from "../models/Booking.js";
 import Counter from "../models/Counter.js";
-import Client from "../models/Client.js";
 import Vehicle from "../models/Vehicle.js";
 import Employee from "../models/Employee.js";
 
@@ -301,6 +300,39 @@ router.patch("/:id/status", async (req, res) => {
     res.status(500).json({
       success: false,
       message: "Server error while updating status"
+    });
+  }
+});
+
+// PATCH archive booking
+router.patch('/:id/archive', async (req, res) => {
+  try {
+    const booking = await Booking.findByIdAndUpdate(
+      req.params.id,
+      {
+        isArchived: true,
+        updatedAt: new Date()
+      },
+      { new: true }
+    );
+
+    if (!booking) {
+      return res.status(404).json({
+        success: false,
+        message: "Booking not found"
+      });
+    }
+
+    res.json({
+      success: true,
+      message: "Booking archived successfully",
+      booking
+    });
+  } catch (err) {
+    console.error('Error archiving booking:', err);
+    res.status(500).json({
+      success: false,
+      message: "Error archiving booking"
     });
   }
 });

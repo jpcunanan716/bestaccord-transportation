@@ -9,6 +9,8 @@ import clientRoutes from "./routes/clients.js";
 import bookingRoutes from "./routes/bookings.js";
 import driverAuthRoutes from "./routes/driverAuth.js";
 import staffRoutes from "./routes/staff.js";
+import archiveRoutes from "./routes/archive.js";
+
 
 dotenv.config();
 
@@ -24,6 +26,7 @@ app.use("/api/clients", clientRoutes);
 app.use("/api/bookings", bookingRoutes);
 app.use("/api/driver", driverAuthRoutes);
 app.use("/api/staff", staffRoutes);
+app.use("/api/archive", archiveRoutes);
 
 const PORT = process.env.PORT || 5000;
 mongoose

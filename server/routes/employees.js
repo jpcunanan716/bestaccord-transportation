@@ -114,6 +114,40 @@ router.put("/:id", async (req, res) => {
   }
 });
 
+// PATCH archive employee
+router.patch('/:id/archive', async (req, res) => {
+  try {
+    const employee = await Employee.findByIdAndUpdate(
+      req.params.id,
+      {
+        isArchived: true,
+        updatedAt: new Date()
+      },
+      { new: true }
+    );
+
+    if (!employee) {
+      return res.status(404).json({
+        success: false,
+        message: "Employee not found"
+      });
+    }
+
+    res.json({
+      success: true,
+      message: "Employee archived successfully",
+      employee
+    });
+  } catch (err) {
+    console.error('Error archiving employee:', err);
+    res.status(500).json({
+      success: false,
+      message: "Error archiving employee"
+    });
+  }
+});
+
+
 // DELETE employee
 router.delete("/:id", async (req, res) => {
   try {

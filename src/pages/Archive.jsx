@@ -13,7 +13,8 @@ export default function Archive() {
     const fetchArchivedData = async () => {
       setLoading(true);
       try {
-        const response = await axios.get(`http://localhost:5000/api/${activeTab}/archived`);
+        // Update the API endpoint to use /api/archive/:type/archived
+        const response = await axios.get(`http://localhost:5000/api/archive/${activeTab}/archived`);
         setArchivedData(response.data);
         setError(null);
       } catch (err) {
@@ -26,6 +27,20 @@ export default function Archive() {
 
     fetchArchivedData();
   }, [activeTab]);
+
+  // Add handleRestore function
+  const handleRestore = async (id) => {
+    try {
+      await axios.patch(`http://localhost:5000/api/archive/${activeTab}/${id}/restore`);
+      // Refresh the data after restoration
+      const response = await axios.get(`http://localhost:5000/api/archive/${activeTab}/archived`);
+      setArchivedData(response.data);
+      alert('Item restored successfully');
+    } catch (err) {
+      console.error('Error restoring item:', err);
+      alert('Failed to restore item');
+    }
+  };
 
   // Tab configuration
   const tabs = [
@@ -107,15 +122,15 @@ export default function Archive() {
   );
 }
 
-// Helper function to get table headers based on active tab
+// Helper function to get table cells based on active tab
 function getTableHeaders(tab) {
   switch (tab) {
     case 'bookings':
       return ['Reservation ID', 'Trip Number', 'Company', 'Status', 'Date'];
-    case 'tripReports':
-      return ['Trip Number', 'Driver', 'Date', 'Status'];
+    // case 'tripReports':
+    //   return ['Trip Number', 'Driver', 'Date', 'Status'];
     case 'clients':
-      return ['Client Name', 'Contact Person', 'Contact Number', 'Address'];
+      return ['Client Name', 'Location', 'Branch', 'Date Added'];
     case 'vehicles':
       return ['Vehicle ID', 'Type', 'Plate Number', 'Status'];
     case 'employees':
@@ -138,8 +153,51 @@ function getTableCells(tab, item) {
           <td className="px-6 py-4">{new Date(item.dateNeeded).toLocaleDateString()}</td>
         </>
       );
-    // Add cases for other tabs...
+    case 'clients':
+      return (
+        <>
+          <td className="px-6 py-4">{item.clientName}</td>
+          <td className="px-6 py-4">
+            {item.address?.city || item.city || 'N/A'}
+          </td>
+          <td className="px-6 py-4">
+            {item.address?.barangay || item.barangay || 'N/A'}
+          </td>
+          <td className="px-6 py-4">
+            {new Date(item.createdAt).toLocaleDateString()}
+          </td>
+        </>
+      );
+    // case 'tripReports':
+    //   return (
+    //     <>
+    //       <td className="px-6 py-4">{item.tripNumber || 'N/A'}</td>
+    //       <td className="px-6 py-4">{item.driver || item.driverName || 'N/A'}</td>
+    //       <td className="px-6 py-4">
+    //         {item.date ? new Date(item.date).toLocaleDateString() : 'N/A'}
+    //       </td>
+    //       <td className="px-6 py-4">{item.status || 'N/A'}</td>
+    //     </>
+    //   );
+    case 'vehicles':
+      return (
+        <>
+          <td className="px-6 py-4">{item.vehicleId || 'N/A'}</td>
+          <td className="px-6 py-4">{item.vehicleType || item.type || 'N/A'}</td>
+          <td className="px-6 py-4">{item.plateNumber || 'N/A'}</td>
+          <td className="px-6 py-4">{item.status || 'N/A'}</td>
+        </>
+      );
+    case 'employees':
+      return (
+        <>
+          <td className="px-6 py-4">{item.employeeId || 'N/A'}</td>
+          <td className="px-6 py-4">{item.fullName || item.name || 'N/A'}</td>
+          <td className="px-6 py-4">{item.role || 'N/A'}</td>
+          <td className="px-6 py-4">{item.status || 'N/A'}</td>
+        </>
+      );
     default:
-      return null;
+      return <td colSpan="100%" className="px-6 py-4 text-center">No data available</td>;
   }
 }

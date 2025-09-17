@@ -48,6 +48,7 @@ function Client() {
   const [provinces, setProvinces] = useState([]);
   const [cities, setCities] = useState([]);
   const [barangays, setBarangays] = useState([]);
+
   // Fetch regions on mount
   useEffect(() => {
     const fetchRegions = async () => {
@@ -200,16 +201,18 @@ function Client() {
   const fetchClients = async () => {
     try {
       const res = await axios.get("http://localhost:5000/api/clients");
-      setClients(res.data);
-      setFilteredClients(res.data);
+      // Filter out archived clients
+      const activeClients = res.data.filter(client => !client.isArchived);
+      setClients(activeClients);
+      setFilteredClients(activeClients);
 
-      // Extract unique values
-      setUniqueNames([...new Set(res.data.map((c) => c.clientName))]);
-      setUniqueBranches([...new Set(res.data.map((c) => c.branch))]);
-      setUniqueLocations([...new Set(res.data.map((c) => c.location))]);
+      // Extract unique values from active clients only
+      setUniqueNames([...new Set(activeClients.map((c) => c.clientName))]);
+      setUniqueBranches([...new Set(activeClients.map((c) => c.branch))]);
+      setUniqueLocations([...new Set(activeClients.map((c) => c.location))]);
       setUniqueDates([
         ...new Set(
-          res.data.map((c) =>
+          activeClients.map((c) =>
             new Date(c.createdAt).toLocaleDateString()
           )
         ),
@@ -337,8 +340,10 @@ function Client() {
           `http://localhost:5000/api/clients/${editClient._id}`,
           payload
         );
+        alert('Client updated successfully!');
       } else {
         await axios.post("http://localhost:5000/api/clients", payload);
+        alert('Client created successfully!');
       }
       closeModal();
       fetchClients();
@@ -348,13 +353,19 @@ function Client() {
     }
   };
 
+  //Archive Handler
   const handleDelete = async (id) => {
-    if (!window.confirm("Are you sure you want to delete this client?")) return;
+    if (!window.confirm("Are you sure you want to archive this client?")) return;
+
     try {
-      await axios.delete(`http://localhost:5000/api/clients/${id}`);
+      await axios.patch(`http://localhost:5000/api/clients/${id}/archive`, {
+        isArchived: true
+      });
+      alert('Client archived successfully');
       fetchClients();
     } catch (err) {
-      console.error(err);
+      console.error('Error archiving client:', err);
+      alert('Error archiving client. Please try again.');
     }
   };
 
@@ -495,7 +506,7 @@ function Client() {
                           onClick={() => handleDelete(client._id)}
                           className="px-3 py-1 bg-red-500 text-white rounded shadow hover:bg-red-600 inline-flex items-center gap-1 transition transform hover:scale-105"
                         >
-                          <Trash2 size={16} /> Delete
+                          <Trash2 size={16} /> Archive
                         </button>
                       </td>
                     </tr>

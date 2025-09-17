@@ -32,6 +32,7 @@ const bookingSchema = new mongoose.Schema({
         enum: ["Pending", "Ready to go", "In Transit", "Delivered", "Completed"],
         default: "Pending"
     },
+    isArchived: { type: Boolean, default: false },
 }, { timestamps: true });
 
 export default mongoose.model("Booking", bookingSchema);

@@ -37,6 +37,7 @@ function Employee() {
   const [generalSearch, setGeneralSearch] = useState("");
   const containerRef = useRef(null);
 
+
   const roles = ["Driver", "Helper"];
   const employmentTypes = ["Full-time", "Part-time", "Contractual"];
   const shifts = ["Morning", "Afternoon", "Night"];
@@ -44,10 +45,13 @@ function Employee() {
   const fetchEmployees = async () => {
     try {
       const res = await axios.get("http://localhost:5000/api/employees");
-      setEmployees(res.data);
-      setFilteredEmployees(res.data);
+      //Filter out archived employees
+      const activeEmployees = res.data.filter(emp => !emp.isArchived);
+      setEmployees(activeEmployees);
+      setFilteredEmployees(activeEmployees);
+
     } catch (err) {
-      console.error("Error fetching employees:", err);
+      console.error(err);
     }
   };
 
@@ -174,13 +178,18 @@ function Employee() {
     }
   };
 
+  //Archive Handler
   const handleDelete = async (id) => {
-    if (!window.confirm("Are you sure you want to delete this employee?")) return;
+    if (!window.confirm("Are you sure you want to archive this employee?")) return;
     try {
-      await axios.delete(`http://localhost:5000/api/employees/${id}`);
+      await axios.patch(`http://localhost:5000/api/employees/${id}/archive`, {
+        isArchived: true
+      });
+      alert("Employee archived successfully");
       fetchEmployees();
     } catch (err) {
-      console.error(err);
+      console.error('Error archiving employee:', err);
+      alert('Error archiving employee. Please try again.');
     }
   };
 
@@ -343,7 +352,7 @@ function Employee() {
                         onClick={() => handleDelete(emp._id)}
                         className="px-3 py-1 bg-red-500 text-white rounded shadow hover:bg-red-600 inline-flex items-center gap-1 transition transform hover:scale-105"
                       >
-                        <Trash2 size={16} /> Delete
+                        <Trash2 size={16} /> Archive
                       </button>
                     </td>
                   </tr>

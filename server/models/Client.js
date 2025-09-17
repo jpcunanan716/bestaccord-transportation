@@ -9,6 +9,7 @@ const clientSchema = new mongoose.Schema(
       city: { type: String },
       barangay: { type: String },
     },
+    isArchived: { type: Boolean, default: false },
   },
   { timestamps: true }
 );
