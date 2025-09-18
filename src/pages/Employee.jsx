@@ -303,7 +303,7 @@ function Employee() {
             <table className="w-full text-sm table-auto">
               <thead className="bg-gray-100">
                 <tr>
-                  <th className="px-6 py-3 text-left font-semibold text-gray-700"></th>
+                  <th className="px-6 py-3 text-left font-semibold text-gray-700">No</th>
                   <th className="px-6 py-3 text-left font-semibold text-gray-700">Employee ID</th>
                   <th className="px-6 py-3 text-left font-semibold text-gray-700">Full Name</th>
                   <th className="px-6 py-3 text-left font-semibold text-gray-700">Role</th>
@@ -319,7 +319,7 @@ function Employee() {
                     className="border-b last:border-none hover:bg-gray-50 transition"
                   >
                     <td className="px-6 py-3">{index + 1}</td>
-                    <td className="px-6 py-3">{getDisplayID(index, emp)}</td>
+                    <td className="px-6 py-3 font-mono text-blue-600">{getDisplayID(index, emp)}</td>
                     <td className="px-6 py-3">{emp.fullName}</td>
                     <td className="px-6 py-3">{emp.role}</td>
                     <td className="px-6 py-3">{emp.mobileNumber}</td>

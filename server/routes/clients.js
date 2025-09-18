@@ -94,6 +94,39 @@ router.patch('/:id/archive', async (req, res) => {
   }
 });
 
+// PATCH restore client
+router.patch('/:id/restore', async (req, res) => {
+  try {
+    const client = await Client.findByIdAndUpdate(
+      req.params.id,
+      {
+        isArchived: false,
+        updatedAt: new Date()
+      },
+      { new: true }
+    );
+
+    if (!client) {
+      return res.status(404).json({
+        success: false,
+        message: "Client not found"
+      });
+    }
+
+    res.json({
+      success: true,
+      message: "Client restored successfully",
+      client
+    });
+  } catch (err) {
+    console.error('Error restoring client:', err);
+    res.status(500).json({
+      success: false,
+      message: "Error restoring client"
+    });
+  }
+});
+
 // DELETE client
 router.delete("/:id", async (req, res) => {
   try {

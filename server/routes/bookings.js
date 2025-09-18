@@ -337,6 +337,39 @@ router.patch('/:id/archive', async (req, res) => {
   }
 });
 
+// PATCH restore booking
+router.patch('/:id/restore', async (req, res) => {
+  try {
+    const booking = await Booking.findByIdAndUpdate(
+      req.params.id,
+      {
+        isArchived: false,
+        updatedAt: new Date()
+      },
+      { new: true }
+    );
+
+    if (!booking) {
+      return res.status(404).json({
+        success: false,
+        message: "Booking not found"
+      });
+    }
+
+    res.json({
+      success: true,
+      message: "Booking restored successfully",
+      booking
+    });
+  } catch (err) {
+    console.error('Error restoring booking:', err);
+    res.status(500).json({
+      success: false,
+      message: "Error restoring booking"
+    });
+  }
+});
+
 // DELETE booking
 router.delete("/:id", async (req, res) => {
   try {

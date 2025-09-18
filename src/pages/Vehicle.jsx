@@ -310,7 +310,7 @@ export default function Vehicle() {
             <table className="w-full text-sm table-auto">
               <thead className="bg-gray-100 rounded-t-lg">
                 <tr>
-                  <th className="px-6 py-3 text-left font-semibold text-gray-700">#</th>
+                  <th className="px-6 py-3 text-left font-semibold text-gray-700">No</th>
                   <th className="px-6 py-3 text-left font-semibold text-gray-700">Vehicle ID</th>
                   <th className="px-6 py-3 text-left font-semibold text-gray-700">Vehicle</th>
                   <th className="px-6 py-3 text-left font-semibold text-gray-700">Wheels</th>
