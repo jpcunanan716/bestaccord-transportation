@@ -7,6 +7,24 @@ import Employee from '../models/Employee.js';
 
 const router = express.Router();
 
+// Helper function to get the correct model - ADD THIS
+function getModelByType(type) {
+    switch (type) {
+        case 'bookings':
+            return Booking;
+        case 'clients':
+            return Client;
+        case 'vehicles':
+            return Vehicle;
+        case 'employees':
+            return Employee;
+        // case 'tripReports':
+        //     return TripReport;
+        default:
+            throw new Error(`Unknown model type: ${type}`);
+    }
+}
+
 // Get archived bookings
 router.get('/bookings/archived', async (req, res) => {
     try {
@@ -16,16 +34,6 @@ router.get('/bookings/archived', async (req, res) => {
         res.status(500).json({ message: err.message });
     }
 });
-
-// Get archived Trip Reports
-// router.get('/tripreports/archived', async (req, res) => {
-//     try {
-//         const archivedTripReports = await TripReport.find({ isArchived: true });
-//         res.json(archivedTripReports);
-//     } catch (err) {
-//         res.status(500).json({ message: err.message });
-//     }
-// });
 
 // Get archived clients
 router.get('/clients/archived', async (req, res) => {
@@ -61,7 +69,7 @@ router.get('/employees/archived', async (req, res) => {
 router.patch('/:type/:id/restore', async (req, res) => {
     try {
         const { type, id } = req.params;
-        const Model = getModelByType(type);
+        const Model = getModelByType(type); // Now this function exists
 
         const item = await Model.findByIdAndUpdate(
             id,
@@ -73,8 +81,9 @@ router.patch('/:type/:id/restore', async (req, res) => {
             return res.status(404).json({ message: 'Item not found' });
         }
 
-        res.json(item);
+        res.json({ success: true, message: `${type} restored successfully`, item });
     } catch (err) {
+        console.error('Error restoring item:', err);
         res.status(500).json({ message: err.message });
     }
 });

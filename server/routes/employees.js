@@ -147,6 +147,38 @@ router.patch('/:id/archive', async (req, res) => {
   }
 });
 
+// PATCH restore employee
+router.patch('/:id/restore', async (req, res) => {
+  try {
+    const employee = await Employee.findByIdAndUpdate(
+      req.params.id,
+      {
+        isArchived: false,
+        updatedAt: new Date()
+      },
+      { new: true }
+    );
+
+    if (!employee) {
+      return res.status(404).json({
+        success: false,
+        message: "Employee not found"
+      });
+    }
+
+    res.json({
+      success: true,
+      message: "Employee restored successfully",
+      employee
+    });
+  } catch (err) {
+    console.error('Error restoring employee:', err);
+    res.status(500).json({
+      success: false,
+      message: "Error restoring employee"
+    });
+  }
+});
 
 // DELETE employee
 router.delete("/:id", async (req, res) => {
