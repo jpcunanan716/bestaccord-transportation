@@ -5,7 +5,6 @@ import {
   Monitor,
   FileText,
   Truck,
-  History,
   Users,
   User,
   Archive,
@@ -27,7 +26,6 @@ export default function DashboardLayout() {
   if (role === "admin") {
     menuItems.push(
       { name: "Vehicle", path: "/dashboard/vehicle", icon: <Truck size={20} /> },
-      { name: "History Record", path: "/dashboard/history-record", icon: <History size={20} /> },
       { name: "Employee", path: "/dashboard/employee", icon: <Users size={20} /> },
       { name: "Client", path: "/dashboard/client", icon: <User size={20} /> },
       { name: "Archive", path: "/dashboard/archive", icon: <Archive size={20} /> },

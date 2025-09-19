@@ -6,7 +6,6 @@ import Booking from "./pages/Booking";
 import Monitoring from "./pages/Monitoring";
 import TripReport from "./pages/TripReport";
 import Vehicle from "./pages/Vehicle";
-import HistoryRecord from "./pages/HistoryRecord";
 import Employee from "./pages/Employee";
 import EmployeeInfo from "./pages/EmployeeInfo";
 import Client from "./pages/Client";
@@ -85,14 +84,6 @@ export default function App() {
           element={
             <PrivateRoute roles={["admin"]}>
               <VehicleInfo />
-            </PrivateRoute>
-          }
-        />
-        <Route
-          path="history-record"
-          element={
-            <PrivateRoute roles={["admin"]}>
-              <HistoryRecord />
             </PrivateRoute>
           }
         />

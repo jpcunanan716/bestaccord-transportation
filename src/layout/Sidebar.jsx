@@ -6,7 +6,6 @@ const links = [
   { name: "Monitoring", path: "/monitoring" },
   { name: "Trip Report", path: "/trip-report" },
   { name: "Vehicle", path: "/vehicle" },
-  { name: "History Record", path: "/history-record" },
   { name: "Employee", path: "/employee" },
   { name: "Client", path: "/client" },
   { name: "Archive", path: "/archive" },
