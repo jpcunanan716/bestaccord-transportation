@@ -23,11 +23,42 @@ const ReceiptGenerator = ({ booking, onClose, onReceiptGenerated }) => {
     try {
       // Create a temporary container with better styling for PDF
       const element = receiptRef.current;
+      
+      // Use more conservative html2canvas options to avoid modern CSS issues
       const canvas = await html2canvas(element, {
         scale: 2,
         useCORS: true,
         allowTaint: true,
-        backgroundColor: '#ffffff'
+        backgroundColor: '#ffffff',
+        // Disable modern CSS features that cause issues
+        ignoreElements: (element) => {
+          // Ignore elements that might use unsupported CSS
+          return element.tagName === 'VIDEO' || element.tagName === 'CANVAS';
+        },
+        onclone: (clonedDoc) => {
+          // Force simple colors and remove any problematic styles
+          const clonedElement = clonedDoc.querySelector('[data-receipt-content]');
+          if (clonedElement) {
+            // Override any potentially problematic styles
+            clonedElement.style.backgroundColor = '#ffffff';
+            clonedElement.style.color = '#000000';
+            
+            // Remove any gradient or complex background styles
+            const allElements = clonedElement.querySelectorAll('*');
+            allElements.forEach(el => {
+              // Force simple colors
+              if (el.style.backgroundColor && el.style.backgroundColor.includes('oklch')) {
+                el.style.backgroundColor = '#ffffff';
+              }
+              if (el.style.color && el.style.color.includes('oklch')) {
+                el.style.color = '#000000';
+              }
+              // Remove problematic CSS properties
+              el.style.removeProperty('backdrop-filter');
+              el.style.removeProperty('filter');
+            });
+          }
+        }
       });
       
       const imgData = canvas.toDataURL('image/png');
@@ -87,7 +118,7 @@ const ReceiptGenerator = ({ booking, onClose, onReceiptGenerated }) => {
   };
 
   return (
-    <div className="fixed inset-0 z-50 bg-black bg-opacity-50 flex items-center justify-center p-4">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ backgroundColor: 'rgba(0, 0, 0, 0.5)', backdropFilter: 'blur(5px)' }}>
       <div className="bg-white rounded-lg max-w-4xl w-full max-h-[90vh] overflow-y-auto">
         {/* Modal Header */}
         <div className="sticky top-0 bg-white border-b p-4 flex justify-between items-center">
@@ -112,83 +143,224 @@ const ReceiptGenerator = ({ booking, onClose, onReceiptGenerated }) => {
 
         {/* Receipt Content */}
         <div className="p-8">
-          <div ref={receiptRef} className="bg-white" style={{ fontFamily: 'Arial, sans-serif' }}>
+          <div 
+            ref={receiptRef} 
+            data-receipt-content
+            className="bg-white"
+            style={{ 
+              fontFamily: 'Arial, sans-serif',
+              backgroundColor: '#ffffff',
+              color: '#000000'
+            }}
+          >
             {/* Company Header */}
-            <div className="text-center border-b-2 border-gray-300 pb-6 mb-6">
-              <h1 className="text-3xl font-bold text-gray-900 mb-2">BESTACCORD LOGISTICS</h1>
-              <p className="text-gray-600 text-sm">Professional Transportation & Logistics Services</p>
-              <p className="text-gray-600 text-sm">📍 Metro Manila, Philippines | 📞 +63 XXX XXX XXXX</p>
+            <div 
+              className="text-center pb-6 mb-6"
+              style={{ 
+                borderBottom: '2px solid #d1d5db',
+                backgroundColor: '#ffffff'
+              }}
+            >
+              <h1 
+                className="text-3xl font-bold mb-2"
+                style={{ 
+                  color: '#111827',
+                  fontSize: '24px',
+                  fontWeight: 'bold',
+                  marginBottom: '8px'
+                }}
+              >
+                BESTACCORD LOGISTICS
+              </h1>
+              <p 
+                className="text-sm mb-1"
+                style={{ 
+                  color: '#6b7280',
+                  fontSize: '14px',
+                  marginBottom: '4px'
+                }}
+              >
+                Professional Transportation & Logistics Services
+              </p>
+              <p 
+                className="text-sm"
+                style={{ 
+                  color: '#6b7280',
+                  fontSize: '14px'
+                }}
+              >
+                📍 Metro Manila, Philippines | 📞 +63 XXX XXX XXXX
+              </p>
             </div>
 
             {/* Receipt Header */}
             <div className="flex justify-between items-start mb-8">
               <div>
-                <h2 className="text-2xl font-bold text-gray-900 mb-2">DELIVERY RECEIPT</h2>
-                <div className="space-y-1 text-sm">
-                  <p><span className="font-semibold">Receipt No:</span> {receiptNumber}</p>
-                  <p><span className="font-semibold">Trip No:</span> {booking.tripNumber}</p>
-                  <p><span className="font-semibold">Reservation ID:</span> {booking.reservationId}</p>
+                <h2 
+                  className="text-2xl font-bold mb-2"
+                  style={{ 
+                    color: '#111827',
+                    fontSize: '20px',
+                    fontWeight: 'bold',
+                    marginBottom: '8px'
+                  }}
+                >
+                  DELIVERY RECEIPT
+                </h2>
+                <div className="space-y-1" style={{ fontSize: '12px', color: '#374151' }}>
+                  <p><span style={{ fontWeight: 'bold' }}>Receipt No:</span> {receiptNumber}</p>
+                  <p><span style={{ fontWeight: 'bold' }}>Trip No:</span> {booking.tripNumber}</p>
+                  <p><span style={{ fontWeight: 'bold' }}>Reservation ID:</span> {booking.reservationId}</p>
                 </div>
               </div>
-              <div className="text-right text-sm">
-                <p><span className="font-semibold">Date Issued:</span></p>
+              <div className="text-right" style={{ fontSize: '12px', color: '#374151' }}>
+                <p><span style={{ fontWeight: 'bold' }}>Date Issued:</span></p>
                 <p>{formatDate(new Date())}</p>
-                <p className="mt-2"><span className="font-semibold">Delivery Date:</span></p>
+                <p className="mt-2"><span style={{ fontWeight: 'bold' }}>Delivery Date:</span></p>
                 <p>{formatDate(booking.dateNeeded)}</p>
               </div>
             </div>
 
             {/* Customer & Route Information */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
-              <div className="border border-gray-300 p-4 rounded">
-                <h3 className="font-bold text-gray-900 mb-3 flex items-center">
-                  <Building className="w-4 h-4 mr-2" />
-                  Customer Information
+              <div 
+                className="p-4 rounded"
+                style={{ 
+                  border: '1px solid #d1d5db',
+                  backgroundColor: '#ffffff'
+                }}
+              >
+                <h3 
+                  className="font-bold mb-3 flex items-center"
+                  style={{ 
+                    color: '#111827',
+                    fontSize: '14px',
+                    fontWeight: 'bold',
+                    marginBottom: '12px'
+                  }}
+                >
+                  🏢 Customer Information
                 </h3>
-                <div className="space-y-2 text-sm">
-                  <p><span className="font-semibold">Company:</span> {booking.companyName}</p>
-                  <p><span className="font-semibold">Contact:</span> {booking.customerEstablishmentName}</p>
-                  <p><span className="font-semibold">Consignor:</span> {booking.shipperConsignorName}</p>
+                <div className="space-y-2" style={{ fontSize: '12px' }}>
+                  <p><span style={{ fontWeight: 'bold' }}>Company:</span> {booking.companyName}</p>
+                  <p><span style={{ fontWeight: 'bold' }}>Contact:</span> {booking.customerEstablishmentName}</p>
+                  <p><span style={{ fontWeight: 'bold' }}>Consignor:</span> {booking.shipperConsignorName}</p>
                 </div>
               </div>
               
-              <div className="border border-gray-300 p-4 rounded">
-                <h3 className="font-bold text-gray-900 mb-3 flex items-center">
-                  <MapPin className="w-4 h-4 mr-2" />
-                  Route Information
+              <div 
+                className="p-4 rounded"
+                style={{ 
+                  border: '1px solid #d1d5db',
+                  backgroundColor: '#ffffff'
+                }}
+              >
+                <h3 
+                  className="font-bold mb-3 flex items-center"
+                  style={{ 
+                    color: '#111827',
+                    fontSize: '14px',
+                    fontWeight: 'bold',
+                    marginBottom: '12px'
+                  }}
+                >
+                  📍 Route Information
                 </h3>
-                <div className="space-y-2 text-sm">
-                  <p><span className="font-semibold">From:</span> {booking.originAddress}</p>
-                  <p><span className="font-semibold">To:</span> {booking.destinationAddress}</p>
-                  <p><span className="font-semibold">Area Code:</span> {booking.areaLocationCode}</p>
+                <div className="space-y-2" style={{ fontSize: '12px' }}>
+                  <p><span style={{ fontWeight: 'bold' }}>From:</span> {booking.originAddress}</p>
+                  <p><span style={{ fontWeight: 'bold' }}>To:</span> {booking.destinationAddress}</p>
+                  <p><span style={{ fontWeight: 'bold' }}>Area Code:</span> {booking.areaLocationCode}</p>
                 </div>
               </div>
             </div>
 
             {/* Package Details */}
             <div className="mb-8">
-              <h3 className="font-bold text-gray-900 mb-4 flex items-center text-lg">
-                <Package className="w-5 h-5 mr-2" />
-                Package Details
+              <h3 
+                className="font-bold mb-4 flex items-center"
+                style={{ 
+                  color: '#111827',
+                  fontSize: '16px',
+                  fontWeight: 'bold',
+                  marginBottom: '16px'
+                }}
+              >
+                📦 Package Details
               </h3>
-              <div className="border border-gray-300 rounded overflow-hidden">
-                <table className="w-full text-sm">
-                  <thead className="bg-gray-100">
+              <div 
+                className="rounded overflow-hidden"
+                style={{ 
+                  border: '1px solid #d1d5db',
+                  backgroundColor: '#ffffff'
+                }}
+              >
+                <table className="w-full" style={{ fontSize: '12px' }}>
+                  <thead style={{ backgroundColor: '#f3f4f6' }}>
                     <tr>
-                      <th className="px-4 py-3 text-left font-semibold">Product Name</th>
-                      <th className="px-4 py-3 text-left font-semibold">Quantity</th>
-                      <th className="px-4 py-3 text-left font-semibold">Weight</th>
-                      <th className="px-4 py-3 text-left font-semibold">Packages</th>
-                      <th className="px-4 py-3 text-left font-semibold">Units/Package</th>
+                      <th 
+                        className="px-4 py-3 text-left font-bold"
+                        style={{ 
+                          padding: '12px 16px',
+                          textAlign: 'left',
+                          fontWeight: 'bold',
+                          borderBottom: '1px solid #d1d5db'
+                        }}
+                      >
+                        Product Name
+                      </th>
+                      <th 
+                        className="px-4 py-3 text-left font-bold"
+                        style={{ 
+                          padding: '12px 16px',
+                          textAlign: 'left',
+                          fontWeight: 'bold',
+                          borderBottom: '1px solid #d1d5db'
+                        }}
+                      >
+                        Quantity
+                      </th>
+                      <th 
+                        className="px-4 py-3 text-left font-bold"
+                        style={{ 
+                          padding: '12px 16px',
+                          textAlign: 'left',
+                          fontWeight: 'bold',
+                          borderBottom: '1px solid #d1d5db'
+                        }}
+                      >
+                        Weight
+                      </th>
+                      <th 
+                        className="px-4 py-3 text-left font-bold"
+                        style={{ 
+                          padding: '12px 16px',
+                          textAlign: 'left',
+                          fontWeight: 'bold',
+                          borderBottom: '1px solid #d1d5db'
+                        }}
+                      >
+                        Packages
+                      </th>
+                      <th 
+                        className="px-4 py-3 text-left font-bold"
+                        style={{ 
+                          padding: '12px 16px',
+                          textAlign: 'left',
+                          fontWeight: 'bold',
+                          borderBottom: '1px solid #d1d5db'
+                        }}
+                      >
+                        Units/Package
+                      </th>
                     </tr>
                   </thead>
                   <tbody>
-                    <tr className="border-t">
-                      <td className="px-4 py-3">{booking.productName}</td>
-                      <td className="px-4 py-3">{booking.quantity?.toLocaleString()} pcs</td>
-                      <td className="px-4 py-3">{booking.grossWeight} tons</td>
-                      <td className="px-4 py-3">{booking.numberOfPackages} boxes</td>
-                      <td className="px-4 py-3">{booking.unitPerPackage} pcs/box</td>
+                    <tr style={{ borderTop: '1px solid #d1d5db' }}>
+                      <td style={{ padding: '12px 16px' }}>{booking.productName}</td>
+                      <td style={{ padding: '12px 16px' }}>{booking.quantity?.toLocaleString()} pcs</td>
+                      <td style={{ padding: '12px 16px' }}>{booking.grossWeight} tons</td>
+                      <td style={{ padding: '12px 16px' }}>{booking.numberOfPackages} boxes</td>
+                      <td style={{ padding: '12px 16px' }}>{booking.unitPerPackage} pcs/box</td>
                     </tr>
                   </tbody>
                 </table>
@@ -197,38 +369,64 @@ const ReceiptGenerator = ({ booking, onClose, onReceiptGenerated }) => {
 
             {/* Vehicle & Team Information */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
-              <div className="border border-gray-300 p-4 rounded">
-                <h3 className="font-bold text-gray-900 mb-3 flex items-center">
-                  <Truck className="w-4 h-4 mr-2" />
-                  Vehicle Information
+              <div 
+                className="p-4 rounded"
+                style={{ 
+                  border: '1px solid #d1d5db',
+                  backgroundColor: '#ffffff'
+                }}
+              >
+                <h3 
+                  className="font-bold mb-3 flex items-center"
+                  style={{ 
+                    color: '#111827',
+                    fontSize: '14px',
+                    fontWeight: 'bold',
+                    marginBottom: '12px'
+                  }}
+                >
+                  🚛 Vehicle Information
                 </h3>
-                <div className="space-y-2 text-sm">
-                  <p><span className="font-semibold">Vehicle Type:</span> {booking.vehicleType}</p>
-                  <p><span className="font-semibold">Vehicle ID:</span> {booking.vehicleId}</p>
-                  <p><span className="font-semibold">Plate Number:</span> {booking.vehicle?.plateNumber || 'N/A'}</p>
+                <div className="space-y-2" style={{ fontSize: '12px' }}>
+                  <p><span style={{ fontWeight: 'bold' }}>Vehicle Type:</span> {booking.vehicleType}</p>
+                  <p><span style={{ fontWeight: 'bold' }}>Vehicle ID:</span> {booking.vehicleId}</p>
+                  <p><span style={{ fontWeight: 'bold' }}>Plate Number:</span> {booking.vehicle?.plateNumber || 'N/A'}</p>
                 </div>
               </div>
               
-              <div className="border border-gray-300 p-4 rounded">
-                <h3 className="font-bold text-gray-900 mb-3 flex items-center">
-                  <User className="w-4 h-4 mr-2" />
-                  Delivery Team
+              <div 
+                className="p-4 rounded"
+                style={{ 
+                  border: '1px solid #d1d5db',
+                  backgroundColor: '#ffffff'
+                }}
+              >
+                <h3 
+                  className="font-bold mb-3 flex items-center"
+                  style={{ 
+                    color: '#111827',
+                    fontSize: '14px',
+                    fontWeight: 'bold',
+                    marginBottom: '12px'
+                  }}
+                >
+                  👥 Delivery Team
                 </h3>
-                <div className="space-y-2 text-sm">
+                <div className="space-y-2" style={{ fontSize: '12px' }}>
                   {booking.employeeDetails && booking.employeeDetails.length > 0 ? (
                     booking.employeeDetails.map((emp, idx) => (
                       <p key={idx}>
-                        <span className="font-semibold">{emp.role}:</span> {emp.employeeName}
+                        <span style={{ fontWeight: 'bold' }}>{emp.role}:</span> {emp.employeeName}
                       </p>
                     ))
                   ) : booking.employeeAssigned && booking.employeeAssigned.length > 0 ? (
                     booking.employeeAssigned.map((empId, idx) => (
                       <p key={idx}>
-                        <span className="font-semibold">Team Member:</span> {empId}
+                        <span style={{ fontWeight: 'bold' }}>Team Member:</span> {empId}
                       </p>
                     ))
                   ) : (
-                    <p className="text-gray-500">No team assigned</p>
+                    <p style={{ color: '#6b7280' }}>No team assigned</p>
                   )}
                 </div>
               </div>
@@ -236,41 +434,82 @@ const ReceiptGenerator = ({ booking, onClose, onReceiptGenerated }) => {
 
             {/* Cost Breakdown */}
             <div className="mb-8">
-              <h3 className="font-bold text-gray-900 mb-4 flex items-center text-lg">
+              <h3 
+                className="font-bold mb-4 flex items-center"
+                style={{ 
+                  color: '#111827',
+                  fontSize: '16px',
+                  fontWeight: 'bold',
+                  marginBottom: '16px'
+                }}
+              >
                 💰 Cost Breakdown
               </h3>
-              <div className="border border-gray-300 rounded overflow-hidden">
-                <table className="w-full text-sm">
-                  <thead className="bg-gray-100">
+              <div 
+                className="rounded overflow-hidden"
+                style={{ 
+                  border: '1px solid #d1d5db',
+                  backgroundColor: '#ffffff'
+                }}
+              >
+                <table className="w-full" style={{ fontSize: '12px' }}>
+                  <thead style={{ backgroundColor: '#f3f4f6' }}>
                     <tr>
-                      <th className="px-4 py-3 text-left font-semibold">Description</th>
-                      <th className="px-4 py-3 text-right font-semibold">Amount</th>
+                      <th 
+                        className="px-4 py-3 text-left font-bold"
+                        style={{ 
+                          padding: '12px 16px',
+                          textAlign: 'left',
+                          fontWeight: 'bold',
+                          borderBottom: '1px solid #d1d5db'
+                        }}
+                      >
+                        Description
+                      </th>
+                      <th 
+                        className="px-4 py-3 text-right font-bold"
+                        style={{ 
+                          padding: '12px 16px',
+                          textAlign: 'right',
+                          fontWeight: 'bold',
+                          borderBottom: '1px solid #d1d5db'
+                        }}
+                      >
+                        Amount
+                      </th>
                     </tr>
                   </thead>
                   <tbody>
-                    <tr className="border-t">
-                      <td className="px-4 py-3">Delivery Fee</td>
-                      <td className="px-4 py-3 text-right">{formatCurrency(booking.deliveryFee)}</td>
+                    <tr style={{ borderTop: '1px solid #d1d5db' }}>
+                      <td style={{ padding: '12px 16px' }}>Delivery Fee</td>
+                      <td style={{ padding: '12px 16px', textAlign: 'right' }}>{formatCurrency(booking.deliveryFee)}</td>
                     </tr>
-                    <tr className="border-t">
-                      <td className="px-4 py-3">Rate Cost (Area)</td>
-                      <td className="px-4 py-3 text-right">{formatCurrency(booking.rateCost)}</td>
+                    <tr style={{ borderTop: '1px solid #d1d5db' }}>
+                      <td style={{ padding: '12px 16px' }}>Rate Cost (Area)</td>
+                      <td style={{ padding: '12px 16px', textAlign: 'right' }}>{formatCurrency(booking.rateCost)}</td>
                     </tr>
-                    <tr className="border-t">
-                      <td className="px-4 py-3">Fuel Cost</td>
-                      <td className="px-4 py-3 text-right">{formatCurrency(3000)}</td>
+                    <tr style={{ borderTop: '1px solid #d1d5db' }}>
+                      <td style={{ padding: '12px 16px' }}>Fuel Cost</td>
+                      <td style={{ padding: '12px 16px', textAlign: 'right' }}>{formatCurrency(3000)}</td>
                     </tr>
-                    <tr className="border-t">
-                      <td className="px-4 py-3">Service Charge</td>
-                      <td className="px-4 py-3 text-right">{formatCurrency(300)}</td>
+                    <tr style={{ borderTop: '1px solid #d1d5db' }}>
+                      <td style={{ padding: '12px 16px' }}>Service Charge</td>
+                      <td style={{ padding: '12px 16px', textAlign: 'right' }}>{formatCurrency(300)}</td>
                     </tr>
-                    <tr className="border-t">
-                      <td className="px-4 py-3">Other Expenses</td>
-                      <td className="px-4 py-3 text-right">{formatCurrency(300)}</td>
+                    <tr style={{ borderTop: '1px solid #d1d5db' }}>
+                      <td style={{ padding: '12px 16px' }}>Other Expenses</td>
+                      <td style={{ padding: '12px 16px', textAlign: 'right' }}>{formatCurrency(300)}</td>
                     </tr>
-                    <tr className="border-t-2 border-gray-400 bg-gray-50 font-bold">
-                      <td className="px-4 py-3">TOTAL AMOUNT</td>
-                      <td className="px-4 py-3 text-right">
+                    <tr 
+                      className="font-bold"
+                      style={{ 
+                        borderTop: '2px solid #9ca3af',
+                        backgroundColor: '#f9fafb',
+                        fontWeight: 'bold'
+                      }}
+                    >
+                      <td style={{ padding: '12px 16px', fontWeight: 'bold' }}>TOTAL AMOUNT</td>
+                      <td style={{ padding: '12px 16px', textAlign: 'right', fontWeight: 'bold' }}>
                         {formatCurrency(
                           (booking.deliveryFee || 0) + 
                           (booking.rateCost || 0) + 
@@ -284,31 +523,69 @@ const ReceiptGenerator = ({ booking, onClose, onReceiptGenerated }) => {
             </div>
 
             {/* Signature Section */}
-            <div className="border-t-2 border-gray-300 pt-6 mt-8">
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-8 text-center text-sm">
+            <div 
+              className="pt-6 mt-8"
+              style={{ 
+                borderTop: '2px solid #d1d5db',
+                paddingTop: '24px',
+                marginTop: '32px'
+              }}
+            >
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-8 text-center" style={{ fontSize: '12px' }}>
                 <div>
-                  <div className="border-b border-gray-400 mb-2 pb-12"></div>
-                  <p className="font-semibold">Driver Signature</p>
-                  <p className="text-gray-600">Date: _______________</p>
+                  <div 
+                    className="mb-2 pb-12"
+                    style={{ 
+                      borderBottom: '1px solid #9ca3af',
+                      marginBottom: '8px',
+                      paddingBottom: '48px'
+                    }}
+                  ></div>
+                  <p style={{ fontWeight: 'bold' }}>Driver Signature</p>
+                  <p style={{ color: '#6b7280' }}>Date: _______________</p>
                 </div>
                 <div>
-                  <div className="border-b border-gray-400 mb-2 pb-12"></div>
-                  <p className="font-semibold">Customer Signature</p>
-                  <p className="text-gray-600">Date: _______________</p>
+                  <div 
+                    className="mb-2 pb-12"
+                    style={{ 
+                      borderBottom: '1px solid #9ca3af',
+                      marginBottom: '8px',
+                      paddingBottom: '48px'
+                    }}
+                  ></div>
+                  <p style={{ fontWeight: 'bold' }}>Customer Signature</p>
+                  <p style={{ color: '#6b7280' }}>Date: _______________</p>
                 </div>
                 <div>
-                  <div className="border-b border-gray-400 mb-2 pb-12"></div>
-                  <p className="font-semibold">Company Representative</p>
-                  <p className="text-gray-600">Date: _______________</p>
+                  <div 
+                    className="mb-2 pb-12"
+                    style={{ 
+                      borderBottom: '1px solid #9ca3af',
+                      marginBottom: '8px',
+                      paddingBottom: '48px'
+                    }}
+                  ></div>
+                  <p style={{ fontWeight: 'bold' }}>Company Representative</p>
+                  <p style={{ color: '#6b7280' }}>Date: _______________</p>
                 </div>
               </div>
             </div>
 
             {/* Footer */}
-            <div className="text-center text-xs text-gray-500 mt-8 pt-4 border-t">
+            <div 
+              className="text-center mt-8 pt-4"
+              style={{ 
+                textAlign: 'center',
+                marginTop: '32px',
+                paddingTop: '16px',
+                borderTop: '1px solid #e5e7eb',
+                fontSize: '10px',
+                color: '#6b7280'
+              }}
+            >
               <p>This is a computer-generated receipt and is valid without signature.</p>
               <p>Thank you for choosing Bestaccord Logistics for your transportation needs!</p>
-              <p className="mt-2">Generated on: {new Date().toLocaleString()}</p>
+              <p style={{ marginTop: '8px' }}>Generated on: {new Date().toLocaleString()}</p>
             </div>
           </div>
         </div>

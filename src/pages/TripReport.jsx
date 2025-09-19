@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { 
   Upload, 
   FileText, 
@@ -13,7 +14,9 @@ import {
   Plus,
   X,
   AlertCircle,
-  CheckCircle
+  CheckCircle,
+  Paperclip,
+  CloudUpload
 } from 'lucide-react';
 
 export default function TripReport() {
@@ -37,11 +40,11 @@ export default function TripReport() {
   // Upload form states
   const [uploadForm, setUploadForm] = useState({
     receiptNumber: '',
-    notes: '',
-    uploadedBy: 'Admin'
+    notes: ''
   });
   const [selectedFile, setSelectedFile] = useState(null);
   const [uploading, setUploading] = useState(false);
+  const [isDragOver, setIsDragOver] = useState(false);
 
   const fileInputRef = useRef(null);
 
@@ -96,33 +99,56 @@ export default function TripReport() {
   // Handle file selection
   const handleFileSelect = (event) => {
     const file = event.target.files[0];
-    if (file) {
-      // Validate file size (10MB limit)
-      if (file.size > 10 * 1024 * 1024) {
-        setError('File size must be less than 10MB');
-        return;
-      }
+    processFile(file);
+  };
 
-      // Validate file type
-      const allowedTypes = [
-        'application/pdf',
-        'application/msword',
-        'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-        'application/vnd.ms-excel',
-        'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-        'image/jpeg',
-        'image/png',
-        'text/plain'
-      ];
+  // Handle drag and drop
+  const handleDragOver = (event) => {
+    event.preventDefault();
+    setIsDragOver(true);
+  };
 
-      if (!allowedTypes.includes(file.type)) {
-        setError('Invalid file type. Only PDF, DOC, DOCX, Excel, JPG, PNG files are allowed.');
-        return;
-      }
+  const handleDragLeave = (event) => {
+    event.preventDefault();
+    setIsDragOver(false);
+  };
 
-      setSelectedFile(file);
-      setError('');
+  const handleDrop = (event) => {
+    event.preventDefault();
+    setIsDragOver(false);
+    const file = event.dataTransfer.files[0];
+    processFile(file);
+  };
+
+  // Process selected file
+  const processFile = (file) => {
+    if (!file) return;
+
+    // Validate file size (10MB limit)
+    if (file.size > 10 * 1024 * 1024) {
+      setError('File size must be less than 10MB');
+      return;
     }
+
+    // Validate file type
+    const allowedTypes = [
+      'application/pdf',
+      'application/msword',
+      'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+      'application/vnd.ms-excel',
+      'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+      'image/jpeg',
+      'image/png',
+      'text/plain'
+    ];
+
+    if (!allowedTypes.includes(file.type)) {
+      setError('Invalid file type. Only PDF, DOC, DOCX, Excel, JPG, PNG files are allowed.');
+      return;
+    }
+
+    setSelectedFile(file);
+    setError('');
   };
 
   // Handle upload form submission
@@ -147,7 +173,7 @@ export default function TripReport() {
       formData.append('document', selectedFile);
       formData.append('receiptNumber', uploadForm.receiptNumber.trim());
       formData.append('notes', uploadForm.notes);
-      formData.append('uploadedBy', uploadForm.uploadedBy);
+      formData.append('uploadedBy', 'Admin');
 
       const response = await fetch('http://localhost:5000/api/trip-reports', {
         method: 'POST',
@@ -180,8 +206,7 @@ export default function TripReport() {
   const resetUploadForm = () => {
     setUploadForm({
       receiptNumber: '',
-      notes: '',
-      uploadedBy: 'Admin'
+      notes: ''
     });
     setSelectedFile(null);
     if (fileInputRef.current) {
@@ -287,6 +312,25 @@ export default function TripReport() {
       'Other': 'bg-yellow-100 text-yellow-800'
     };
     return colors[type] || colors['Other'];
+  };
+
+  // Get file type icon
+  const getFileTypeIcon = (type) => {
+    switch (type?.toLowerCase()) {
+      case 'pdf':
+        return '📄';
+      case 'doc':
+      case 'docx':
+        return '📝';
+      case 'excel':
+        return '📊';
+      case 'jpg':
+      case 'jpeg':
+      case 'png':
+        return '🖼️';
+      default:
+        return '📁';
+    }
   };
 
   // Effects
@@ -601,15 +645,49 @@ export default function TripReport() {
 
       {/* Upload Modal */}
       {showUploadModal && (
-        <div className="fixed inset-0 z-50 overflow-y-auto">
+        <div 
+          className="fixed inset-0 z-50 overflow-y-auto" 
+          style={{ backdropFilter: 'blur(8px)', backgroundColor: 'rgba(0, 0, 0, 0.25)' }}
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          transition={{ duration: 0.2 }}
+        >
           <div className="flex items-center justify-center min-h-screen pt-4 px-4 pb-20 text-center">
-            <div className="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity"></div>
-
-            <div className="inline-block align-bottom bg-white rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full">
+            <div 
+              className="inline-block align-bottom bg-white rounded-xl text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-2xl sm:w-full"
+              initial={{ scale: 0.9, opacity: 0, y: 30 }}
+              animate={{ scale: 1, opacity: 1, y: 0 }}
+              exit={{ scale: 0.9, opacity: 0, y: 30 }}
+              transition={{ duration: 0.3, ease: "easeOut" }}
+            >
               <form onSubmit={handleUpload}>
-                <div className="bg-white px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
-                  <div className="flex items-center justify-between mb-4">
-                    <h3 className="text-lg font-medium text-gray-900">Upload Trip Report</h3>
+                {/* Modal Header */}
+                <div 
+                  className="bg-gradient-to-r from-blue-600 to-blue-700 px-6 py-4"
+                  initial={{ y: -20, opacity: 0 }}
+                  animate={{ y: 0, opacity: 1 }}
+                  transition={{ delay: 0.1, duration: 0.3 }}
+                >
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center space-x-3">
+                      <div 
+                        className="p-2 bg-blue-500 rounded-lg"
+                        initial={{ scale: 0, rotate: -180 }}
+                        animate={{ scale: 1, rotate: 0 }}
+                        transition={{ delay: 0.2, duration: 0.4, type: "spring" }}
+                      >
+                        <CloudUpload className="w-6 h-6 text-white" />
+                      </div>
+                      <div
+                        initial={{ x: -20, opacity: 0 }}
+                        animate={{ x: 0, opacity: 1 }}
+                        transition={{ delay: 0.15, duration: 0.3 }}
+                      >
+                        <h3 className="text-xl font-bold text-white">Upload Trip Report</h3>
+                        <p className="text-blue-100 text-sm">Add a new document to your trip reports</p>
+                      </div>
+                    </div>
                     <button
                       type="button"
                       onClick={() => {
@@ -617,16 +695,166 @@ export default function TripReport() {
                         resetUploadForm();
                         setError('');
                       }}
-                      className="text-gray-400 hover:text-gray-600"
+                      className="text-blue-100 hover:text-white transition-colors p-2 rounded-lg hover:bg-blue-600"
+                      whileHover={{ scale: 1.05 }}
+                      whileTap={{ scale: 0.95 }}
                     >
                       <X className="w-5 h-5" />
                     </button>
                   </div>
+                </div>
 
-                  <div className="space-y-4">
-                    {/* Receipt Number */}
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                {/* Modal Body */}
+                <div 
+                  className="px-6 py-6"
+                  initial={{ y: 20, opacity: 0 }}
+                  animate={{ y: 0, opacity: 1 }}
+                  transition={{ delay: 0.2, duration: 0.3 }}
+                >
+                  <div className="space-y-6">
+                    
+                    {/* File Upload Section */}
+                    <div
+                      initial={{ y: 20, opacity: 0 }}
+                      animate={{ y: 0, opacity: 1 }}
+                      transition={{ delay: 0.25, duration: 0.3 }}
+                    >
+                      <label className="block text-sm font-semibold text-gray-700 mb-3">
+                        Document File *
+                      </label>
+                      
+                      {/* Upload Area */}
+                      <div 
+                        className={`relative border-2 border-dashed rounded-xl p-8 text-center transition-all duration-300 ${
+                          isDragOver 
+                            ? 'border-blue-400 bg-blue-50 scale-105' 
+                            : selectedFile 
+                            ? 'border-green-400 bg-green-50' 
+                            : 'border-gray-300 hover:border-gray-400 bg-gray-50 hover:scale-102'
+                        }`}
+                        onDragOver={handleDragOver}
+                        onDragLeave={handleDragLeave}
+                        onDrop={handleDrop}
+                        whileHover={{ scale: 1.02 }}
+                        transition={{ type: "spring", stiffness: 300 }}
+                      >
+                        {selectedFile ? (
+                          // File Selected State
+                          <div 
+                            className="space-y-4"
+                            initial={{ scale: 0.8, opacity: 0 }}
+                            animate={{ scale: 1, opacity: 1 }}
+                            transition={{ duration: 0.4, type: "spring" }}
+                          >
+                            <div className="flex items-center justify-center">
+                              <div 
+                                className="p-3 bg-green-100 rounded-full"
+                                animate={{ rotate: [0, 10, -10, 0] }}
+                                transition={{ duration: 0.5 }}
+                              >
+                                <Paperclip className="w-8 h-8 text-green-600" />
+                              </div>
+                            </div>
+                            <div>
+                              <p className="text-lg font-medium text-gray-900">File Selected</p>
+                              <p className="text-sm text-gray-600 mt-1">{selectedFile.name}</p>
+                              <p className="text-xs text-gray-500 mt-1">
+                                {getFileTypeIcon(selectedFile.type)} {formatFileSize(selectedFile.size)}
+                              </p>
+                            </div>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setSelectedFile(null);
+                                if (fileInputRef.current) fileInputRef.current.value = '';
+                              }}
+                              className="inline-flex items-center px-3 py-1.5 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 transition-colors"
+                              whileHover={{ scale: 1.05 }}
+                              whileTap={{ scale: 0.95 }}
+                            >
+                              <X className="w-4 h-4 mr-1" />
+                              Remove
+                            </button>
+                          </div>
+                        ) : (
+                          // Default Upload State
+                          <div className="space-y-4">
+                            <div className="flex items-center justify-center">
+                              <div 
+                                className={`p-4 rounded-full transition-all duration-300 ${
+                                  isDragOver ? 'bg-blue-100' : 'bg-gray-100'
+                                }`}
+                                animate={isDragOver ? { 
+                                  y: [-5, 5, -5],
+                                  transition: { repeat: Infinity, duration: 1 }
+                                } : {}}
+                              >
+                                <CloudUpload className={`w-12 h-12 transition-colors duration-300 ${
+                                  isDragOver ? 'text-blue-600' : 'text-gray-400'
+                                }`} />
+                              </div>
+                            </div>
+                            <div>
+                              <p className="text-lg font-medium text-gray-900">
+                                {isDragOver ? 'Drop your file here' : 'Upload your document'}
+                              </p>
+                              <p className="text-sm text-gray-600 mt-2">
+                                Drag and drop your file here, or{' '}
+                                <button
+                                  type="button"
+                                  onClick={() => fileInputRef.current?.click()}
+                                  className="text-blue-600 hover:text-blue-700 font-medium underline"
+                                  whileHover={{ scale: 1.05 }}
+                                >
+                                  browse files
+                                </button>
+                              </p>
+                            </div>
+                            <div 
+                              className="flex items-center justify-center space-x-4 text-xs text-gray-500"
+                              initial={{ opacity: 0, y: 10 }}
+                              animate={{ opacity: 1, y: 0 }}
+                              transition={{ delay: 0.4, duration: 0.3 }}
+                            >
+                              <span className="flex items-center">
+                                <span className="w-2 h-2 bg-red-400 rounded-full mr-1"></span>
+                                PDF
+                              </span>
+                              <span className="flex items-center">
+                                <span className="w-2 h-2 bg-blue-400 rounded-full mr-1"></span>
+                                DOC/DOCX
+                              </span>
+                              <span className="flex items-center">
+                                <span className="w-2 h-2 bg-green-400 rounded-full mr-1"></span>
+                                Excel
+                              </span>
+                              <span className="flex items-center">
+                                <span className="w-2 h-2 bg-purple-400 rounded-full mr-1"></span>
+                                Images
+                              </span>
+                            </div>
+                            <p className="text-xs text-gray-500">Maximum file size: 10MB</p>
+                          </div>
+                        )}
+
+                        {/* Hidden file input */}
+                        <input
+                          ref={fileInputRef}
+                          type="file"
+                          className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                          onChange={handleFileSelect}
+                          accept=".pdf,.doc,.docx,.xls,.xlsx,.jpg,.jpeg,.png,.txt"
+                        />
+                      </div>
+                    </div>
+
+                    {/* Receipt Number - Full Width */}
+                    <div
+                      initial={{ x: -20, opacity: 0 }}
+                      animate={{ x: 0, opacity: 1 }}
+                      transition={{ delay: 0.3, duration: 0.3 }}
+                    >
+                      <label className="block text-sm font-semibold text-gray-700 mb-2">
                         Receipt Number *
                       </label>
                       <input
@@ -634,66 +862,19 @@ export default function TripReport() {
                         required
                         value={uploadForm.receiptNumber}
                         onChange={(e) => setUploadForm({...uploadForm, receiptNumber: e.target.value})}
-                        placeholder="Enter receipt number"
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-400 focus:border-transparent"
-                      />
-                    </div>
-
-                    {/* File Upload */}
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">
-                        Document File *
-                      </label>
-                      <div className="mt-1 flex justify-center px-6 pt-5 pb-6 border-2 border-gray-300 border-dashed rounded-lg hover:border-gray-400 transition-colors">
-                        <div className="space-y-1 text-center">
-                          <Upload className="mx-auto h-12 w-12 text-gray-400" />
-                          <div className="flex text-sm text-gray-600">
-                            <label
-                              htmlFor="file-upload"
-                              className="relative cursor-pointer bg-white rounded-md font-medium text-blue-600 hover:text-blue-500 focus-within:outline-none focus-within:ring-2 focus-within:ring-offset-2 focus-within:ring-blue-500"
-                            >
-                              <span>Upload a file</span>
-                              <input
-                                id="file-upload"
-                                name="file-upload"
-                                type="file"
-                                className="sr-only"
-                                ref={fileInputRef}
-                                onChange={handleFileSelect}
-                                accept=".pdf,.doc,.docx,.xls,.xlsx,.jpg,.jpeg,.png,.txt"
-                              />
-                            </label>
-                            <p className="pl-1">or drag and drop</p>
-                          </div>
-                          <p className="text-xs text-gray-500">
-                            PDF, DOC, DOCX, Excel, JPG, PNG up to 10MB
-                          </p>
-                          {selectedFile && (
-                            <div className="mt-2 text-sm text-green-600">
-                              Selected: {selectedFile.name} ({formatFileSize(selectedFile.size)})
-                            </div>
-                          )}
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* Uploaded By */}
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">
-                        Uploaded By
-                      </label>
-                      <input
-                        type="text"
-                        value={uploadForm.uploadedBy}
-                        onChange={(e) => setUploadForm({...uploadForm, uploadedBy: e.target.value})}
-                        placeholder="Enter uploader name"
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-400 focus:border-transparent"
+                        placeholder="e.g., RCP001234"
+                        className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
+                        whileFocus={{ scale: 1.02 }}
                       />
                     </div>
 
                     {/* Notes */}
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                    <div
+                      initial={{ x: -20, opacity: 0 }}
+                      animate={{ x: 0, opacity: 1 }}
+                      transition={{ delay: 0.35, duration: 0.3 }}
+                    >
+                      <label className="block text-sm font-semibold text-gray-700 mb-2">
                         Notes (Optional)
                       </label>
                       <textarea
@@ -701,17 +882,39 @@ export default function TripReport() {
                         value={uploadForm.notes}
                         onChange={(e) => setUploadForm({...uploadForm, notes: e.target.value})}
                         placeholder="Add any notes about this document..."
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-400 focus:border-transparent"
+                        className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 resize-none"
+                        whileFocus={{ scale: 1.01 }}
                       />
                     </div>
+
+                    {/* Error Message */}
+                    {error && (
+                      <div 
+                        className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg flex items-center"
+                        initial={{ scale: 0.95, opacity: 0, x: -20 }}
+                        animate={{ scale: 1, opacity: 1, x: 0 }}
+                        transition={{ duration: 0.3, type: "spring" }}
+                      >
+                        <AlertCircle className="w-5 h-5 mr-2 flex-shrink-0" />
+                        <span className="text-sm">{error}</span>
+                      </div>
+                    )}
                   </div>
                 </div>
 
-                <div className="bg-gray-50 px-4 py-3 sm:px-6 sm:flex sm:flex-row-reverse">
+                {/* Modal Footer */}
+                <div 
+                  className="bg-gray-50 px-6 py-4 sm:flex sm:flex-row-reverse sm:space-x-reverse sm:space-x-3"
+                  initial={{ y: 20, opacity: 0 }}
+                  animate={{ y: 0, opacity: 1 }}
+                  transition={{ delay: 0.4, duration: 0.3 }}
+                >
                   <button
                     type="submit"
-                    disabled={uploading || !selectedFile}
-                    className="w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-blue-600 text-base font-medium text-white hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 sm:ml-3 sm:w-auto sm:text-sm disabled:opacity-50 disabled:cursor-not-allowed"
+                    disabled={uploading || !selectedFile || !uploadForm.receiptNumber.trim()}
+                    className="w-full sm:w-auto inline-flex justify-center items-center rounded-lg border border-transparent shadow-sm px-6 py-3 bg-blue-600 text-base font-medium text-white hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                    whileHover={{ scale: 1.05 }}
+                    whileTap={{ scale: 0.95 }}
                   >
                     {uploading ? (
                       <>
@@ -719,7 +922,10 @@ export default function TripReport() {
                         Uploading...
                       </>
                     ) : (
-                      'Upload Document'
+                      <>
+                        <Upload className="w-4 h-4 mr-2" />
+                        Upload Document
+                      </>
                     )}
                   </button>
                   <button
@@ -729,7 +935,9 @@ export default function TripReport() {
                       resetUploadForm();
                       setError('');
                     }}
-                    className="mt-3 w-full inline-flex justify-center rounded-md border border-gray-300 shadow-sm px-4 py-2 bg-white text-base font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 sm:mt-0 sm:ml-3 sm:w-auto sm:text-sm"
+                    className="mt-3 sm:mt-0 w-full sm:w-auto inline-flex justify-center rounded-lg border border-gray-300 shadow-sm px-6 py-3 bg-white text-base font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors"
+                    whileHover={{ scale: 1.05 }}
+                    whileTap={{ scale: 0.95 }}
                   >
                     Cancel
                   </button>
