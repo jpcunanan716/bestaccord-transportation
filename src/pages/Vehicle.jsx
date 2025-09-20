@@ -345,19 +345,19 @@ export default function Vehicle() {
                     <td className="px-6 py-3 text-center space-x-2">
                       <button
                         onClick={() => viewVehicle(v)}
-                        className="px-3 py-1 bg-blue-500 text-white rounded shadow hover:bg-blue-600 inline-flex items-center gap-1 transition transform hover:scale-105"
+                        className="text-blue-600 hover:text-blue-800 px-3 py-1 rounded hover:bg-blue-50 inline-flex items-center gap-1 transition transform hover:scale-105"
                       >
                         <Eye size={16} /> View
                       </button>
                       <button
                         onClick={() => openModal(v)}
-                        className="px-3 py-1 bg-yellow-400 text-white rounded shadow hover:bg-yellow-500 inline-flex items-center gap-1 transition transform hover:scale-105"
+                        className="text-yellow-600 hover:text-yellow-800 px-3 py-1 rounded hover:bg-yellow-50 inline-flex items-center gap-1 transition transform hover:scale-105"
                       >
                         <Pencil size={16} /> Edit
                       </button>
                       <button
                         onClick={() => handleDelete(v._id)}
-                        className="px-3 py-1 bg-red-500 text-white rounded shadow hover:bg-red-600 inline-flex items-center gap-1 transition transform hover:scale-105"
+                        className="text-red-600 hover:text-red-800 px-3 py-1 rounded hover:bg-red-50 inline-flex items-center gap-1 transition transform hover:scale-105"
                       >
                         <Trash2 size={16} /> Archive
                       </button>

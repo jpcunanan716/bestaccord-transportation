@@ -292,7 +292,7 @@ export default function TripReport() {
     }
   };
 
-  // Handle archive/delete
+  //Archive handler
   const handleDelete = async (id) => {
     if (!window.confirm('Are you sure you want to archive this document?')) return;
     setError('');

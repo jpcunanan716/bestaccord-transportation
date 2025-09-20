@@ -2,15 +2,7 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
-import {
-  Menu,
-  X,
-  User,
-  LogOut,
-  ArrowLeft,
-  Calendar,
-  ClipboardList,
-} from "lucide-react";
+import { Menu, X, User, LogOut, ArrowLeft, Calendar, ClipboardList, } from "lucide-react";
 import DriverProfile from "./DriverProfile";
 import DriverBookings from "./DriverBookings";
 import { useDriverBookingCount } from "../hooks/useDriverBookingCount";
@@ -18,9 +10,9 @@ import logo from "../assets/bestaccord_logo_black.png";
 
 export default function DriverDashboard() {
   const [menuOpen, setMenuOpen] = useState(false);
-  const [activePage, setActivePage] = useState("home"); // home | bookings | schedule | profile
+  const [activePage, setActivePage] = useState("home");
   const navigate = useNavigate();
-  
+
   // Get booking count for notification badge
   const { bookingCount, loading: countLoading } = useDriverBookingCount();
 
@@ -81,7 +73,7 @@ export default function DriverDashboard() {
                 >
                   <ClipboardList className="w-6 h-6" />
                   <span>Bookings</span>
-                  
+
                   {/* 🔴 Notification Badge */}
                   {!countLoading && bookingCount > 0 && (
                     <motion.div
@@ -93,7 +85,7 @@ export default function DriverDashboard() {
                       {bookingCount > 99 ? '99+' : bookingCount}
                     </motion.div>
                   )}
-                  
+
                   {/* Loading indicator for badge */}
                   {countLoading && (
                     <div className="absolute -top-2 -right-2 bg-gray-300 rounded-full h-6 w-6 flex items-center justify-center border-2 border-white">
