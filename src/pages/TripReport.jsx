@@ -293,29 +293,27 @@ export default function TripReport() {
   };
 
   // Handle archive/delete
-  const handleArchive = async (id) => {
-    if (!window.confirm('Are you sure you want to archive this trip report?')) return;
-
+  const handleDelete = async (id) => {
+    if (!window.confirm('Are you sure you want to archive this document?')) return;
+    setError('');
     try {
       const response = await fetch(`http://localhost:5000/api/trip-reports/${id}/archive`, {
         method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',
-        }
+        },
+        // No body needed since the archive route doesn't expect any data
       });
 
       if (!response.ok) {
-        throw new Error('Failed to archive trip report');
+        throw new Error('Failed to archive document');
       }
 
-      setSuccess('Trip report archived successfully');
-      fetchTripReports(currentPage);
-
-      setTimeout(() => setSuccess(''), 3000);
-
+      alert('Document archived successfully');
+      fetchTripReports();
     } catch (err) {
-      console.error('Error archiving trip report:', err);
-      setError('Failed to archive trip report');
+      console.error('Error archiving document:', err);
+      alert('Failed to archive document');
     }
   };
 
@@ -808,10 +806,10 @@ export default function TripReport() {
                       {/* Upload Area */}
                       <div
                         className={`relative border-2 border-dashed rounded-xl p-8 text-center transition-all duration-300 ${isDragOver
-                            ? 'border-blue-400 bg-blue-50 scale-105'
-                            : selectedFile
-                              ? 'border-green-400 bg-green-50'
-                              : 'border-gray-300 hover:border-gray-400 bg-gray-50 hover:scale-102'
+                          ? 'border-blue-400 bg-blue-50 scale-105'
+                          : selectedFile
+                            ? 'border-green-400 bg-green-50'
+                            : 'border-gray-300 hover:border-gray-400 bg-gray-50 hover:scale-102'
                           }`}
                         onDragOver={handleDragOver}
                         onDragLeave={handleDragLeave}
