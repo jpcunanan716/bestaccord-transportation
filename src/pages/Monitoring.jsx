@@ -15,8 +15,10 @@ import {
   AlertCircle,
   PlayCircle,
   Clock4,
-  User
+  User,
+  FileText  // Added this import for receipt icon
 } from "lucide-react";
+import ReceiptGenerator from "../components/ReceiptGenerator"; // Add this import
 
 export default function Monitoring() {
   const [bookings, setBookings] = useState([]);
@@ -24,6 +26,7 @@ export default function Monitoring() {
   const [loading, setLoading] = useState(false);
   const [selectedBooking, setSelectedBooking] = useState(null);
   const [showModal, setShowModal] = useState(false);
+  const [showReceiptGenerator, setShowReceiptGenerator] = useState(false); // Add this state
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("All");
   const [error, setError] = useState("");
@@ -174,6 +177,19 @@ export default function Monitoring() {
     { name: "Delivered", status: "Delivered" },
     { name: "Completed", status: "Completed" }
   ];
+
+  // Add these new functions for receipt generation
+  const handleGenerateReceipt = () => {
+    if (selectedBooking && selectedBooking.status === "Completed") {
+      setShowReceiptGenerator(true);
+    }
+  };
+
+  const handleReceiptGenerated = (receiptData) => {
+    console.log("Receipt generated:", receiptData);
+    setShowReceiptGenerator(false);
+    alert(`Receipt generated successfully! Receipt Number: ${receiptData.receiptNumber}`);
+  };
 
   // Update booking status
   const updateBookingStatus = async (bookingId, newStatus) => {
@@ -1271,7 +1287,7 @@ export default function Monitoring() {
                         </div>
                       </motion.div>
 
-                      {/* Action Buttons */}
+                      {/* UPDATED Action Buttons - This is the main change */}
                       <motion.div 
                         className="flex space-x-4"
                         initial={{ opacity: 0, y: 20 }}
@@ -1318,10 +1334,17 @@ export default function Monitoring() {
                           </div>
                         )}
                         
+                        {/* NEW: Generate Receipt Button for Completed Status */}
                         {selectedBooking.status === "Completed" && (
-                          <div className="flex-1 px-4 py-2 bg-gray-100 text-gray-800 rounded-lg text-center">
-                            ✓ Trip Completed
-                          </div>
+                          <motion.button 
+                            onClick={handleGenerateReceipt}
+                            className="flex-1 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors flex items-center justify-center space-x-2"
+                            whileHover={{ scale: 1.02 }}
+                            whileTap={{ scale: 0.98 }}
+                          >
+                            <FileText className="w-4 h-4" />
+                            <span>Generate Receipt</span>
+                          </motion.button>
                         )}
                       </motion.div>
 
@@ -1333,6 +1356,15 @@ export default function Monitoring() {
           </motion.div>
         )}
       </AnimatePresence>
+
+      {/* NEW: Receipt Generator Modal */}
+      {showReceiptGenerator && selectedBooking && (
+        <ReceiptGenerator
+          booking={selectedBooking}
+          onClose={() => setShowReceiptGenerator(false)}
+          onReceiptGenerated={handleReceiptGenerated}
+        />
+      )}
       
     </>
   );
