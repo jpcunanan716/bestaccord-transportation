@@ -1,12 +1,12 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { 
-  Upload, 
-  FileText, 
-  Eye, 
-  Download, 
-  Trash2, 
-  Search, 
+import {
+  Upload,
+  FileText,
+  Eye,
+  Download,
+  Trash2,
+  Search,
   Filter,
   Calendar,
   User,
@@ -18,6 +18,7 @@ import {
   Paperclip,
   CloudUpload
 } from 'lucide-react';
+import axios from 'axios';
 
 export default function TripReport() {
   const [tripReports, setTripReports] = useState([]);
@@ -26,7 +27,7 @@ export default function TripReport() {
   const [showUploadModal, setShowUploadModal] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
-  
+
   // Pagination states
   const [currentPage, setCurrentPage] = useState(1);
   const [pagination, setPagination] = useState({});
@@ -79,7 +80,7 @@ export default function TripReport() {
       const data = await response.json();
       setTripReports(data.tripReports || []);
       setPagination(data.pagination || {});
-      
+
       // Extract unique values for filters
       if (data.tripReports && data.tripReports.length > 0) {
         const docTypes = ['All', ...new Set(data.tripReports.map(report => report.documentType))];
@@ -154,7 +155,7 @@ export default function TripReport() {
   // Handle upload form submission
   const handleUpload = async (event) => {
     event.preventDefault();
-    
+
     if (!selectedFile) {
       setError('Please select a file to upload');
       return;
@@ -215,29 +216,17 @@ export default function TripReport() {
   };
 
   // Handle archive/delete
-  const handleArchive = async (id) => {
-    if (!window.confirm('Are you sure you want to archive this trip report?')) return;
-
+  const handleDelete = async (id) => {
+    if (!window.confirm('Are you sure you want to archive this document?')) return;
     try {
-      const response = await fetch(`http://localhost:5000/api/trip-reports/${id}/archive`, {
-        method: 'PATCH',
-        headers: {
-          'Content-Type': 'application/json',
-        }
+      await axios.patch(`http://localhost:5000/api/trip-reports/${id}/archive`, {
+        isArchive: true,
       });
-
-      if (!response.ok) {
-        throw new Error('Failed to archive trip report');
-      }
-
-      setSuccess('Trip report archived successfully');
-      fetchTripReports(currentPage);
-
-      setTimeout(() => setSuccess(''), 3000);
-
+      alert('Document archived successfully');
+      fetchTripReports();
     } catch (err) {
-      console.error('Error archiving trip report:', err);
-      setError('Failed to archive trip report');
+      console.error('Error archiving document:', err);
+      alert('Failed to archive document');
     }
   };
 
@@ -245,7 +234,7 @@ export default function TripReport() {
   const handleDownload = async (id, fileName) => {
     try {
       const response = await fetch(`http://localhost:5000/api/trip-reports/download/${id}`);
-      
+
       if (!response.ok) {
         throw new Error('Failed to download file');
       }
@@ -357,7 +346,7 @@ export default function TripReport() {
           <h1 className="text-2xl font-bold text-gray-800">Trip Reports</h1>
           <p className="text-gray-600 text-sm">Manage and view uploaded trip documents and receipts</p>
         </div>
-        
+
         <button
           onClick={() => setShowUploadModal(true)}
           className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg shadow hover:bg-blue-700 transition"
@@ -464,7 +453,7 @@ export default function TripReport() {
               <tbody className="bg-white divide-y divide-gray-200">
                 {tripReports.map((report, index) => {
                   const displayNumber = ((currentPage - 1) * itemsPerPage) + index + 1;
-                  
+
                   return (
                     <tr key={report._id} className="hover:bg-gray-50 transition-colors">
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
@@ -514,7 +503,6 @@ export default function TripReport() {
                         <button
                           onClick={() => handleView(report._id)}
                           className="inline-flex items-center px-2 py-1 bg-blue-100 text-blue-700 rounded hover:bg-blue-200 transition"
-                          title="View Document"
                         >
                           <Eye className="w-3 h-3 mr-1" />
                           View
@@ -522,16 +510,13 @@ export default function TripReport() {
                         <button
                           onClick={() => handleDownload(report._id, report.originalFileName)}
                           className="inline-flex items-center px-2 py-1 bg-green-100 text-green-700 rounded hover:bg-green-200 transition"
-                          title="Download Document"
                         >
                           <Download className="w-3 h-3 mr-1" />
                           Download
                         </button>
                         <button
-                          onClick={() => handleArchive(report._id)}
-                          className="inline-flex items-center px-2 py-1 bg-red-100 text-red-700 rounded hover:bg-red-200 transition"
-                          title="Archive Document"
-                        >
+                          onClick={() => handleDelete(report._id)}
+                          className="inline-flex items-center px-2 py-1 bg-red-100 text-red-700 rounded hover:bg-red-200 transition"                        >
                           <Trash2 className="w-3 h-3 mr-1" />
                           Archive
                         </button>
@@ -574,11 +559,10 @@ export default function TripReport() {
                     fetchTripReports(currentPage - 1);
                   }}
                   disabled={!pagination.hasPrev}
-                  className={`relative inline-flex items-center px-4 py-2 border text-sm font-medium rounded-md ${
-                    pagination.hasPrev
-                      ? 'border-gray-300 text-gray-700 bg-white hover:bg-gray-50'
-                      : 'border-gray-200 text-gray-400 bg-gray-100 cursor-not-allowed'
-                  }`}
+                  className={`relative inline-flex items-center px-4 py-2 border text-sm font-medium rounded-md ${pagination.hasPrev
+                    ? 'border-gray-300 text-gray-700 bg-white hover:bg-gray-50'
+                    : 'border-gray-200 text-gray-400 bg-gray-100 cursor-not-allowed'
+                    }`}
                 >
                   Previous
                 </button>
@@ -588,11 +572,10 @@ export default function TripReport() {
                     fetchTripReports(currentPage + 1);
                   }}
                   disabled={!pagination.hasNext}
-                  className={`ml-3 relative inline-flex items-center px-4 py-2 border text-sm font-medium rounded-md ${
-                    pagination.hasNext
-                      ? 'border-gray-300 text-gray-700 bg-white hover:bg-gray-50'
-                      : 'border-gray-200 text-gray-400 bg-gray-100 cursor-not-allowed'
-                  }`}
+                  className={`ml-3 relative inline-flex items-center px-4 py-2 border text-sm font-medium rounded-md ${pagination.hasNext
+                    ? 'border-gray-300 text-gray-700 bg-white hover:bg-gray-50'
+                    : 'border-gray-200 text-gray-400 bg-gray-100 cursor-not-allowed'
+                    }`}
                 >
                   Next
                 </button>
@@ -613,11 +596,10 @@ export default function TripReport() {
                         fetchTripReports(currentPage - 1);
                       }}
                       disabled={!pagination.hasPrev}
-                      className={`relative inline-flex items-center px-2 py-2 rounded-l-md border text-sm font-medium ${
-                        pagination.hasPrev
-                          ? 'border-gray-300 text-gray-500 bg-white hover:bg-gray-50'
-                          : 'border-gray-200 text-gray-300 bg-gray-100 cursor-not-allowed'
-                      }`}
+                      className={`relative inline-flex items-center px-2 py-2 rounded-l-md border text-sm font-medium ${pagination.hasPrev
+                        ? 'border-gray-300 text-gray-500 bg-white hover:bg-gray-50'
+                        : 'border-gray-200 text-gray-300 bg-gray-100 cursor-not-allowed'
+                        }`}
                     >
                       Previous
                     </button>
@@ -627,11 +609,10 @@ export default function TripReport() {
                         fetchTripReports(currentPage + 1);
                       }}
                       disabled={!pagination.hasNext}
-                      className={`relative inline-flex items-center px-2 py-2 rounded-r-md border text-sm font-medium ${
-                        pagination.hasNext
-                          ? 'border-gray-300 text-gray-500 bg-white hover:bg-gray-50'
-                          : 'border-gray-200 text-gray-300 bg-gray-100 cursor-not-allowed'
-                      }`}
+                      className={`relative inline-flex items-center px-2 py-2 rounded-r-md border text-sm font-medium ${pagination.hasNext
+                        ? 'border-gray-300 text-gray-500 bg-white hover:bg-gray-50'
+                        : 'border-gray-200 text-gray-300 bg-gray-100 cursor-not-allowed'
+                        }`}
                     >
                       Next
                     </button>
@@ -645,8 +626,8 @@ export default function TripReport() {
 
       {/* Upload Modal */}
       {showUploadModal && (
-        <div 
-          className="fixed inset-0 z-50 overflow-y-auto" 
+        <div
+          className="fixed inset-0 z-50 overflow-y-auto"
           style={{ backdropFilter: 'blur(8px)', backgroundColor: 'rgba(0, 0, 0, 0.25)' }}
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
@@ -654,7 +635,7 @@ export default function TripReport() {
           transition={{ duration: 0.2 }}
         >
           <div className="flex items-center justify-center min-h-screen pt-4 px-4 pb-20 text-center">
-            <div 
+            <div
               className="inline-block align-bottom bg-white rounded-xl text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-2xl sm:w-full"
               initial={{ scale: 0.9, opacity: 0, y: 30 }}
               animate={{ scale: 1, opacity: 1, y: 0 }}
@@ -663,7 +644,7 @@ export default function TripReport() {
             >
               <form onSubmit={handleUpload}>
                 {/* Modal Header */}
-                <div 
+                <div
                   className="bg-gradient-to-r from-blue-600 to-blue-700 px-6 py-4"
                   initial={{ y: -20, opacity: 0 }}
                   animate={{ y: 0, opacity: 1 }}
@@ -671,7 +652,7 @@ export default function TripReport() {
                 >
                   <div className="flex items-center justify-between">
                     <div className="flex items-center space-x-3">
-                      <div 
+                      <div
                         className="p-2 bg-blue-500 rounded-lg"
                         initial={{ scale: 0, rotate: -180 }}
                         animate={{ scale: 1, rotate: 0 }}
@@ -705,14 +686,14 @@ export default function TripReport() {
                 </div>
 
                 {/* Modal Body */}
-                <div 
+                <div
                   className="px-6 py-6"
                   initial={{ y: 20, opacity: 0 }}
                   animate={{ y: 0, opacity: 1 }}
                   transition={{ delay: 0.2, duration: 0.3 }}
                 >
                   <div className="space-y-6">
-                    
+
                     {/* File Upload Section */}
                     <div
                       initial={{ y: 20, opacity: 0 }}
@@ -722,16 +703,15 @@ export default function TripReport() {
                       <label className="block text-sm font-semibold text-gray-700 mb-3">
                         Document File *
                       </label>
-                      
+
                       {/* Upload Area */}
-                      <div 
-                        className={`relative border-2 border-dashed rounded-xl p-8 text-center transition-all duration-300 ${
-                          isDragOver 
-                            ? 'border-blue-400 bg-blue-50 scale-105' 
-                            : selectedFile 
-                            ? 'border-green-400 bg-green-50' 
+                      <div
+                        className={`relative border-2 border-dashed rounded-xl p-8 text-center transition-all duration-300 ${isDragOver
+                          ? 'border-blue-400 bg-blue-50 scale-105'
+                          : selectedFile
+                            ? 'border-green-400 bg-green-50'
                             : 'border-gray-300 hover:border-gray-400 bg-gray-50 hover:scale-102'
-                        }`}
+                          }`}
                         onDragOver={handleDragOver}
                         onDragLeave={handleDragLeave}
                         onDrop={handleDrop}
@@ -740,14 +720,14 @@ export default function TripReport() {
                       >
                         {selectedFile ? (
                           // File Selected State
-                          <div 
+                          <div
                             className="space-y-4"
                             initial={{ scale: 0.8, opacity: 0 }}
                             animate={{ scale: 1, opacity: 1 }}
                             transition={{ duration: 0.4, type: "spring" }}
                           >
                             <div className="flex items-center justify-center">
-                              <div 
+                              <div
                                 className="p-3 bg-green-100 rounded-full"
                                 animate={{ rotate: [0, 10, -10, 0] }}
                                 transition={{ duration: 0.5 }}
@@ -780,18 +760,16 @@ export default function TripReport() {
                           // Default Upload State
                           <div className="space-y-4">
                             <div className="flex items-center justify-center">
-                              <div 
-                                className={`p-4 rounded-full transition-all duration-300 ${
-                                  isDragOver ? 'bg-blue-100' : 'bg-gray-100'
-                                }`}
-                                animate={isDragOver ? { 
+                              <div
+                                className={`p-4 rounded-full transition-all duration-300 ${isDragOver ? 'bg-blue-100' : 'bg-gray-100'
+                                  }`}
+                                animate={isDragOver ? {
                                   y: [-5, 5, -5],
                                   transition: { repeat: Infinity, duration: 1 }
                                 } : {}}
                               >
-                                <CloudUpload className={`w-12 h-12 transition-colors duration-300 ${
-                                  isDragOver ? 'text-blue-600' : 'text-gray-400'
-                                }`} />
+                                <CloudUpload className={`w-12 h-12 transition-colors duration-300 ${isDragOver ? 'text-blue-600' : 'text-gray-400'
+                                  }`} />
                               </div>
                             </div>
                             <div>
@@ -810,7 +788,7 @@ export default function TripReport() {
                                 </button>
                               </p>
                             </div>
-                            <div 
+                            <div
                               className="flex items-center justify-center space-x-4 text-xs text-gray-500"
                               initial={{ opacity: 0, y: 10 }}
                               animate={{ opacity: 1, y: 0 }}
@@ -861,7 +839,7 @@ export default function TripReport() {
                         type="text"
                         required
                         value={uploadForm.receiptNumber}
-                        onChange={(e) => setUploadForm({...uploadForm, receiptNumber: e.target.value})}
+                        onChange={(e) => setUploadForm({ ...uploadForm, receiptNumber: e.target.value })}
                         placeholder="e.g., RCP001234"
                         className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
                         whileFocus={{ scale: 1.02 }}
@@ -880,7 +858,7 @@ export default function TripReport() {
                       <textarea
                         rows={3}
                         value={uploadForm.notes}
-                        onChange={(e) => setUploadForm({...uploadForm, notes: e.target.value})}
+                        onChange={(e) => setUploadForm({ ...uploadForm, notes: e.target.value })}
                         placeholder="Add any notes about this document..."
                         className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 resize-none"
                         whileFocus={{ scale: 1.01 }}
@@ -889,7 +867,7 @@ export default function TripReport() {
 
                     {/* Error Message */}
                     {error && (
-                      <div 
+                      <div
                         className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg flex items-center"
                         initial={{ scale: 0.95, opacity: 0, x: -20 }}
                         animate={{ scale: 1, opacity: 1, x: 0 }}
@@ -903,7 +881,7 @@ export default function TripReport() {
                 </div>
 
                 {/* Modal Footer */}
-                <div 
+                <div
                   className="bg-gray-50 px-6 py-4 sm:flex sm:flex-row-reverse sm:space-x-reverse sm:space-x-3"
                   initial={{ y: 20, opacity: 0 }}
                   animate={{ y: 0, opacity: 1 }}

@@ -2,6 +2,7 @@ import express from "express";
 import mongoose from "mongoose";
 import dotenv from "dotenv";
 import cors from "cors";
+import archiveRoutes from "./routes/archive.js";
 import vehicleRoutes from "./routes/vehicle.js";
 import employeeRoutes from "./routes/employees.js";
 import authRoutes from "./routes/Auth.js";
@@ -9,7 +10,6 @@ import clientRoutes from "./routes/clients.js";
 import bookingRoutes from "./routes/bookings.js";
 import driverAuthRoutes from "./routes/driverAuth.js";
 import staffRoutes from "./routes/staff.js";
-import archiveRoutes from "./routes/archive.js";
 import tripReportsRoutes from './routes/tripReports.js';
 
 

@@ -1,7 +1,5 @@
-// server/routes/tripReports.js
 import express from "express";
 import multer from "multer";
-import path from "path";
 import fs from "fs";
 import TripReport from "../models/TripReport.js";
 
@@ -48,7 +46,7 @@ const fileFilter = (req, file, cb) => {
     }
 };
 
-const upload = multer({ 
+const upload = multer({
     storage: storage,
     fileFilter: fileFilter,
     limits: {
@@ -130,7 +128,7 @@ router.get("/:id", async (req, res) => {
     try {
         const tripReport = await TripReport.findById(req.params.id)
             .populate('bookingId', 'tripNumber reservationId companyName');
-        
+
         if (!tripReport) {
             return res.status(404).json({ message: "Trip report not found" });
         }
@@ -195,7 +193,7 @@ router.post("/", upload.single('document'), async (req, res) => {
         }
 
         console.error("Error uploading trip report:", err);
-        
+
         if (err.code === 11000) {
             return res.status(409).json({ message: "Receipt number already exists" });
         }
@@ -208,10 +206,10 @@ router.post("/", upload.single('document'), async (req, res) => {
 router.put("/:id", async (req, res) => {
     try {
         const { receiptNumber, notes, uploadedBy } = req.body;
-        
+
         const updatedReport = await TripReport.findByIdAndUpdate(
             req.params.id,
-            { 
+            {
                 receiptNumber,
                 notes,
                 uploadedBy,
@@ -231,7 +229,7 @@ router.put("/:id", async (req, res) => {
 
     } catch (err) {
         console.error("Error updating trip report:", err);
-        
+
         if (err.code === 11000) {
             return res.status(409).json({ message: "Receipt number already exists" });
         }
@@ -245,7 +243,7 @@ router.patch("/:id/archive", async (req, res) => {
     try {
         const tripReport = await TripReport.findByIdAndUpdate(
             req.params.id,
-            { 
+            {
                 isArchived: true,
                 updatedAt: new Date()
             },
@@ -253,7 +251,10 @@ router.patch("/:id/archive", async (req, res) => {
         );
 
         if (!tripReport) {
-            return res.status(404).json({ message: "Trip report not found" });
+            return res.status(404).json({
+                success: false,
+                message: "Trip report not found"
+            });
         }
 
         res.json({
@@ -263,7 +264,10 @@ router.patch("/:id/archive", async (req, res) => {
 
     } catch (err) {
         console.error("Error archiving trip report:", err);
-        res.status(500).json({ message: err.message });
+        res.status(500).json({
+            success: false,
+            message: err.message
+        });
     }
 });
 
@@ -272,7 +276,7 @@ router.patch("/:id/restore", async (req, res) => {
     try {
         const tripReport = await TripReport.findByIdAndUpdate(
             req.params.id,
-            { 
+            {
                 isArchived: false,
                 updatedAt: new Date()
             },
@@ -298,7 +302,7 @@ router.patch("/:id/restore", async (req, res) => {
 router.delete("/:id", async (req, res) => {
     try {
         const tripReport = await TripReport.findById(req.params.id);
-        
+
         if (!tripReport) {
             return res.status(404).json({ message: "Trip report not found" });
         }
@@ -323,7 +327,7 @@ router.delete("/:id", async (req, res) => {
 router.get("/download/:id", async (req, res) => {
     try {
         const tripReport = await TripReport.findById(req.params.id);
-        
+
         if (!tripReport) {
             return res.status(404).json({ message: "Trip report not found" });
         }
@@ -334,7 +338,7 @@ router.get("/download/:id", async (req, res) => {
 
         res.setHeader('Content-Type', tripReport.mimeType);
         res.setHeader('Content-Disposition', `attachment; filename="${tripReport.originalFileName}"`);
-        
+
         const fileStream = fs.createReadStream(tripReport.filePath);
         fileStream.pipe(res);
 
@@ -348,7 +352,7 @@ router.get("/download/:id", async (req, res) => {
 router.get("/view/:id", async (req, res) => {
     try {
         const tripReport = await TripReport.findById(req.params.id);
-        
+
         if (!tripReport) {
             return res.status(404).json({ message: "Trip report not found" });
         }
@@ -359,7 +363,7 @@ router.get("/view/:id", async (req, res) => {
 
         res.setHeader('Content-Type', tripReport.mimeType);
         res.setHeader('Content-Disposition', `inline; filename="${tripReport.originalFileName}"`);
-        
+
         const fileStream = fs.createReadStream(tripReport.filePath);
         fileStream.pipe(res);
 

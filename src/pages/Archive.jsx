@@ -212,8 +212,8 @@ function getTableHeaders(tab) {
   switch (tab) {
     case 'bookings':
       return ['Reservation ID', 'Reservation Date', 'Vehicle Type', 'Destination'];
-    // case 'tripReports':
-    //   return ['Trip Number', 'Driver', 'Date', 'Status'];
+    case 'tripReports':
+      return ['Receipt Number', 'Document Type', 'File Name', 'Uploaded By', 'Notes'];
     case 'clients':
       return ['Client Name', 'Location', 'Branch', 'Date Added'];
     case 'vehicles':
@@ -252,17 +252,16 @@ function getTableCells(tab, item) {
           </td>
         </>
       );
-    // case 'tripReports':
-    //   return (
-    //     <>
-    //       <td className="px-6 py-4">{item.tripNumber || 'N/A'}</td>
-    //       <td className="px-6 py-4">{item.driver || item.driverName || 'N/A'}</td>
-    //       <td className="px-6 py-4">
-    //         {item.date ? new Date(item.date).toLocaleDateString() : 'N/A'}
-    //       </td>
-    //       <td className="px-6 py-4">{item.status || 'N/A'}</td>
-    //     </>
-    //   );
+    case 'tripReports':
+      return (
+        <>
+          <td className="px-6 py-4">{item.receiptNumber || 'N/A'}</td>
+          <td className="px-6 py-4">{item.documentType || 'N/A'}</td>
+          <td className="px-6 py-4">{item.fileName || 'N/A'}</td>
+          <td className="px-6 py-4">{item.uploadedBy || 'N/A'}</td>
+          <td className="px-6 py-4">{item.notes || 'N/A'}</td>
+        </>
+      );
     case 'vehicles':
       return (
         <>

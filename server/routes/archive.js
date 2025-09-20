@@ -1,13 +1,13 @@
 import express from 'express';
 import Booking from '../models/Booking.js';
-// import TripReport from '../models/TripReport.js';
+import TripReport from '../models/TripReport.js';
 import Client from '../models/Client.js';
 import Vehicle from '../models/Vehicle.js';
 import Employee from '../models/Employee.js';
 
 const router = express.Router();
 
-// Helper function to get the correct model - ADD THIS
+// Helper function to get the correct model
 function getModelByType(type) {
     switch (type) {
         case 'bookings':
@@ -18,49 +18,23 @@ function getModelByType(type) {
             return Vehicle;
         case 'employees':
             return Employee;
-        // case 'tripReports':
-        //     return TripReport;
+        case 'tripReports':
+            return TripReport;
         default:
             throw new Error(`Unknown model type: ${type}`);
     }
 }
 
-// Get archived bookings
-router.get('/bookings/archived', async (req, res) => {
+// Generic route to get archived items by type
+router.get('/:type/archived', async (req, res) => {
     try {
-        const archivedBookings = await Booking.find({ isArchived: true });
-        res.json(archivedBookings);
-    } catch (err) {
-        res.status(500).json({ message: err.message });
-    }
-});
+        const { type } = req.params;
+        const Model = getModelByType(type);
 
-// Get archived clients
-router.get('/clients/archived', async (req, res) => {
-    try {
-        const archivedClients = await Client.find({ isArchived: true });
-        res.json(archivedClients);
+        const archivedItems = await Model.find({ isArchived: true });
+        res.json(archivedItems);
     } catch (err) {
-        res.status(500).json({ message: err.message });
-    }
-});
-
-// Get archived vehicles
-router.get('/vehicles/archived', async (req, res) => {
-    try {
-        const archivedVehicles = await Vehicle.find({ isArchived: true });
-        res.json(archivedVehicles);
-    } catch (err) {
-        res.status(500).json({ message: err.message });
-    }
-});
-
-// Get archived employees
-router.get('/employees/archived', async (req, res) => {
-    try {
-        const archivedEmployees = await Employee.find({ isArchived: true });
-        res.json(archivedEmployees);
-    } catch (err) {
+        console.error(`Error fetching archived ${req.params.type}:`, err);
         res.status(500).json({ message: err.message });
     }
 });
@@ -69,7 +43,7 @@ router.get('/employees/archived', async (req, res) => {
 router.patch('/:type/:id/restore', async (req, res) => {
     try {
         const { type, id } = req.params;
-        const Model = getModelByType(type); // Now this function exists
+        const Model = getModelByType(type);
 
         const item = await Model.findByIdAndUpdate(
             id,
@@ -81,7 +55,7 @@ router.patch('/:type/:id/restore', async (req, res) => {
             return res.status(404).json({ message: 'Item not found' });
         }
 
-        res.json({ success: true, message: `${type} restored successfully`, item });
+        res.json({ success: true, message: `${type.slice(0, -1)} restored successfully`, item });
     } catch (err) {
         console.error('Error restoring item:', err);
         res.status(500).json({ message: err.message });
