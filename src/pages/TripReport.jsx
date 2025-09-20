@@ -124,8 +124,8 @@ export default function TripReport() {
   const processFile = (file) => {
     if (!file) return;
 
-    // Validate file size (10MB limit)
-    if (file.size > 10 * 1024 * 1024) {
+    // Validate file size (20MB limit)
+    if (file.size > 20 * 1024 * 1024) {
       setError('File size must be less than 10MB');
       return;
     }
@@ -833,7 +833,7 @@ export default function TripReport() {
                                 Images
                               </span>
                             </div>
-                            <p className="text-xs text-gray-500">Maximum file size: 10MB</p>
+                            <p className="text-xs text-gray-500">Maximum file size: 20MB</p>
                           </div>
                         )}
 

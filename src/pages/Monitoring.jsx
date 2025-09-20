@@ -18,7 +18,7 @@ import {
   User,
   FileText  // Added this import for receipt icon
 } from "lucide-react";
-import ReceiptGenerator from "../components/ReceiptGenerator"; // Add this import
+import ReceiptGenerator from "../components/InvoiceGenerator"; // Add this import
 
 export default function Monitoring() {
   const [bookings, setBookings] = useState([]);
@@ -1334,7 +1334,7 @@ export default function Monitoring() {
                           </div>
                         )}
                         
-                        {/* NEW: Generate Receipt Button for Completed Status */}
+                        {/* NEW: Generate Invoice Button for Completed Status */}
                         {selectedBooking.status === "Completed" && (
                           <motion.button 
                             onClick={handleGenerateReceipt}
@@ -1343,7 +1343,7 @@ export default function Monitoring() {
                             whileTap={{ scale: 0.98 }}
                           >
                             <FileText className="w-4 h-4" />
-                            <span>Generate Receipt</span>
+                            <span>Generate Invoice</span>
                           </motion.button>
                         )}
                       </motion.div>
