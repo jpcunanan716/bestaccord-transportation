@@ -53,6 +53,53 @@ export default function TripReport() {
   const [uniqueDocumentTypes, setUniqueDocumentTypes] = useState(['All']);
   const [uniqueUploadedBy, setUniqueUploadedBy] = useState(['All']);
 
+  // Enhanced API call function with better error handling
+  const makeAPICall = async (url, options = {}) => {
+    try {
+      console.log('Making API call to:', url);
+      console.log('Options:', options);
+
+      const response = await fetch(url, options);
+
+      // Log response details
+      console.log('Response status:', response.status);
+      console.log('Response headers:', Object.fromEntries(response.headers.entries()));
+
+      // Check if response is ok
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error('Error response text:', errorText);
+
+        // Try to parse as JSON first, fallback to text
+        let errorData;
+        try {
+          errorData = JSON.parse(errorText);
+        } catch {
+          errorData = { message: errorText || `HTTP ${response.status} Error` };
+        }
+
+        throw new Error(errorData.message || `Server error: ${response.status}`);
+      }
+
+      // Check content type
+      const contentType = response.headers.get('content-type');
+      console.log('Content-Type:', contentType);
+
+      if (contentType && contentType.includes('application/json')) {
+        const data = await response.json();
+        console.log('Response data:', data);
+        return data;
+      } else {
+        const text = await response.text();
+        console.error('Non-JSON response:', text);
+        throw new Error('Server returned non-JSON response. Please check server configuration.');
+      }
+    } catch (error) {
+      console.error('API call failed:', error);
+      throw error;
+    }
+  };
+
   // Fetch trip reports
   const fetchTripReports = async (page = 1) => {
     setLoading(true);
@@ -66,18 +113,8 @@ export default function TripReport() {
         ...(generalSearch && { search: generalSearch })
       });
 
-      const response = await fetch(`http://localhost:5000/api/trip-reports?${params}`, {
-        method: 'GET',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-      });
+      const data = await makeAPICall(`http://localhost:5000/api/trip-reports?${params}`);
 
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
-
-      const data = await response.json();
       setTripReports(data.tripReports || []);
       setPagination(data.pagination || {});
 
@@ -121,38 +158,51 @@ export default function TripReport() {
     processFile(file);
   };
 
-  // Process selected file
+  // Process selected file with enhanced validation
   const processFile = (file) => {
     if (!file) return;
 
-    // Validate file size (10MB limit)
-    if (file.size > 10 * 1024 * 1024) {
-      setError('File size must be less than 10MB');
+    console.log('Processing file:', file);
+
+    // Validate file size (20MB limit)
+    if (file.size > 20 * 1024 * 1024) {
+      setError('File size must be less than 20MB');
       return;
     }
 
-    // Validate file type
-    const allowedTypes = [
+    // Enhanced file type validation
+    const allowedMimeTypes = [
       'application/pdf',
       'application/msword',
       'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
       'application/vnd.ms-excel',
       'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
       'image/jpeg',
+      'image/jpg',
       'image/png',
       'text/plain'
     ];
 
-    if (!allowedTypes.includes(file.type)) {
-      setError('Invalid file type. Only PDF, DOC, DOCX, Excel, JPG, PNG files are allowed.');
+    const allowedExtensions = ['.pdf', '.doc', '.docx', '.xls', '.xlsx', '.jpg', '.jpeg', '.png', '.txt'];
+    const fileExtension = file.name.toLowerCase().substring(file.name.lastIndexOf('.'));
+
+    if (!allowedMimeTypes.includes(file.type) && !allowedExtensions.includes(fileExtension)) {
+      setError('Invalid file type. Only PDF, DOC, DOCX, Excel, JPG, PNG, and TXT files are allowed.');
+      return;
+    }
+
+    // Additional file name validation
+    if (file.name.length > 255) {
+      setError('File name is too long. Please use a shorter file name.');
       return;
     }
 
     setSelectedFile(file);
     setError('');
+    console.log('File processed successfully:', file.name, file.type, file.size);
   };
 
-  // Handle upload form submission
+  // Enhanced upload handler with better error handling
   const handleUpload = async (event) => {
     event.preventDefault();
 
@@ -166,38 +216,64 @@ export default function TripReport() {
       return;
     }
 
+    // Validate receipt number format
+    if (uploadForm.receiptNumber.trim().length < 3) {
+      setError('Receipt number must be at least 3 characters long');
+      return;
+    }
+
     setUploading(true);
     setError('');
 
     try {
+      // Create and validate FormData
       const formData = new FormData();
       formData.append('document', selectedFile);
       formData.append('receiptNumber', uploadForm.receiptNumber.trim());
-      formData.append('notes', uploadForm.notes);
+      formData.append('notes', uploadForm.notes.trim());
       formData.append('uploadedBy', 'Admin');
 
-      const response = await fetch('http://localhost:5000/api/trip-reports', {
-        method: 'POST',
-        body: formData, // Don't set Content-Type header for FormData
-      });
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.message || 'Upload failed');
+      // Log FormData contents
+      console.log('FormData contents:');
+      for (let [key, value] of formData.entries()) {
+        console.log(key, value);
       }
 
+      // Make the upload request with enhanced error handling
+      const data = await makeAPICall('http://localhost:5000/api/trip-reports', {
+        method: 'POST',
+        body: formData,
+        // Don't set Content-Type header for FormData - let browser handle it
+      });
+
+      console.log('Upload successful:', data);
       setSuccess('Trip report uploaded successfully!');
       setShowUploadModal(false);
       resetUploadForm();
       fetchTripReports(currentPage);
 
-      // Clear success message after 3 seconds
-      setTimeout(() => setSuccess(''), 3000);
+      // Clear success message after 5 seconds
+      setTimeout(() => setSuccess(''), 5000);
 
     } catch (err) {
       console.error('Error uploading trip report:', err);
-      setError(err.message);
+
+      // Provide more specific error messages
+      let errorMessage = err.message;
+
+      if (errorMessage.includes('Receipt number already exists')) {
+        errorMessage = 'A document with this receipt number already exists. Please use a different receipt number.';
+      } else if (errorMessage.includes('File too large')) {
+        errorMessage = 'File is too large. Please select a file smaller than 20MB.';
+      } else if (errorMessage.includes('Invalid file type')) {
+        errorMessage = 'Invalid file type. Please select a PDF, DOC, DOCX, Excel, JPG, PNG, or TXT file.';
+      } else if (errorMessage.includes('Server returned non-JSON response')) {
+        errorMessage = 'Server configuration error. Please contact the administrator.';
+      } else if (errorMessage.includes('Failed to fetch')) {
+        errorMessage = 'Cannot connect to server. Please check if the server is running and try again.';
+      }
+
+      setError(errorMessage);
     } finally {
       setUploading(false);
     }
@@ -210,33 +286,47 @@ export default function TripReport() {
       notes: ''
     });
     setSelectedFile(null);
+    setIsDragOver(false);
     if (fileInputRef.current) {
       fileInputRef.current.value = '';
     }
   };
 
   // Handle archive/delete
-  const handleDelete = async (id) => {
-    if (!window.confirm('Are you sure you want to archive this document?')) return;
+  const handleArchive = async (id) => {
+    if (!window.confirm('Are you sure you want to archive this trip report?')) return;
+
     try {
-      await axios.patch(`http://localhost:5000/api/trip-reports/${id}/archive`, {
-        isArchive: true,
+      const response = await fetch(`http://localhost:5000/api/trip-reports/${id}/archive`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+        }
       });
-      alert('Document archived successfully');
-      fetchTripReports();
+
+      if (!response.ok) {
+        throw new Error('Failed to archive trip report');
+      }
+
+      setSuccess('Trip report archived successfully');
+      fetchTripReports(currentPage);
+
+      setTimeout(() => setSuccess(''), 3000);
+
     } catch (err) {
-      console.error('Error archiving document:', err);
-      alert('Failed to archive document');
+      console.error('Error archiving trip report:', err);
+      setError('Failed to archive trip report');
     }
   };
 
-  // Handle download
+  // Handle download with enhanced error handling
   const handleDownload = async (id, fileName) => {
     try {
       const response = await fetch(`http://localhost:5000/api/trip-reports/download/${id}`);
 
       if (!response.ok) {
-        throw new Error('Failed to download file');
+        const errorText = await response.text();
+        throw new Error(errorText || 'Failed to download file');
       }
 
       const blob = await response.blob();
@@ -252,18 +342,18 @@ export default function TripReport() {
 
     } catch (err) {
       console.error('Error downloading file:', err);
-      setError('Failed to download file');
+      setError(`Failed to download file: ${err.message}`);
     }
   };
 
-  // Handle view/preview
+  // Handle view/preview with enhanced error handling
   const handleView = async (id) => {
     try {
       const url = `http://localhost:5000/api/trip-reports/view/${id}`;
       window.open(url, '_blank');
     } catch (err) {
       console.error('Error viewing file:', err);
-      setError('Failed to view file');
+      setError(`Failed to view file: ${err.message}`);
     }
   };
 
@@ -333,10 +423,29 @@ export default function TripReport() {
       const timer = setTimeout(() => {
         setError('');
         setSuccess('');
-      }, 5000);
+      }, 8000); // Increased timeout for better UX
       return () => clearTimeout(timer);
     }
   }, [error, success]);
+
+  // Test server connection on component mount
+  useEffect(() => {
+    const testConnection = async () => {
+      try {
+        const response = await fetch('http://localhost:5000/api/trip-reports/stats/overview');
+        if (!response.ok) {
+          console.warn('Server connection test failed:', response.status);
+        } else {
+          console.log('Server connection successful');
+        }
+      } catch (err) {
+        console.warn('Server connection test failed:', err.message);
+        setError('Cannot connect to server. Please ensure the server is running on port 5000.');
+      }
+    };
+
+    testConnection();
+  }, []);
 
   return (
     <div className="space-y-6">
@@ -367,7 +476,13 @@ export default function TripReport() {
       {error && (
         <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded-lg flex items-center">
           <AlertCircle className="w-5 h-5 mr-2" />
-          {error}
+          <div>
+            <div className="font-medium">Upload Error</div>
+            <div className="text-sm">{error}</div>
+            <div className="text-xs mt-1 text-red-600">
+              If this error persists, please check server logs or contact support.
+            </div>
+          </div>
         </div>
       )}
 
@@ -629,10 +744,6 @@ export default function TripReport() {
         <div
           className="fixed inset-0 z-50 overflow-y-auto"
           style={{ backdropFilter: 'blur(8px)', backgroundColor: 'rgba(0, 0, 0, 0.25)' }}
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          exit={{ opacity: 0 }}
-          transition={{ duration: 0.2 }}
         >
           <div className="flex items-center justify-center min-h-screen pt-4 px-4 pb-20 text-center">
             <div
@@ -660,11 +771,7 @@ export default function TripReport() {
                       >
                         <CloudUpload className="w-6 h-6 text-white" />
                       </div>
-                      <div
-                        initial={{ x: -20, opacity: 0 }}
-                        animate={{ x: 0, opacity: 1 }}
-                        transition={{ delay: 0.15, duration: 0.3 }}
-                      >
+                      <div>
                         <h3 className="text-xl font-bold text-white">Upload Trip Report</h3>
                         <p className="text-blue-100 text-sm">Add a new document to your trip reports</p>
                       </div>
@@ -677,8 +784,6 @@ export default function TripReport() {
                         setError('');
                       }}
                       className="text-blue-100 hover:text-white transition-colors p-2 rounded-lg hover:bg-blue-600"
-                      whileHover={{ scale: 1.05 }}
-                      whileTap={{ scale: 0.95 }}
                     >
                       <X className="w-5 h-5" />
                     </button>
@@ -695,11 +800,7 @@ export default function TripReport() {
                   <div className="space-y-6">
 
                     {/* File Upload Section */}
-                    <div
-                      initial={{ y: 20, opacity: 0 }}
-                      animate={{ y: 0, opacity: 1 }}
-                      transition={{ delay: 0.25, duration: 0.3 }}
-                    >
+                    <div>
                       <label className="block text-sm font-semibold text-gray-700 mb-3">
                         Document File *
                       </label>
@@ -707,16 +808,14 @@ export default function TripReport() {
                       {/* Upload Area */}
                       <div
                         className={`relative border-2 border-dashed rounded-xl p-8 text-center transition-all duration-300 ${isDragOver
-                          ? 'border-blue-400 bg-blue-50 scale-105'
-                          : selectedFile
-                            ? 'border-green-400 bg-green-50'
-                            : 'border-gray-300 hover:border-gray-400 bg-gray-50 hover:scale-102'
+                            ? 'border-blue-400 bg-blue-50 scale-105'
+                            : selectedFile
+                              ? 'border-green-400 bg-green-50'
+                              : 'border-gray-300 hover:border-gray-400 bg-gray-50 hover:scale-102'
                           }`}
                         onDragOver={handleDragOver}
                         onDragLeave={handleDragLeave}
                         onDrop={handleDrop}
-                        whileHover={{ scale: 1.02 }}
-                        transition={{ type: "spring", stiffness: 300 }}
                       >
                         {selectedFile ? (
                           // File Selected State
@@ -749,8 +848,6 @@ export default function TripReport() {
                                 if (fileInputRef.current) fileInputRef.current.value = '';
                               }}
                               className="inline-flex items-center px-3 py-1.5 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 transition-colors"
-                              whileHover={{ scale: 1.05 }}
-                              whileTap={{ scale: 0.95 }}
                             >
                               <X className="w-4 h-4 mr-1" />
                               Remove
@@ -782,7 +879,6 @@ export default function TripReport() {
                                   type="button"
                                   onClick={() => fileInputRef.current?.click()}
                                   className="text-blue-600 hover:text-blue-700 font-medium underline"
-                                  whileHover={{ scale: 1.05 }}
                                 >
                                   browse files
                                 </button>
@@ -811,7 +907,7 @@ export default function TripReport() {
                                 Images
                               </span>
                             </div>
-                            <p className="text-xs text-gray-500">Maximum file size: 10MB</p>
+                            <p className="text-xs text-gray-500">Maximum file size: 20MB</p>
                           </div>
                         )}
 
@@ -827,11 +923,7 @@ export default function TripReport() {
                     </div>
 
                     {/* Receipt Number - Full Width */}
-                    <div
-                      initial={{ x: -20, opacity: 0 }}
-                      animate={{ x: 0, opacity: 1 }}
-                      transition={{ delay: 0.3, duration: 0.3 }}
-                    >
+                    <div>
                       <label className="block text-sm font-semibold text-gray-700 mb-2">
                         Receipt Number *
                       </label>
@@ -842,16 +934,11 @@ export default function TripReport() {
                         onChange={(e) => setUploadForm({ ...uploadForm, receiptNumber: e.target.value })}
                         placeholder="e.g., RCP001234"
                         className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
-                        whileFocus={{ scale: 1.02 }}
                       />
                     </div>
 
                     {/* Notes */}
-                    <div
-                      initial={{ x: -20, opacity: 0 }}
-                      animate={{ x: 0, opacity: 1 }}
-                      transition={{ delay: 0.35, duration: 0.3 }}
-                    >
+                    <div>
                       <label className="block text-sm font-semibold text-gray-700 mb-2">
                         Notes (Optional)
                       </label>
@@ -861,7 +948,6 @@ export default function TripReport() {
                         onChange={(e) => setUploadForm({ ...uploadForm, notes: e.target.value })}
                         placeholder="Add any notes about this document..."
                         className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 resize-none"
-                        whileFocus={{ scale: 1.01 }}
                       />
                     </div>
 
@@ -891,8 +977,6 @@ export default function TripReport() {
                     type="submit"
                     disabled={uploading || !selectedFile || !uploadForm.receiptNumber.trim()}
                     className="w-full sm:w-auto inline-flex justify-center items-center rounded-lg border border-transparent shadow-sm px-6 py-3 bg-blue-600 text-base font-medium text-white hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-                    whileHover={{ scale: 1.05 }}
-                    whileTap={{ scale: 0.95 }}
                   >
                     {uploading ? (
                       <>
@@ -914,8 +998,6 @@ export default function TripReport() {
                       setError('');
                     }}
                     className="mt-3 sm:mt-0 w-full sm:w-auto inline-flex justify-center rounded-lg border border-gray-300 shadow-sm px-6 py-3 bg-white text-base font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors"
-                    whileHover={{ scale: 1.05 }}
-                    whileTap={{ scale: 0.95 }}
                   >
                     Cancel
                   </button>
