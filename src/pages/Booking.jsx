@@ -333,21 +333,21 @@ function Booking() {
 
   // Updated vehicle change handler to auto-fill vehicleType
   const handleVehicleChange = (e) => {
-    const selectedVehicle = vehicles.find(v => v._id === e.target.value);
-    if (selectedVehicle) {
-      setFormData(prev => ({
-        ...prev,
-        vehicleId: selectedVehicle._id, // Store the _id for the dropdown value
-        vehicleType: selectedVehicle.vehicleType
-      }));
-    } else {
-      setFormData(prev => ({
-        ...prev,
-        vehicleId: "",
-        vehicleType: ""
-      }));
-    }
-  };
+  const selectedVehicle = vehicles.find(v => v.vehicleId === e.target.value); // Changed from v._id to v.vehicleId
+  if (selectedVehicle) {
+    setFormData(prev => ({
+      ...prev,
+      vehicleId: selectedVehicle.vehicleId,
+      vehicleType: selectedVehicle.vehicleType
+    }));
+  } else {
+    setFormData(prev => ({
+      ...prev,
+      vehicleId: "",
+      vehicleType: ""
+    }));
+  }
+};
 
   // Helper function to format employee names for display
   const formatEmployeeNames = (employeeAssigned) => {
@@ -1114,29 +1114,29 @@ function Booking() {
                         Select Vehicle *
                       </label>
                       <select
-                        name="vehicleId"
-                        value={formData.vehicleId}
-                        onChange={handleVehicleChange}
-                        required
-                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-400"
-                      >
-                        <option value="">Select Vehicle</option>
-                        {(() => {
-                          const key = `${formData.originAddress?.toLowerCase()} - ${formData.destinationAddress?.toLowerCase()}`;
-                          const allowedVehiclesArr = addressDefaults[key];
-                          const allowedVehicleTypes = Array.isArray(allowedVehiclesArr)
-                            ? allowedVehiclesArr.map(def => def.vehicleType)
-                            : [];
+  name="vehicleId"
+  value={formData.vehicleId}
+  onChange={handleVehicleChange}
+  required
+  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-400"
+>
+  <option value="">Select Vehicle</option>
+  {(() => {
+    const key = `${formData.originAddress?.toLowerCase()} - ${formData.destinationAddress?.toLowerCase()}`;
+    const allowedVehiclesArr = addressDefaults[key];
+    const allowedVehicleTypes = Array.isArray(allowedVehiclesArr)
+      ? allowedVehiclesArr.map(def => def.vehicleType)
+      : [];
 
-                          return getAvailableVehicles()
-                            .filter(vehicle => allowedVehicleTypes.length === 0 || allowedVehicleTypes.includes(vehicle.vehicleType))
-                            .map(vehicle => (
-                              <option key={vehicle._id} value={vehicle._id}>
-                                {`${vehicle.vehicleId} - ${vehicle.manufacturedBy} ${vehicle.model} (${vehicle.vehicleType}) - ${vehicle.plateNumber}`}
-                              </option>
-                            ));
-                        })()}
-                      </select>
+    return getAvailableVehicles()
+      .filter(vehicle => allowedVehicleTypes.length === 0 || allowedVehicleTypes.includes(vehicle.vehicleType))
+      .map(vehicle => (
+        <option key={vehicle._id} value={vehicle.vehicleId}> {/* Changed from vehicle._id to vehicle.vehicleId */}
+          {`${vehicle.vehicleId} - ${vehicle.manufacturedBy} ${vehicle.model} (${vehicle.vehicleType}) - ${vehicle.plateNumber}`}
+        </option>
+      ));
+  })()}
+</select>
                       {errors.vehicleId && <p className="text-red-500 text-xs mt-1">{errors.vehicleId}</p>}
                     </div>
 

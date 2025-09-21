@@ -29,8 +29,8 @@ function Client() {
 
   const [formData, setFormData] = useState({
     clientName: "",
+    clientBranch: "",
     location: "",
-    branch: "",
     region: "",
     province: "",
     city: "",
@@ -208,7 +208,7 @@ function Client() {
 
       // Extract unique values from active clients only
       setUniqueNames([...new Set(activeClients.map((c) => c.clientName))]);
-      setUniqueBranches([...new Set(activeClients.map((c) => c.branch))]);
+      setUniqueBranches([...new Set(activeClients.map((c) => c.clientBranch))]);
       setUniqueLocations([...new Set(activeClients.map((c) => c.location))]);
       setUniqueDates([
         ...new Set(
@@ -237,7 +237,7 @@ function Client() {
       results = results.filter((client) => client.location === searchLocation);
     }
     if (searchBranch) {
-      results = results.filter((client) => client.branch === searchBranch);
+      results = results.filter((client) => client.clientBranch === searchBranch);
     }
     if (searchDate) {
       results = results.filter(
@@ -254,7 +254,7 @@ function Client() {
           client.location
             ?.toLowerCase()
             .includes(generalSearch.toLowerCase()) ||
-          client.branch?.toLowerCase().includes(generalSearch.toLowerCase()) ||
+          client.clientBranch?.toLowerCase().includes(generalSearch.toLowerCase()) ||
           new Date(client.createdAt)
             .toLocaleDateString()
             .includes(generalSearch)
@@ -279,8 +279,8 @@ function Client() {
       setEditClient(client);
       setFormData({
         clientName: client.clientName || "",
+        clientBranch: client.clientBranch || "",
         location: client.location || "",
-        branch: client.branch || "",
         region: client.region || "",
         province: client.province || "",
         city: client.city || "",
@@ -290,8 +290,8 @@ function Client() {
       setEditClient(null);
       setFormData({
         clientName: "",
+        clientBranch: "",
         location: "",
-        branch: "",
         region: "",
         province: "",
         city: "",
@@ -461,8 +461,8 @@ function Client() {
                 <tr>
                   <th className="px-6 py-3 text-left font-semibold text-gray-700">No</th>
                   <th className="px-6 py-3 text-left font-semibold text-gray-700">Client Name</th>
-                  <th className="px-6 py-3 text-left font-semibold text-gray-700">Location</th>
                   <th className="px-6 py-3 text-left font-semibold text-gray-700">Branch</th>
+                  <th className="px-6 py-3 text-left font-semibold text-gray-700">Address</th>
                   <th className="px-6 py-3 text-left font-semibold text-gray-700">Date Added</th>
                   <th className="px-6 py-3 text-center font-semibold text-gray-700">Actions</th>
                 </tr>
@@ -486,8 +486,12 @@ function Client() {
                     >
                       <td className="px-6 py-3">{startIndex + index + 1}</td>
                       <td className="px-6 py-3">{client.clientName}</td>
-                      <td className="px-6 py-3">{city}</td>
-                      <td className="px-6 py-3">{barangay}</td>
+                      <td className="px-6 py-3">{client.clientBranch}</td>
+                      <td className="px-6 py-3">
+                        {[client.address.barangay, client.address.city, client.address.province, client.address.region]
+                          .filter(Boolean)
+                          .join(', ')}
+                      </td>
                       <td className="px-6 py-3">{new Date(client.createdAt).toLocaleDateString()}</td>
                       <td className="px-6 py-3 text-center space-x-2 inline-flex">
                         <button
@@ -568,6 +572,17 @@ function Client() {
                 required
                 className="border p-2 rounded focus:ring-2 focus:ring-indigo-400"
               />
+
+              <input
+                type="text"
+                name="clientBranch"
+                placeholder="Client Branch"
+                value={formData.clientBranch}
+                onChange={handleChange}
+                required
+                className="border p-2 rounded focus:ring-2 focus:ring-indigo-400"
+              />
+
 
               {/* Address Fields */}
               <select

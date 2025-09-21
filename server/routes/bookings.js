@@ -125,7 +125,6 @@ router.get("/:id", async (req, res) => {
   }
 });
 
-// Add these helper functions at the top of the file
 async function updateVehicleAndEmployeeStatus(booking, newStatus) {
   try {
     if (booking.vehicleId) {
@@ -134,7 +133,11 @@ async function updateVehicleAndEmployeeStatus(booking, newStatus) {
         { status: newStatus },
         { new: true }
       );
-      console.log(`✅ Vehicle ${booking.vehicleId} status updated to ${newStatus}`);
+      if (!vehicleResult) {
+        console.warn(`⚠️ Vehicle ${booking.vehicleId} not found`);
+      } else {
+        console.log(`✅ Vehicle ${booking.vehicleId} status updated to ${newStatus}`);
+      }
     }
 
     // Update employees status

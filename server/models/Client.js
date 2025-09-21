@@ -1,17 +1,18 @@
-import mongoose from "mongoose";
+  import mongoose from "mongoose";
 
-const clientSchema = new mongoose.Schema(
-  {
-    clientName: { type: String, required: true },
-    address: {
-      region: { type: String },
-      province: { type: String },
-      city: { type: String },
-      barangay: { type: String },
+  const clientSchema = new mongoose.Schema(
+    {
+      clientName: { type: String, required: true },
+      clientBranch: { type: String, required: true },
+      address: {
+        region: { type: String },
+        province: { type: String },
+        city: { type: String },
+        barangay: { type: String },
+      },
+      isArchived: { type: Boolean, default: false },
     },
-    isArchived: { type: Boolean, default: false },
-  },
-  { timestamps: true }
-);
+    { timestamps: true }
+  );
 
-export default mongoose.model("Client", clientSchema);
+  export default mongoose.model("Client", clientSchema);
