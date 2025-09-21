@@ -215,6 +215,19 @@ router.post("/", async (req, res) => {
 // PUT update booking
 router.put("/:id", async (req, res) => {
   try {
+    // First, get the current booking to check its status
+    const currentBooking = await Booking.findById(req.params.id);
+    if (!currentBooking) {
+      return res.status(404).json({ message: "Booking not found" });
+    }
+
+    // Prevent editing if booking is ready to go or in transit
+    if (currentBooking.status === "Ready to go" || currentBooking.status === "In Transit") {
+      return res.status(400).json({
+        message: "Cannot edit booking while ready to go or in transit"
+      });
+    }
+
     console.log("🔄 Updating booking:", req.params.id, "with data:", req.body);
 
     // Don't allow updating auto-generated IDs through PUT request (except for status updates)
@@ -310,6 +323,23 @@ router.patch("/:id/status", async (req, res) => {
 // PATCH archive booking
 router.patch('/:id/archive', async (req, res) => {
   try {
+    // First, get the current booking to check its status
+    const currentBooking = await Booking.findById(req.params.id);
+    if (!currentBooking) {
+      return res.status(404).json({
+        success: false,
+        message: "Booking not found"
+      });
+    }
+
+    // Prevent archiving if booking is ready to go or in transit
+    if (currentBooking.status === "Ready to go" || currentBooking.status === "In Transit") {
+      return res.status(400).json({
+        success: false,
+        message: "Cannot archive booking while ready to go or in transit"
+      });
+    }
+
     const booking = await Booking.findByIdAndUpdate(
       req.params.id,
       {

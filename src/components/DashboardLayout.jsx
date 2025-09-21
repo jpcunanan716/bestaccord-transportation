@@ -84,7 +84,7 @@ export default function DashboardLayout() {
 
           {/* Menu Items */}
           <nav
-            className={`space-y-2 transition-all duration-300 ${isSidebarCollapsed ? "px-3" : "px-4"
+            className={`space-y-2 transition-all duration-300 ${isSidebarCollapsed ? "px-3 pb-4" : "px-4 pb-4"
               }`}
           >
             {menuItems.map((item) => (

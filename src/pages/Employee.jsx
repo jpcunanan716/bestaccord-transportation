@@ -340,19 +340,19 @@ function Employee() {
                         onClick={() => viewEmployee(emp)}
                         className="text-blue-600 hover:text-blue-800 px-3 py-1 rounded hover:bg-blue-50 inline-flex items-center gap-1 transition transform hover:scale-105"
                       >
-                        <Eye size={16} /> View
+                        <Eye />
                       </button>
                       <button
                         onClick={() => openModal(emp)}
                         className="text-yellow-600 hover:text-yellow-800 px-3 py-1 rounded hover:bg-yellow-50 inline-flex items-center gap-1 transition transform hover:scale-105"
                       >
-                        <Pencil size={16} /> Edit
+                        <Pencil />
                       </button>
                       <button
                         onClick={() => handleDelete(emp._id)}
                         className="text-red-600 hover:text-red-800 px-3 py-1 rounded hover:bg-red-50 inline-flex items-center gap-1 transition transform hover:scale-105"
                       >
-                        <Trash2 size={16} /> Archive
+                        <Trash2 />
                       </button>
                     </td>
                   </tr>

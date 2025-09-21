@@ -797,15 +797,43 @@ function Booking() {
                       >
                         <Eye />
                       </button>
+                      
+                      {/* Conditional Edit Button - Disabled when "On Trip" */}
                       <button
-                        onClick={() => openModal(booking)}
-                        className="text-yellow-600 hover:text-yellow-800 px-3 py-1 rounded hover:bg-yellow-50 inline-flex items-center gap-1 transition transform hover:scale-105"
+                        onClick={() => {
+                          if (booking.status === "On Trip") {
+                            alert("Cannot edit booking while on trip");
+                            return;
+                          }
+                          openModal(booking);
+                        }}
+                        disabled={booking.status === "On Trip"}
+                        className={`px-3 py-1 rounded inline-flex items-center gap-1 transition ${
+                          booking.status === "On Trip"
+                            ? "text-gray-400 cursor-not-allowed bg-gray-100"
+                            : "text-yellow-600 hover:text-yellow-800 hover:bg-yellow-50 transform hover:scale-105"
+                        }`}
+                        title={booking.status === "On Trip" ? "Cannot edit booking while on trip" : "Edit booking"}
                       >
                         <Pencil />
                       </button>
+                      
+                      {/* Conditional Archive Button - Disabled when "On Trip" */}
                       <button
-                        onClick={() => handleDelete(booking._id)}
-                        className="text-red-600 hover:text-red-800 px-3 py-1 rounded hover:bg-red-50 inline-flex items-center gap-1 transition transform hover:scale-105"
+                        onClick={() => {
+                          if (booking.status === "On Trip") {
+                            alert("Cannot archive booking while on trip");
+                            return;
+                          }
+                          handleDelete(booking._id);
+                        }}
+                        disabled={booking.status === "On Trip"}
+                        className={`px-3 py-1 rounded inline-flex items-center gap-1 transition ${
+                          booking.status === "On Trip"
+                            ? "text-gray-400 cursor-not-allowed bg-gray-100"
+                            : "text-red-600 hover:text-red-800 hover:bg-red-50 transform hover:scale-105"
+                        }`}
+                        title={booking.status === "On Trip" ? "Cannot archive booking while on trip" : "Archive booking"}
                       >
                         <Trash2 />
                       </button>
