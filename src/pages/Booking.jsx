@@ -333,21 +333,21 @@ function Booking() {
 
   // Updated vehicle change handler to auto-fill vehicleType
   const handleVehicleChange = (e) => {
-    const selectedVehicle = vehicles.find(v => v._id === e.target.value);
-    if (selectedVehicle) {
-      setFormData(prev => ({
-        ...prev,
-        vehicleId: selectedVehicle._id, // Store the _id for the dropdown value
-        vehicleType: selectedVehicle.vehicleType
-      }));
-    } else {
-      setFormData(prev => ({
-        ...prev,
-        vehicleId: "",
-        vehicleType: ""
-      }));
-    }
-  };
+  const selectedVehicle = vehicles.find(v => v.vehicleId === e.target.value); // Changed from v._id to v.vehicleId
+  if (selectedVehicle) {
+    setFormData(prev => ({
+      ...prev,
+      vehicleId: selectedVehicle.vehicleId,
+      vehicleType: selectedVehicle.vehicleType
+    }));
+  } else {
+    setFormData(prev => ({
+      ...prev,
+      vehicleId: "",
+      vehicleType: ""
+    }));
+  }
+};
 
   // Helper function to format employee names for display
   const formatEmployeeNames = (employeeAssigned) => {
@@ -790,24 +790,52 @@ function Booking() {
                     <td className="px-6 py-3">
                       {formatEmployeeNames(booking.employeeAssigned)}
                     </td>
-                    <td className="px-6 py-3 text-center space-x-2">
+                    <td className="px-6 py-3 text-right space-x-2 inline-flex">
                       <button
                         onClick={() => viewBooking(booking)}
-                        className="px-3 py-1 bg-blue-500 text-white rounded shadow hover:bg-blue-600 inline-flex items-center gap-1 transition transform hover:scale-105"
+                        className="text-blue-600 hover:text-blue-800 px-3 py-1 rounded hover:bg-blue-50 inline-flex items-center gap-1 transition transform hover:scale-105"
                       >
-                        <Eye size={16} /> View
+                        <Eye />
                       </button>
+                      
+                      {/* Conditional Edit Button - Disabled when "On Trip" */}
                       <button
-                        onClick={() => openModal(booking)}
-                        className="px-3 py-1 bg-yellow-400 text-white rounded shadow hover:bg-yellow-500 inline-flex items-center gap-1 transition transform hover:scale-105"
+                        onClick={() => {
+                          if (booking.status === "On Trip") {
+                            alert("Cannot edit booking while on trip");
+                            return;
+                          }
+                          openModal(booking);
+                        }}
+                        disabled={booking.status === "On Trip"}
+                        className={`px-3 py-1 rounded inline-flex items-center gap-1 transition ${
+                          booking.status === "On Trip"
+                            ? "text-gray-400 cursor-not-allowed bg-gray-100"
+                            : "text-yellow-600 hover:text-yellow-800 hover:bg-yellow-50 transform hover:scale-105"
+                        }`}
+                        title={booking.status === "On Trip" ? "Cannot edit booking while on trip" : "Edit booking"}
                       >
-                        <Pencil size={16} /> Edit
+                        <Pencil />
                       </button>
+                      
+                      {/* Conditional Archive Button - Disabled when "On Trip" */}
                       <button
-                        onClick={() => handleDelete(booking._id)}
-                        className="px-3 py-1 bg-red-500 text-white rounded shadow hover:bg-red-600 inline-flex items-center gap-1 transition transform hover:scale-105"
+                        onClick={() => {
+                          if (booking.status === "On Trip") {
+                            alert("Cannot archive booking while on trip");
+                            return;
+                          }
+                          handleDelete(booking._id);
+                        }}
+                        disabled={booking.status === "On Trip"}
+                        className={`px-3 py-1 rounded inline-flex items-center gap-1 transition ${
+                          booking.status === "On Trip"
+                            ? "text-gray-400 cursor-not-allowed bg-gray-100"
+                            : "text-red-600 hover:text-red-800 hover:bg-red-50 transform hover:scale-105"
+                        }`}
+                        title={booking.status === "On Trip" ? "Cannot archive booking while on trip" : "Archive booking"}
                       >
-                        <Trash2 size={16} /> Archive
+                        <Trash2 />
                       </button>
                     </td>
                   </tr>
@@ -1114,29 +1142,29 @@ function Booking() {
                         Select Vehicle *
                       </label>
                       <select
-                        name="vehicleId"
-                        value={formData.vehicleId}
-                        onChange={handleVehicleChange}
-                        required
-                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-400"
-                      >
-                        <option value="">Select Vehicle</option>
-                        {(() => {
-                          const key = `${formData.originAddress?.toLowerCase()} - ${formData.destinationAddress?.toLowerCase()}`;
-                          const allowedVehiclesArr = addressDefaults[key];
-                          const allowedVehicleTypes = Array.isArray(allowedVehiclesArr)
-                            ? allowedVehiclesArr.map(def => def.vehicleType)
-                            : [];
+  name="vehicleId"
+  value={formData.vehicleId}
+  onChange={handleVehicleChange}
+  required
+  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-400"
+>
+  <option value="">Select Vehicle</option>
+  {(() => {
+    const key = `${formData.originAddress?.toLowerCase()} - ${formData.destinationAddress?.toLowerCase()}`;
+    const allowedVehiclesArr = addressDefaults[key];
+    const allowedVehicleTypes = Array.isArray(allowedVehiclesArr)
+      ? allowedVehiclesArr.map(def => def.vehicleType)
+      : [];
 
-                          return getAvailableVehicles()
-                            .filter(vehicle => allowedVehicleTypes.length === 0 || allowedVehicleTypes.includes(vehicle.vehicleType))
-                            .map(vehicle => (
-                              <option key={vehicle._id} value={vehicle._id}>
-                                {`${vehicle.vehicleId} - ${vehicle.manufacturedBy} ${vehicle.model} (${vehicle.vehicleType}) - ${vehicle.plateNumber}`}
-                              </option>
-                            ));
-                        })()}
-                      </select>
+    return getAvailableVehicles()
+      .filter(vehicle => allowedVehicleTypes.length === 0 || allowedVehicleTypes.includes(vehicle.vehicleType))
+      .map(vehicle => (
+        <option key={vehicle._id} value={vehicle.vehicleId}> {/* Changed from vehicle._id to vehicle.vehicleId */}
+          {`${vehicle.vehicleId} - ${vehicle.manufacturedBy} ${vehicle.model} (${vehicle.vehicleType}) - ${vehicle.plateNumber}`}
+        </option>
+      ));
+  })()}
+</select>
                       {errors.vehicleId && <p className="text-red-500 text-xs mt-1">{errors.vehicleId}</p>}
                     </div>
 

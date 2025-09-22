@@ -514,10 +514,6 @@ const addressDefaults = {
         { vehicleType: "Car", areaLocationCode: "3", rateCost: 200 },
         { vehicleType: "Truck", areaLocationCode: "3", rateCost: 200 }
     ]
-
-
-
-
 };
 
 export default addressDefaults;

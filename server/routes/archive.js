@@ -18,7 +18,7 @@ function getModelByType(type) {
             return Vehicle;
         case 'employees':
             return Employee;
-        case 'tripReports':
+        case 'trip-reports':
             return TripReport;
         default:
             throw new Error(`Unknown model type: ${type}`);

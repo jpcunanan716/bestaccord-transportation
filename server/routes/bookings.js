@@ -125,7 +125,6 @@ router.get("/:id", async (req, res) => {
   }
 });
 
-// Add these helper functions at the top of the file
 async function updateVehicleAndEmployeeStatus(booking, newStatus) {
   try {
     if (booking.vehicleId) {
@@ -134,7 +133,11 @@ async function updateVehicleAndEmployeeStatus(booking, newStatus) {
         { status: newStatus },
         { new: true }
       );
-      console.log(`✅ Vehicle ${booking.vehicleId} status updated to ${newStatus}`);
+      if (!vehicleResult) {
+        console.warn(`⚠️ Vehicle ${booking.vehicleId} not found`);
+      } else {
+        console.log(`✅ Vehicle ${booking.vehicleId} status updated to ${newStatus}`);
+      }
     }
 
     // Update employees status
@@ -212,6 +215,19 @@ router.post("/", async (req, res) => {
 // PUT update booking
 router.put("/:id", async (req, res) => {
   try {
+    // First, get the current booking to check its status
+    const currentBooking = await Booking.findById(req.params.id);
+    if (!currentBooking) {
+      return res.status(404).json({ message: "Booking not found" });
+    }
+
+    // Prevent editing if booking is ready to go or in transit
+    if (currentBooking.status === "Ready to go" || currentBooking.status === "In Transit") {
+      return res.status(400).json({
+        message: "Cannot edit booking while ready to go or in transit"
+      });
+    }
+
     console.log("🔄 Updating booking:", req.params.id, "with data:", req.body);
 
     // Don't allow updating auto-generated IDs through PUT request (except for status updates)
@@ -307,6 +323,23 @@ router.patch("/:id/status", async (req, res) => {
 // PATCH archive booking
 router.patch('/:id/archive', async (req, res) => {
   try {
+    // First, get the current booking to check its status
+    const currentBooking = await Booking.findById(req.params.id);
+    if (!currentBooking) {
+      return res.status(404).json({
+        success: false,
+        message: "Booking not found"
+      });
+    }
+
+    // Prevent archiving if booking is ready to go or in transit
+    if (currentBooking.status === "Ready to go" || currentBooking.status === "In Transit") {
+      return res.status(400).json({
+        success: false,
+        message: "Cannot archive booking while ready to go or in transit"
+      });
+    }
+
     const booking = await Booking.findByIdAndUpdate(
       req.params.id,
       {

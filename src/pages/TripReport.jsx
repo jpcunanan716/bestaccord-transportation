@@ -292,7 +292,7 @@ export default function TripReport() {
     }
   };
 
-  // Handle archive/delete
+  //Archive handler
   const handleDelete = async (id) => {
     if (!window.confirm('Are you sure you want to archive this document?')) return;
     setError('');
@@ -615,23 +615,21 @@ export default function TripReport() {
                       <td className="px-6 py-4 whitespace-nowrap text-center text-sm font-medium space-x-2">
                         <button
                           onClick={() => handleView(report._id)}
-                          className="inline-flex items-center px-2 py-1 bg-blue-100 text-blue-700 rounded hover:bg-blue-200 transition"
+                          className="text-blue-600 hover:text-blue-800 px-3 py-1 rounded hover:bg-blue-50 inline-flex items-center gap-1 transition transform hover:scale-105"
                         >
-                          <Eye className="w-3 h-3 mr-1" />
-                          View
+                          <Eye />
                         </button>
                         <button
                           onClick={() => handleDownload(report._id, report.originalFileName)}
-                          className="inline-flex items-center px-2 py-1 bg-green-100 text-green-700 rounded hover:bg-green-200 transition"
+                          className="text-green-600 hover:text-green-800 px-3 py-1 rounded hover:bg-green-50 inline-flex items-center gap-1 transition transform hover:scale-105"
                         >
-                          <Download className="w-3 h-3 mr-1" />
-                          Download
+                          <Download />
                         </button>
                         <button
                           onClick={() => handleDelete(report._id)}
-                          className="inline-flex items-center px-2 py-1 bg-red-100 text-red-700 rounded hover:bg-red-200 transition"                        >
-                          <Trash2 className="w-3 h-3 mr-1" />
-                          Archive
+                          className="text-red-600 hover:text-red-800 px-3 py-1 rounded hover:bg-red-50 inline-flex items-center gap-1 transition transform hover:scale-105"
+                        >
+                          <Trash2 />
                         </button>
                       </td>
                     </tr>

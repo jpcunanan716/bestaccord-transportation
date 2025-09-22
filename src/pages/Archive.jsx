@@ -74,7 +74,7 @@ export default function Archive() {
   // Tab configuration
   const tabs = [
     { id: 'bookings', label: 'Bookings', icon: Package },
-    { id: 'tripReports', label: 'Trip Reports', icon: FileText },
+    { id: 'trip-reports', label: 'Trip Reports', icon: FileText },
     { id: 'clients', label: 'Clients', icon: Building },
     { id: 'vehicles', label: 'Vehicles', icon: Car },
     { id: 'employees', label: 'Employees', icon: Users },
@@ -212,7 +212,7 @@ function getTableHeaders(tab) {
   switch (tab) {
     case 'bookings':
       return ['Reservation ID', 'Reservation Date', 'Vehicle Type', 'Destination'];
-    case 'tripReports':
+    case 'trip-reports':
       return ['Receipt Number', 'Document Type', 'File Name', 'Uploaded By', 'Notes'];
     case 'clients':
       return ['Client Name', 'Location', 'Branch', 'Date Added'];
@@ -252,7 +252,7 @@ function getTableCells(tab, item) {
           </td>
         </>
       );
-    case 'tripReports':
+    case 'trip-reports':
       return (
         <>
           <td className="px-6 py-4">{item.receiptNumber || 'N/A'}</td>

@@ -480,10 +480,23 @@ router.delete("/:id", async (req, res) => {
             });
         }
 
+        console.log('Trip report found:', {
+            id: tripReport._id,
+            filePath: tripReport.filePath,
+            fileExists: tripReport.filePath ? fs.existsSync(tripReport.filePath) : 'No file path'
+        });
+
         // Delete file from filesystem
-        if (tripReport.filePath && fs.existsSync(tripReport.filePath)) {
-            fs.unlinkSync(tripReport.filePath);
-            console.log('Deleted file:', tripReport.filePath);
+        if (tripReport.filePath) {
+            if (fs.existsSync(tripReport.filePath)) {
+                fs.unlinkSync(tripReport.filePath);
+                console.log('Deleted file:', tripReport.filePath);
+            } else {
+                console.warn('File not found at path:', tripReport.filePath);
+                // Continue with database deletion even if file doesn't exist
+            }
+        } else {
+            console.log('No file path stored for this trip report');
         }
 
         // Delete from database
