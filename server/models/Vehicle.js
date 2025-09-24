@@ -7,7 +7,7 @@ const VehicleSchema = new mongoose.Schema(
     manufacturedBy: { type: String, required: true },
     model: { type: String, required: true },
     plateNumber: { type: String, required: true, unique: true },
-    vehicleType: { type: String, enum: ["Truck", "Car"], required: true },
+    vehicleType: { type: String, enum: ["4-Wheeler", "6-Wheeler"], required: true },
     color: { type: String },
     chassisNumber: { type: String },
     engineNumber: { type: String },

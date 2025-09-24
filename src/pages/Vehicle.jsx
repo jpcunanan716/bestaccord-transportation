@@ -34,7 +34,7 @@ export default function Vehicle() {
     manufacturedBy: "",
     model: "",
     plateNumber: "",
-    vehicleType: "Truck",
+    vehicleType: "6-Wheeler",
     color: "",
     chassisNumber: "",
     engineNumber: "",
@@ -44,7 +44,7 @@ export default function Vehicle() {
 
   const containerRef = useRef(null);
   const brands = ["Toyota", "Ford", "Mitsubishi", "Honda", "Isuzu", "Nissan"];
-  const vehicleTypes = ["Truck", "Car"];
+  const vehicleTypes = ["6-Wheeler", "4-Wheeler"];
   const statuses = ["Available", "Not Available", "On Trip"];
 
   const fetchVehicles = async () => {
@@ -138,7 +138,7 @@ export default function Vehicle() {
         manufacturedBy: "",
         model: "",
         plateNumber: "",
-        vehicleType: "Truck",
+        vehicleType: "6-Wheeler",
         color: "",
         chassisNumber: "",
         engineNumber: "",
@@ -328,7 +328,7 @@ export default function Vehicle() {
                     <td className="px-6 py-3">{index + 1}</td>
                     <td className="px-6 py-3 font-mono text-blue-600">{getDisplayID(index, v)}</td>
                     <td className="px-6 py-3">{v.manufacturedBy} {v.model}</td>
-                    <td className="px-6 py-3">{v.vehicleType === "Truck" ? 6 : 4}</td>
+                    <td className="px-6 py-3">{v.vehicleType === "6-Wheeler" ? 6 : 4}</td>
                     <td className="px-6 py-3">{v.plateNumber}</td>
                     <td className="px-6 py-3">
                       <span

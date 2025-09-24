@@ -874,25 +874,12 @@ const InvoiceGenerator = ({ booking, onClose, onInvoiceGenerated }) => {
                       <td style={styles.tableCell}>Area Rate Charge</td>
                       <td className="text-right" style={styles.tableCellRight}>{formatCurrency(booking.rateCost)}</td>
                     </tr>
-                    <tr>
-                      <td style={styles.tableCell}>Fuel Surcharge</td>
-                      <td className="text-right" style={styles.tableCellRight}>{formatCurrency(3000)}</td>
-                    </tr>
-                    <tr>
-                      <td style={styles.tableCell}>Service Charge</td>
-                      <td className="text-right" style={styles.tableCellRight}>{formatCurrency(300)}</td>
-                    </tr>
-                    <tr>
-                      <td style={styles.tableCell}>Other Charges</td>
-                      <td className="text-right" style={styles.tableCellRight}>{formatCurrency(300)}</td>
-                    </tr>
                     <tr className="total-row" style={styles.totalRow}>
                       <td style={styles.totalCell}>TOTAL AMOUNT DUE</td>
                       <td className="text-right" style={styles.totalAmount}>
                         {formatCurrency(
                           (booking.deliveryFee || 0) + 
-                          (booking.rateCost || 0) + 
-                          3000 + 300 + 300
+                          (booking.rateCost || 0)
                         )}
                       </td>
                     </tr>
@@ -904,7 +891,7 @@ const InvoiceGenerator = ({ booking, onClose, onInvoiceGenerated }) => {
             {/* Footer */}
             <div className="footer" style={styles.footer}>
               <p style={{ fontWeight: 'bold', marginBottom: '3px' }}>Thank you for choosing Bestaccord Logistics!</p>
-              <p style={{ marginBottom: '6px' }}>For inquiries about this invoice, please contact us at billing@bestaccord.com</p>
+              <p style={{ marginBottom: '6px' }}>For inquiries about this invoice, please contact us at bestaccordtranspo@gmail.com</p>
               <p>Generated on: {new Date().toLocaleString()}</p>
             </div>
           </div>

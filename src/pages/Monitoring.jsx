@@ -1119,33 +1119,6 @@ export default function Monitoring() {
                         </div>
                       </motion.div>
 
-                      {/* Additional Costs */}
-                      <motion.div 
-                        className="bg-white rounded-lg border border-gray-200 p-6"
-                        initial={{ opacity: 0, y: 20 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        transition={{ duration: 0.5, delay: 0.5 }}
-                      >
-                        <div className="grid grid-cols-2 gap-6">
-                          <div>
-                            <h4 className="text-sm font-medium text-gray-600 mb-2">Toll Fee</h4>
-                            <p className="text-gray-900">₱{selectedBooking.rateCost?.toLocaleString() || '500'} PHP</p>
-                          </div>
-                          <div>
-                            <h4 className="text-sm font-medium text-gray-600 mb-2">Fuel Cost</h4>
-                            <p className="text-gray-900">₱3,000 PHP</p>
-                          </div>
-                          <div>
-                            <h4 className="text-sm font-medium text-gray-600 mb-2">Service Charge</h4>
-                            <p className="text-gray-900">₱300 PHP</p>
-                          </div>
-                          <div>
-                            <h4 className="text-sm font-medium text-gray-600 mb-2">Other Expenses</h4>
-                            <p className="text-gray-900">₱300 PHP</p>
-                          </div>
-                        </div>
-                      </motion.div>
-
                       {/* Vehicle Information */}
                       <motion.div 
                         className="bg-white rounded-lg border border-gray-200 p-6"
@@ -1155,18 +1128,12 @@ export default function Monitoring() {
                       >
                         <div className="grid grid-cols-2 gap-6">
                           <div>
-                            <h4 className="text-sm font-medium text-gray-600 mb-2">Vehicle Model</h4>
+                            <h4 className="text-sm font-medium text-gray-600 mb-2">Vehicle Type</h4>
                             <p className="text-gray-900">{selectedBooking.vehicleType}</p>
                           </div>
                           <div>
-                            <h4 className="text-sm font-medium text-gray-600 mb-2">Vehicle Wheels</h4>
-                            <p className="text-gray-900">6W</p>
-                          </div>
-                          <div>
                             <h4 className="text-sm font-medium text-gray-600 mb-2">Vehicle Plate</h4>
-                            <p className="text-gray-900">
-                              {selectedBooking.vehicle?.plateNumber || 'ABC-1234'}
-                            </p>
+                            <p className="text-gray-900">{selectedBooking.plateNumber}</p>
                           </div>
                         </div>
                       </motion.div>
