@@ -16,6 +16,7 @@ function Booking() {
   const [clients, setClients] = useState([]);
   const [vehicles, setVehicles] = useState([]);
   const [employees, setEmployees] = useState([]);
+  const [selectedClient, setSelectedClient] = useState(null);
 
   // Pagination states
   const [currentPage, setCurrentPage] = useState(1);
@@ -62,6 +63,24 @@ function Booking() {
 
   const containerRef = useRef(null);
 
+  // Helper function to clean city names
+  const cleanCityName = (cityName) => {
+    if (!cityName) return "";
+    // Remove "City of " prefix and convert to lowercase for consistent handling
+    return cityName.replace(/^City of /i, "").toLowerCase();
+  };
+
+  // Get unique client names (no duplicates)
+  const getUniqueClientNames = () => {
+    const uniqueNames = [...new Set(clients.map(client => client.clientName))];
+    return uniqueNames;
+  };
+
+  // Get branches for selected client
+  const getClientBranches = (clientName) => {
+    return clients.filter(client => client.clientName === clientName);
+  };
+
   // Fetch all required data
   const fetchBookings = async () => {
     try {
@@ -90,8 +109,10 @@ function Booking() {
 
   const fetchClients = async () => {
     try {
-      const res = await axios.get("http://localhost:5000/api/clients/names");
-      setClients(res.data);
+      const res = await axios.get("http://localhost:5000/api/clients");
+      // Filter out archived clients
+      const activeClients = res.data.filter(client => !client.isArchived);
+      setClients(activeClients);
     } catch (err) {
       console.error("Error fetching clients:", err);
     }
@@ -206,8 +227,15 @@ function Booking() {
         employeeAssigned: Array.isArray(booking.employeeAssigned) ? booking.employeeAssigned : [booking.employeeAssigned],
         roleOfEmployee: Array.isArray(booking.roleOfEmployee) ? booking.roleOfEmployee : [booking.roleOfEmployee],
       });
+      
+      // Find the selected client for editing
+      const client = clients.find(c => c.clientName === booking.companyName);
+      if (client) {
+        setSelectedClient(client);
+      }
     } else {
       setEditBooking(null);
+      setSelectedClient(null);
       setFormData({
         productName: "",
         quantity: "",
@@ -236,6 +264,7 @@ function Booking() {
   const closeModal = () => {
     setShowModal(false);
     setCurrentStep(1);
+    setSelectedClient(null);
   };
 
   const validateField = (name, value) => {
@@ -255,14 +284,52 @@ function Booking() {
     return true;
   };
 
-  // Update handleChange to include validation
+  // Update handleChange to include validation and auto-calculation
   const handleChange = (e) => {
     const { name, value } = e.target;
+    setFormData(prev => {
+      const newFormData = {
+        ...prev,
+        [name]: value
+      };
+
+      // Auto-calculate quantity when numberOfPackages or unitPerPackage changes
+      if (name === 'numberOfPackages' || name === 'unitPerPackage') {
+        const packages = name === 'numberOfPackages' ? parseInt(value) || 0 : parseInt(prev.numberOfPackages) || 0;
+        const unitsPerPackage = name === 'unitPerPackage' ? parseInt(value) || 0 : parseInt(prev.unitPerPackage) || 0;
+        newFormData.quantity = packages * unitsPerPackage;
+      }
+
+      return newFormData;
+    });
+    validateField(name, value);
+  };
+
+  // Handle company selection
+  const handleCompanyChange = (e) => {
+    const selectedCompanyName = e.target.value;
     setFormData(prev => ({
       ...prev,
-      [name]: value
+      companyName: selectedCompanyName,
+      shipperConsignorName: "", // Reset branch selection
+      originAddress: "" // Reset origin address
     }));
-    validateField(name, value);
+    setSelectedClient(null); // Reset selected client until branch is chosen
+  };
+
+  // Handle branch (shipper/consignor) selection
+  const handleBranchChange = (e) => {
+    const selectedBranch = e.target.value;
+    const client = clients.find(c => c.clientBranch === selectedBranch && c.clientName === formData.companyName);
+    
+    if (client) {
+      setSelectedClient(client);
+      setFormData(prev => ({
+        ...prev,
+        shipperConsignorName: selectedBranch,
+        originAddress: cleanCityName(client.address?.city || "")
+      }));
+    }
   };
 
   const handleEmployeeChange = (index, employeeId) => {
@@ -305,8 +372,22 @@ function Booking() {
 
   const getAvailableEmployees = (currentIndex) => {
     const selectedEmployeeIds = formData.employeeAssigned.filter((empId, index) => index !== currentIndex && empId !== "");
-    // Only show employees with status 'Available'
-    return employees.filter(emp => emp.status === "Available" && !selectedEmployeeIds.includes(emp.employeeId));
+    
+    // First employee (index 0) should only show drivers
+    if (currentIndex === 0) {
+      return employees.filter(emp => 
+        emp.status === "Available" && 
+        emp.role === "Driver" && 
+        !selectedEmployeeIds.includes(emp.employeeId)
+      );
+    } else {
+      // Subsequent employees should only show helpers
+      return employees.filter(emp => 
+        emp.status === "Available" && 
+        emp.role === "Helper" && 
+        !selectedEmployeeIds.includes(emp.employeeId)
+      );
+    }
   };
 
   // Helper function to get employee display name
@@ -363,10 +444,9 @@ function Booking() {
   const validateStep1 = () => {
     const requiredFields = {
       productName: 'Product Name',
-      quantity: 'Quantity',
-      grossWeight: 'Gross Weight',
-      unitPerPackage: 'Units per Package',
       numberOfPackages: 'Number of Packages',
+      unitPerPackage: 'Units per Package',
+      grossWeight: 'Gross Weight',
       deliveryFee: 'Delivery Fee',
       companyName: 'Company Name',
       shipperConsignorName: 'Shipper/Consignor',
@@ -387,20 +467,16 @@ function Booking() {
     }
 
     // Validate numeric fields
-    if (isNaN(formData.quantity) || parseInt(formData.quantity) <= 0) {
-      alert('Please enter a valid quantity.');
-      return false;
-    }
-    if (isNaN(formData.grossWeight) || parseFloat(formData.grossWeight) <= 0) {
-      alert('Please enter a valid gross weight.');
+    if (isNaN(formData.numberOfPackages) || parseInt(formData.numberOfPackages) <= 0) {
+      alert('Please enter a valid number of packages.');
       return false;
     }
     if (isNaN(formData.unitPerPackage) || parseInt(formData.unitPerPackage) <= 0) {
       alert('Please enter valid units per package.');
       return false;
     }
-    if (isNaN(formData.numberOfPackages) || parseInt(formData.numberOfPackages) <= 0) {
-      alert('Please enter a valid number of packages.');
+    if (isNaN(formData.grossWeight) || parseFloat(formData.grossWeight) <= 0) {
+      alert('Please enter a valid gross weight.');
       return false;
     }
     if (isNaN(formData.deliveryFee) || parseFloat(formData.deliveryFee) <= 0) {
@@ -452,10 +528,9 @@ function Booking() {
     const requiredFields = {
       // Step 1 fields
       productName: 'Product Name',
-      quantity: 'Quantity',
-      grossWeight: 'Gross Weight',
-      unitPerPackage: 'Units per Package',
       numberOfPackages: 'Number of Packages',
+      unitPerPackage: 'Units per Package',
+      grossWeight: 'Gross Weight',
       deliveryFee: 'Delivery Fee',
       companyName: 'Company Name',
       shipperConsignorName: 'Shipper/Consignor',
@@ -494,20 +569,16 @@ function Booking() {
     }
 
     // Validate numeric fields
-    if (isNaN(formData.quantity) || parseInt(formData.quantity) <= 0) {
-      alert('Please enter a valid quantity.');
-      return;
-    }
-    if (isNaN(formData.grossWeight) || parseFloat(formData.grossWeight) <= 0) {
-      alert('Please enter a valid gross weight.');
+    if (isNaN(formData.numberOfPackages) || parseInt(formData.numberOfPackages) <= 0) {
+      alert('Please enter a valid number of packages.');
       return;
     }
     if (isNaN(formData.unitPerPackage) || parseInt(formData.unitPerPackage) <= 0) {
       alert('Please enter valid units per package.');
       return;
     }
-    if (isNaN(formData.numberOfPackages) || parseInt(formData.numberOfPackages) <= 0) {
-      alert('Please enter a valid number of packages.');
+    if (isNaN(formData.grossWeight) || parseFloat(formData.grossWeight) <= 0) {
+      alert('Please enter a valid gross weight.');
       return;
     }
     if (isNaN(formData.deliveryFee) || parseFloat(formData.deliveryFee) <= 0) {
@@ -798,42 +869,47 @@ function Booking() {
                         <Eye />
                       </button>
                       
-                      {/* Conditional Edit Button - Disabled when "On Trip" */}
+                      {/* Conditional Edit Button - Disabled when "In Transit", "Delivered", or "Completed" */}
                       <button
                         onClick={() => {
-                          if (booking.status === "On Trip") {
-                            alert("Cannot edit booking while on trip");
+                          if (booking.status === "In Transit") {
+                            alert("Cannot edit booking while in transit");
+                            return;
+                          }
+                          if (booking.status === "Delivered") {
+                            alert("Cannot edit delivered booking");
+                            return;
+                          }
+                          if (booking.status === "Completed") {
+                            alert("Cannot edit completed booking");
                             return;
                           }
                           openModal(booking);
                         }}
-                        disabled={booking.status === "On Trip"}
+                        disabled={booking.status === "In Transit" || booking.status === "Delivered" || booking.status === "Completed"}
                         className={`px-3 py-1 rounded inline-flex items-center gap-1 transition ${
-                          booking.status === "On Trip"
+                          booking.status === "In Transit" || booking.status === "Delivered" || booking.status === "Completed"
                             ? "text-gray-400 cursor-not-allowed bg-gray-100"
                             : "text-yellow-600 hover:text-yellow-800 hover:bg-yellow-50 transform hover:scale-105"
                         }`}
-                        title={booking.status === "On Trip" ? "Cannot edit booking while on trip" : "Edit booking"}
+                        title={
+                          booking.status === "In Transit" 
+                            ? "Cannot edit booking while in transit" 
+                            : booking.status === "Delivered"
+                            ? "Cannot edit delivered booking"
+                            : booking.status === "Completed"
+                            ? "Cannot edit completed booking"
+                            : "Edit booking"
+                        }
                       >
                         <Pencil />
                       </button>
                       
-                      {/* Conditional Archive Button - Disabled when "On Trip" */}
+                      {/* Archive Button - Always Enabled */}
                       <button
-                        onClick={() => {
-                          if (booking.status === "On Trip") {
-                            alert("Cannot archive booking while on trip");
-                            return;
-                          }
-                          handleDelete(booking._id);
-                        }}
-                        disabled={booking.status === "On Trip"}
-                        className={`px-3 py-1 rounded inline-flex items-center gap-1 transition ${
-                          booking.status === "On Trip"
-                            ? "text-gray-400 cursor-not-allowed bg-gray-100"
-                            : "text-red-600 hover:text-red-800 hover:bg-red-50 transform hover:scale-105"
-                        }`}
-                        title={booking.status === "On Trip" ? "Cannot archive booking while on trip" : "Archive booking"}
+                        onClick={() => handleDelete(booking._id)}
+                        className="text-red-600 hover:text-red-800 px-3 py-1 rounded hover:bg-red-50 inline-flex items-center gap-1 transition transform hover:scale-105"
+                        title="Archive booking"
                       >
                         <Trash2 />
                       </button>
@@ -930,10 +1006,10 @@ function Booking() {
                     </div>
                   )}
 
-                  {/* Type of Order */}
+                  {/* Type of Order - Updated field order and auto-calculation */}
                   <div>
                     <h3 className="text-lg font-semibold text-gray-700 mb-3">Type of Order</h3>
-                    <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                       <div>
                         <label className="block text-sm font-medium text-gray-700 mb-1">
                           Enter Product Name *
@@ -951,17 +1027,49 @@ function Booking() {
                       </div>
                       <div>
                         <label className="block text-sm font-medium text-gray-700 mb-1">
-                          Quantity *
+                          Number of Packages *
+                        </label>
+                        <input
+                          type="number"
+                          name="numberOfPackages"
+                          value={formData.numberOfPackages}
+                          onChange={handleChange}
+                          required
+                          min="1"
+                          placeholder="10 box"
+                          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-400"
+                        />
+                        {errors.numberOfPackages && <p className="text-red-500 text-xs mt-1">{errors.numberOfPackages}</p>}
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                          Units per package *
+                        </label>
+                        <input
+                          type="number"
+                          name="unitPerPackage"
+                          value={formData.unitPerPackage}
+                          onChange={handleChange}
+                          required
+                          min="1"
+                          placeholder="200pcs/box"
+                          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-400"
+                        />
+                        {errors.unitPerPackage && <p className="text-red-500 text-xs mt-1">{errors.unitPerPackage}</p>}
+                      </div>
+                    </div>
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-4">
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                          Quantity (Auto-calculated) *
                         </label>
                         <input
                           type="number"
                           name="quantity"
                           value={formData.quantity}
-                          onChange={handleChange}
+                          readOnly
                           placeholder="2000pcs"
-                          required
-                          min="1"
-                          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-400"
+                          className="w-full px-3 py-2 border border-gray-300 rounded-md bg-gray-100 focus:ring-2 focus:ring-blue-400"
                         />
                         {errors.quantity && <p className="text-red-500 text-xs mt-1">{errors.quantity}</p>}
                       </div>
@@ -983,38 +1091,7 @@ function Booking() {
                         {errors.grossWeight && <p className="text-red-500 text-xs mt-1">{errors.grossWeight}</p>}
                       </div>
                       <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">
-                          Units per package
-                        </label>
-                        <input
-                          type="number"
-                          name="unitPerPackage"
-                          value={formData.unitPerPackage}
-                          onChange={handleChange}
-                          required
-                          min="1"
-                          placeholder="200pcs/box"
-                          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-400"
-                        />
-                        {errors.unitPerPackage && <p className="text-red-500 text-xs mt-1">{errors.unitPerPackage}</p>}
-                      </div>
-                    </div>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">Number of Packages</label>
-                        <input
-                          type="number"
-                          name="numberOfPackages"
-                          value={formData.numberOfPackages}
-                          onChange={handleChange}
-                          required
-                          placeholder="10 box"
-                          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-400"
-                        />
-                        {errors.numberOfPackages && <p className="text-red-500 text-xs mt-1">{errors.numberOfPackages}</p>}
-                      </div>
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">Delivery Fee Amount</label>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">Delivery Fee Amount *</label>
                         <input
                           type="number"
                           name="deliveryFee"
@@ -1029,7 +1106,7 @@ function Booking() {
                     </div>
                   </div>
 
-                  {/* Customer Details & Shipment Route */}
+                  {/* Customer Details & Shipment Route - Updated with client integration */}
                   <div>
                     <h3 className="text-lg font-semibold text-gray-700 mb-3">
                       Customer Details & Shipment Route
@@ -1041,14 +1118,14 @@ function Booking() {
                       <select
                         name="companyName"
                         value={formData.companyName}
-                        onChange={handleChange}
+                        onChange={handleCompanyChange}
                         required
                         className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-400"
                       >
                         <option value="">Select from existing records</option>
-                        {clients.map((client) => (
-                          <option key={client._id} value={client.clientName}>
-                            {client.clientName}
+                        {getUniqueClientNames().map((clientName, index) => (
+                          <option key={index} value={clientName}>
+                            {clientName}
                           </option>
                         ))}
                       </select>
@@ -1056,20 +1133,26 @@ function Booking() {
 
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">Shipper/Consignor</label>
-                        <input
-                          type="text"
+                        <label className="block text-sm font-medium text-gray-700 mb-1">Shipper/Consignor (Branch) *</label>
+                        <select
                           name="shipperConsignorName"
                           value={formData.shipperConsignorName}
-                          onChange={handleChange}
+                          onChange={handleBranchChange}
                           required
-                          placeholder="Ajinomoto Philippines Corp"
-                          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-400"
-                        />
+                          disabled={!formData.companyName}
+                          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-400 disabled:bg-gray-100"
+                        >
+                          <option value="">Select branch</option>
+                          {formData.companyName && getClientBranches(formData.companyName).map((client, index) => (
+                            <option key={index} value={client.clientBranch}>
+                              {client.clientBranch}
+                            </option>
+                          ))}
+                        </select>
                         {errors.shipperConsignorName && <p className="text-red-500 text-xs mt-1">{errors.shipperConsignorName}</p>}
                       </div>
                       <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">Customer/Establishment</label>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">Customer/Establishment *</label>
                         <input
                           type="text"
                           name="customerEstablishmentName"
@@ -1085,27 +1168,18 @@ function Booking() {
 
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
                       <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">Origin/From</label>
-                        <select
+                        <label className="block text-sm font-medium text-gray-700 mb-1">Origin/From (Auto-populated) *</label>
+                        <input
+                          type="text"
                           name="originAddress"
                           value={formData.originAddress}
-                          onChange={handleChange}
-                          required
-                          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-400"
-                        >
-                          <option value="">Select Origin</option>
-                          {(() => {
-                            const allOrigins = Object.keys(addressDefaults)
-                              .map(pair => pair.split(' - ')[0]);
-                            const uniqueOrigins = [...new Set(allOrigins)];
-                            return uniqueOrigins.map(origin => (
-                              <option key={origin} value={origin}>{origin.charAt(0).toUpperCase() + origin.slice(1)}</option>
-                            ));
-                          })()}
-                        </select>
+                          readOnly
+                          placeholder="Select branch first to auto-populate"
+                          className="w-full px-3 py-2 border border-gray-300 rounded-md bg-gray-100 focus:ring-2 focus:ring-blue-400"
+                        />
                       </div>
                       <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">Destination/To</label>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">Destination/To *</label>
                         <select
                           name="destinationAddress"
                           value={formData.destinationAddress}
@@ -1142,29 +1216,29 @@ function Booking() {
                         Select Vehicle *
                       </label>
                       <select
-  name="vehicleId"
-  value={formData.vehicleId}
-  onChange={handleVehicleChange}
-  required
-  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-400"
->
-  <option value="">Select Vehicle</option>
-  {(() => {
-    const key = `${formData.originAddress?.toLowerCase()} - ${formData.destinationAddress?.toLowerCase()}`;
-    const allowedVehiclesArr = addressDefaults[key];
-    const allowedVehicleTypes = Array.isArray(allowedVehiclesArr)
-      ? allowedVehiclesArr.map(def => def.vehicleType)
-      : [];
+                        name="vehicleId"
+                        value={formData.vehicleId}
+                        onChange={handleVehicleChange}
+                        required
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-400"
+                      >
+                        <option value="">Select Vehicle</option>
+                        {(() => {
+                          const key = `${formData.originAddress?.toLowerCase()} - ${formData.destinationAddress?.toLowerCase()}`;
+                          const allowedVehiclesArr = addressDefaults[key];
+                          const allowedVehicleTypes = Array.isArray(allowedVehiclesArr)
+                            ? allowedVehiclesArr.map(def => def.vehicleType)
+                            : [];
 
-    return getAvailableVehicles()
-      .filter(vehicle => allowedVehicleTypes.length === 0 || allowedVehicleTypes.includes(vehicle.vehicleType))
-      .map(vehicle => (
-        <option key={vehicle._id} value={vehicle.vehicleId}> {/* Changed from vehicle._id to vehicle.vehicleId */}
-          {`${vehicle.vehicleId} - ${vehicle.manufacturedBy} ${vehicle.model} (${vehicle.vehicleType}) - ${vehicle.plateNumber}`}
-        </option>
-      ));
-  })()}
-</select>
+                          return getAvailableVehicles()
+                            .filter(vehicle => allowedVehicleTypes.length === 0 || allowedVehicleTypes.includes(vehicle.vehicleType))
+                            .map(vehicle => (
+                              <option key={vehicle._id} value={vehicle.vehicleId}>
+                                {`${vehicle.vehicleId} - ${vehicle.manufacturedBy} ${vehicle.model} (${vehicle.vehicleType}) - ${vehicle.plateNumber}`}
+                              </option>
+                            ));
+                        })()}
+                      </select>
                       {errors.vehicleId && <p className="text-red-500 text-xs mt-1">{errors.vehicleId}</p>}
                     </div>
 
@@ -1237,14 +1311,16 @@ function Booking() {
                     {formData.employeeAssigned.map((employeeId, index) => (
                       <div key={index} className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4 p-4 border border-gray-200 rounded-lg">
                         <div>
-                          <label className="block text-sm font-medium text-gray-700 mb-1">Select Employee</label>
+                          <label className="block text-sm font-medium text-gray-700 mb-1">
+                            {index === 0 ? "Select Driver" : "Select Helper"}
+                          </label>
                           <select
                             value={employeeId}
                             onChange={(e) => handleEmployeeChange(index, e.target.value)}
                             required
                             className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-400"
                           >
-                            <option value="">Employee</option>
+                            <option value="">{index === 0 ? "Select Driver" : "Select Helper"}</option>
                             {getAvailableEmployees(index).map((employee) => (
                               <option key={employee._id} value={employee.employeeId}>
                                 {`${employee.employeeId} - ${employee.fullName || employee.name || ''}`.trim()}
@@ -1282,7 +1358,7 @@ function Booking() {
                       onClick={addEmployee}
                       className="px-4 py-2 bg-blue-100 text-blue-600 rounded shadow hover:bg-blue-200"
                     >
-                      Add Employee
+                      Add Helper
                     </button>
                   </div>
                 </div>
