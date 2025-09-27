@@ -57,22 +57,21 @@ export default function DriverBookings() {
     }));
   };
 
+  // [All your existing functions remain the same - initializeMap, createMap, startTrip, markAsDelivered, markAsCompleted, fetchBookings, etc.]
+  
   // Initialize map with CORS proxy
   const initializeMap = async () => {
     if (!selectedBooking || !mapRef.current) return;
 
-    // Clean up existing map
     if (mapInstance.current) {
       mapInstance.current.remove();
       mapInstance.current = null;
     }
 
     try {
-      // Check if Leaflet is already loaded
       if (window.L) {
         createMap();
       } else {
-        // Load Leaflet dynamically
         const leafletScript = document.createElement('script');
         leafletScript.src = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.js';
         leafletScript.onload = createMap;
@@ -87,26 +86,19 @@ export default function DriverBookings() {
     if (!mapRef.current) return;
 
     const L = window.L;
-
-    // Initialize map
     const map = L.map(mapRef.current).setView([14.5995, 120.9842], 10);
 
-    // Add OpenStreetMap tiles
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
       attribution: '© OpenStreetMap contributors'
     }).addTo(map);
 
-    // Simplified geocoding function with better error handling
     const geocodeAddress = async (address) => {
       try {
-        // Use a CORS proxy or alternative geocoding service
         const cleanAddress = address.replace(/,?\s*Philippines\s*,?/gi, '');
         const query = encodeURIComponent(`${cleanAddress}, Philippines`);
 
-        // Try multiple geocoding approaches
         const geocodingServices = [
           `https://api.allorigins.win/get?url=${encodeURIComponent(`https://nominatim.openstreetmap.org/search?format=json&q=${query}&limit=1`)}`,
-          // Fallback: Use a simple coordinate estimation for Philippines
         ];
 
         for (const serviceUrl of geocodingServices) {
@@ -126,7 +118,6 @@ export default function DriverBookings() {
           }
         }
 
-        // Fallback coordinates for major Philippine cities
         const philippinesCities = {
           'manila': [14.5995, 120.9842],
           'cebu': [10.3157, 123.8854],
@@ -144,17 +135,15 @@ export default function DriverBookings() {
           return philippinesCities[cityKey];
         }
 
-        // Default to Manila area if no match found
         return [14.5995, 120.9842];
 
       } catch (error) {
         console.warn('Geocoding error, using default coordinates:', error);
-        return [14.5995, 120.9842]; // Default to Manila
+        return [14.5995, 120.9842];
       }
     };
 
     try {
-      // Add markers and route
       const originCoords = await geocodeAddress(selectedBooking.originAddress);
       const destCoords = await geocodeAddress(selectedBooking.destinationAddress);
 
@@ -180,7 +169,6 @@ export default function DriverBookings() {
         }).addTo(map).bindPopup(`<b>🎯 Destination:</b><br/>${selectedBooking.destinationAddress}`);
       }
 
-      // Draw route line
       if (originCoords && destCoords) {
         L.polyline([originCoords, destCoords], {
           color: '#8b5cf6',
@@ -189,7 +177,6 @@ export default function DriverBookings() {
           dashArray: '10, 5'
         }).addTo(map);
 
-        // Fit map to show both points
         const bounds = L.latLngBounds([originCoords, destCoords]);
         map.fitBounds(bounds, { padding: [20, 20] });
       } else if (destCoords) {
@@ -199,13 +186,11 @@ export default function DriverBookings() {
       }
     } catch (error) {
       console.error('Error creating map markers:', error);
-      // Map still shows, just without specific markers
     }
 
     mapInstance.current = map;
   };
 
-  // Start trip function
   const startTrip = async () => {
     if (!selectedBooking) return;
 
@@ -224,7 +209,6 @@ export default function DriverBookings() {
       );
 
       if (response.data.success) {
-        // Update the booking in local state
         setBookings(prevBookings =>
           prevBookings.map(booking =>
             booking._id === selectedBooking._id
@@ -233,7 +217,6 @@ export default function DriverBookings() {
           )
         );
 
-        // Update selected booking
         setSelectedBooking(prev => ({
           ...prev,
           status: "In Transit"
@@ -244,13 +227,12 @@ export default function DriverBookings() {
     } catch (err) {
       console.error("❌ Error starting trip:", err);
       setError("Failed to start trip. Please try again.");
-      setTimeout(() => setError(""), 5000); // Clear error after 5 seconds
+      setTimeout(() => setError(""), 5000);
     } finally {
       setUpdating(false);
     }
   };
 
-  // Mark as delivered function
   const markAsDelivered = async () => {
     if (!selectedBooking) return;
 
@@ -269,7 +251,6 @@ export default function DriverBookings() {
       );
 
       if (response.data.success) {
-        // Update the booking in local state
         setBookings(prevBookings =>
           prevBookings.map(booking =>
             booking._id === selectedBooking._id
@@ -278,7 +259,6 @@ export default function DriverBookings() {
           )
         );
 
-        // Update selected booking
         setSelectedBooking(prev => ({
           ...prev,
           status: "Delivered"
@@ -289,13 +269,12 @@ export default function DriverBookings() {
     } catch (err) {
       console.error("❌ Error marking as delivered:", err);
       setError("Failed to mark as delivered. Please try again.");
-      setTimeout(() => setError(""), 5000); // Clear error after 5 seconds
+      setTimeout(() => setError(""), 5000);
     } finally {
       setUpdating(false);
     }
   };
 
-  // NEW: Mark as completed function
   const markAsCompleted = async () => {
     if (!selectedBooking) return;
 
@@ -314,7 +293,6 @@ export default function DriverBookings() {
       );
 
       if (response.data.success) {
-        // Update the booking in local state
         setBookings(prevBookings =>
           prevBookings.map(booking =>
             booking._id === selectedBooking._id
@@ -323,7 +301,6 @@ export default function DriverBookings() {
           )
         );
 
-        // Update selected booking
         setSelectedBooking(prev => ({
           ...prev,
           status: "Completed"
@@ -331,7 +308,6 @@ export default function DriverBookings() {
 
         console.log("✅ Trip marked as completed");
 
-        // Close modal after a brief delay to show completion message
         setTimeout(() => {
           closeModal();
         }, 1500);
@@ -339,7 +315,7 @@ export default function DriverBookings() {
     } catch (err) {
       console.error("❌ Error marking as completed:", err);
       setError("Failed to mark as completed. Please try again.");
-      setTimeout(() => setError(""), 5000); // Clear error after 5 seconds
+      setTimeout(() => setError(""), 5000);
     } finally {
       setUpdating(false);
     }
@@ -391,7 +367,6 @@ export default function DriverBookings() {
   const openBookingDetails = (booking) => {
     setSelectedBooking(booking);
     setShowModal(true);
-    // Reset expanded sections for new booking
     setExpandedSections({
       route: true,
       cargo: false,
@@ -409,7 +384,6 @@ export default function DriverBookings() {
     }
   };
 
-  // Initialize map when modal opens
   useEffect(() => {
     if (showModal && selectedBooking && mapRef.current) {
       setTimeout(() => initializeMap(), 100);
@@ -422,16 +396,16 @@ export default function DriverBookings() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center p-4">
-        <div className="bg-white p-6 rounded-xl shadow-lg">
+      <div className="min-h-screen bg-gradient-to-br from-purple-900 via-purple-800 to-indigo-900 flex items-center justify-center p-4">
+        <div className="bg-white/10 backdrop-blur-xl border border-white/20 p-6 rounded-2xl shadow-2xl">
           <div className="animate-pulse flex space-x-4">
-            <div className="rounded-full bg-gray-300 h-12 w-12"></div>
+            <div className="rounded-full bg-purple-400/50 h-12 w-12"></div>
             <div className="flex-1 space-y-2 py-1">
-              <div className="h-4 bg-gray-300 rounded w-3/4"></div>
-              <div className="h-4 bg-gray-300 rounded w-1/2"></div>
+              <div className="h-4 bg-purple-400/50 rounded w-3/4"></div>
+              <div className="h-4 bg-purple-400/50 rounded w-1/2"></div>
             </div>
           </div>
-          <p className="text-center mt-4 text-gray-600">Loading your bookings...</p>
+          <p className="text-center mt-4 text-purple-200">Loading your bookings...</p>
         </div>
       </div>
     );
@@ -439,14 +413,14 @@ export default function DriverBookings() {
 
   if (error) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center p-4">
-        <div className="bg-white p-6 rounded-xl shadow-lg max-w-md w-full text-center">
-          <XCircle className="w-12 h-12 text-red-500 mx-auto mb-4" />
-          <h2 className="text-xl font-bold text-gray-800 mb-2">Error Loading Bookings</h2>
-          <p className="text-red-500 mb-4">{error}</p>
+      <div className="min-h-screen bg-gradient-to-br from-purple-900 via-purple-800 to-indigo-900 flex items-center justify-center p-4">
+        <div className="bg-white/10 backdrop-blur-xl border border-white/20 p-6 rounded-2xl shadow-2xl max-w-md w-full text-center">
+          <XCircle className="w-12 h-12 text-red-400 mx-auto mb-4" />
+          <h2 className="text-xl font-bold text-white mb-2">Error Loading Bookings</h2>
+          <p className="text-red-300 mb-4">{error}</p>
           <button
             onClick={fetchBookings}
-            className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition"
+            className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition"
           >
             Try Again
           </button>
@@ -457,17 +431,16 @@ export default function DriverBookings() {
 
   return (
     <>
-      {/* Add Leaflet CSS */}
       <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
 
-      <div className="min-h-screen bg-gradient-to-br from-blue-500 to-purple-600 p-4">
+      <div className="min-h-screen bg-gradient-to-br from-purple-900 via-purple-800 to-indigo-900 p-4">
         <div className="max-w-md mx-auto">
           {/* Header */}
           <div className="flex justify-between items-center mb-6">
             <div>
               <h1 className="text-2xl font-bold text-white">My Bookings</h1>
               {debugInfo && (
-                <p className="text-xs text-white opacity-75">
+                <p className="text-xs text-purple-200">
                   Found {debugInfo.queriedBookings} assignments
                 </p>
               )}
@@ -475,7 +448,7 @@ export default function DriverBookings() {
             <button
               onClick={refreshBookings}
               disabled={refreshing}
-              className="p-2 bg-white bg-opacity-20 rounded-lg hover:bg-opacity-30 transition"
+              className="p-2 bg-white/10 backdrop-blur-sm border border-white/20 rounded-lg hover:bg-white/20 transition"
             >
               <RefreshCw className={`w-5 h-5 text-white ${refreshing ? 'animate-spin' : ''}`} />
             </button>
@@ -483,17 +456,17 @@ export default function DriverBookings() {
 
           {/* Error notification */}
           {error && (
-            <div className="mb-4 p-3 bg-red-500 text-white rounded-lg text-sm">
+            <div className="mb-4 p-3 bg-red-500/20 backdrop-blur-sm border border-red-400/30 text-white rounded-lg text-sm">
               {error}
             </div>
           )}
 
           {/* Bookings List */}
           {bookings.length === 0 ? (
-            <div className="bg-white p-6 rounded-xl shadow-lg text-center">
-              <Package className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-              <h2 className="text-xl font-bold text-gray-800 mb-2">No Bookings Found</h2>
-              <p className="text-gray-600 mb-2">You don't have any assigned bookings yet.</p>
+            <div className="bg-white/10 backdrop-blur-xl border border-white/20 p-6 rounded-2xl shadow-2xl text-center">
+              <Package className="w-12 h-12 text-purple-300 mx-auto mb-4" />
+              <h2 className="text-xl font-bold text-white mb-2">No Bookings Found</h2>
+              <p className="text-purple-200 mb-2">You don't have any assigned bookings yet.</p>
             </div>
           ) : (
             <div className="space-y-4">
@@ -502,14 +475,14 @@ export default function DriverBookings() {
                 return (
                   <div
                     key={booking._id}
-                    className="bg-white rounded-xl shadow-lg p-4 cursor-pointer hover:shadow-xl transition-shadow active:scale-95"
+                    className="bg-white/10 backdrop-blur-xl border border-white/20 rounded-2xl shadow-2xl p-4 cursor-pointer hover:bg-white/15 transition-all active:scale-95"
                     onClick={() => openBookingDetails(booking)}
                   >
                     {/* Booking Header */}
                     <div className="flex justify-between items-start mb-3">
                       <div>
-                        <h3 className="font-bold text-lg text-gray-800">{booking.reservationId}</h3>
-                        <p className="text-sm text-gray-600 font-mono">{booking.tripNumber}</p>
+                        <h3 className="font-bold text-lg text-white">{booking.reservationId}</h3>
+                        <p className="text-sm text-purple-200 font-mono">{booking.tripNumber}</p>
                       </div>
                       <div className={`px-3 py-1 rounded-full text-xs font-semibold flex items-center gap-1 ${statusColors[booking.status]?.bg} ${statusColors[booking.status]?.text}`}>
                         <StatusIcon className="w-3 h-3" />
@@ -519,29 +492,29 @@ export default function DriverBookings() {
 
                     {/* Company & Product */}
                     <div className="mb-3">
-                      <p className="font-semibold text-gray-800">{booking.companyName}</p>
-                      <p className="text-sm text-gray-600 flex items-center gap-1">
+                      <p className="font-semibold text-white">{booking.companyName}</p>
+                      <p className="text-sm text-purple-200 flex items-center gap-1">
                         <Package className="w-4 h-4" />
                         {booking.productName} ({booking.quantity} units)
                       </p>
                     </div>
 
-                    {/* Route - Simplified for mobile */}
-                    <div className="mb-3 text-sm bg-gray-50 p-2 rounded">
+                    {/* Route */}
+                    <div className="mb-3 text-sm bg-white/5 backdrop-blur-sm p-2 rounded-lg border border-white/10">
                       <div className="flex items-center gap-2 mb-1">
-                        <MapPin className="w-3 h-3 text-green-600 flex-shrink-0" />
-                        <span className="text-xs text-gray-500">From:</span>
-                        <span className="font-medium text-xs">{booking.originAddress.length > 30 ? booking.originAddress.substring(0, 30) + '...' : booking.originAddress}</span>
+                        <MapPin className="w-3 h-3 text-green-400 flex-shrink-0" />
+                        <span className="text-xs text-purple-300">From:</span>
+                        <span className="font-medium text-xs text-white">{booking.originAddress.length > 30 ? booking.originAddress.substring(0, 30) + '...' : booking.originAddress}</span>
                       </div>
                       <div className="flex items-center gap-2">
-                        <MapPin className="w-3 h-3 text-red-600 flex-shrink-0" />
-                        <span className="text-xs text-gray-500">To:</span>
-                        <span className="font-medium text-xs">{booking.destinationAddress.length > 30 ? booking.destinationAddress.substring(0, 30) + '...' : booking.destinationAddress}</span>
+                        <MapPin className="w-3 h-3 text-red-400 flex-shrink-0" />
+                        <span className="text-xs text-purple-300">To:</span>
+                        <span className="font-medium text-xs text-white">{booking.destinationAddress.length > 30 ? booking.destinationAddress.substring(0, 30) + '...' : booking.destinationAddress}</span>
                       </div>
                     </div>
 
                     {/* Date & Time */}
-                    <div className="flex items-center gap-4 text-sm text-gray-600">
+                    <div className="flex items-center gap-4 text-sm text-purple-200">
                       <div className="flex items-center gap-1">
                         <Calendar className="w-4 h-4" />
                         {new Date(booking.dateNeeded).toLocaleDateString()}
@@ -558,12 +531,12 @@ export default function DriverBookings() {
           )}
         </div>
 
-        {/* Mobile-Optimized Modal with Blurred Background */}
+        {/* Modal */}
         {showModal && selectedBooking && (
           <div
             className="fixed inset-0 z-50"
             style={{
-              backgroundColor: 'rgba(0, 0, 0, 0.1)',
+              backgroundColor: 'rgba(0, 0, 0, 0.3)',
               backdropFilter: 'blur(8px)',
               WebkitBackdropFilter: 'blur(8px)'
             }}
@@ -761,7 +734,6 @@ export default function DriverBookings() {
 
                   {/* Modal Footer - Sticky */}
                   <div className="sticky bottom-0 bg-white border-t border-gray-200 p-4 z-10">
-                    {/* Show start trip button only if status is "Ready to go" */}
                     {selectedBooking.status === "Ready to go" && (
                       <button
                         onClick={startTrip}
@@ -773,7 +745,6 @@ export default function DriverBookings() {
                       </button>
                     )}
 
-                    {/* Show mark as delivered button if status is "In Transit" or "On Trip" */}
                     {(selectedBooking.status === "In Transit" || selectedBooking.status === "On Trip") && (
                       <button
                         onClick={markAsDelivered}
@@ -785,7 +756,6 @@ export default function DriverBookings() {
                       </button>
                     )}
 
-                    {/* NEW: Show mark as completed button if status is "Delivered" */}
                     {selectedBooking.status === "Delivered" && (
                       <button
                         onClick={markAsCompleted}
@@ -797,7 +767,6 @@ export default function DriverBookings() {
                       </button>
                     )}
 
-                    {/* Show different messages based on status */}
                     {selectedBooking.status === "Pending" && (
                       <div className="w-full py-3 bg-yellow-100 text-yellow-800 rounded-lg text-sm text-center font-medium">
                         ⏳ Waiting for Admin approval

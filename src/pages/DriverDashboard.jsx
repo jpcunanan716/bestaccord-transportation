@@ -1,4 +1,4 @@
-// src/pages/DriverDashboard.jsx (Complete version with notification badge)
+// src/pages/DriverDashboard.jsx
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
@@ -6,7 +6,6 @@ import { Menu, X, User, LogOut, ArrowLeft, Calendar, ClipboardList, } from "luci
 import DriverProfile from "./DriverProfile";
 import DriverBookings from "./DriverBookings";
 import { useDriverBookingCount } from "../hooks/useDriverBookingCount";
-import logo from "../assets/bestaccord_logo_black.png";
 
 export default function DriverDashboard() {
   const [menuOpen, setMenuOpen] = useState(false);
@@ -24,30 +23,30 @@ export default function DriverDashboard() {
   const goBack = () => setActivePage("home");
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-500 to-purple-600 flex flex-col">
+    <div className="min-h-screen bg-gradient-to-br from-purple-900 via-purple-800 to-indigo-900 flex flex-col">
       {/* Header */}
-      <div className="flex items-center justify-between p-4 bg-white shadow-md">
+      <div className="flex items-center justify-between p-4 bg-white/10 backdrop-blur-xl border-b border-white/20 shadow-lg">
         {activePage !== "home" ? (
           <button
             onClick={goBack}
-            className="flex items-center text-blue-600 font-medium"
+            className="flex items-center text-white font-medium hover:text-purple-200 transition-colors"
           >
             <ArrowLeft className="w-5 h-5 mr-1" /> Back
           </button>
         ) : (
           <div className="flex-1 flex justify-center">
-            {/* 🔹 Company Logo instead of text */}
+            {/* Company Logo */}
             <img
-              src="/src/assets/bestaccord_logo_black.png"
+              src="/src/assets/bestaccord_logo.png"
               alt="Company Logo"
-              className="h-16 w-auto object-contain mx-auto"
+              className="h-12 w-auto object-contain mx-auto"
             />
           </div>
         )}
 
         <button
           onClick={() => setMenuOpen(true)}
-          className="p-2 rounded-md text-gray-700 hover:bg-gray-100"
+          className="p-2 rounded-lg text-white hover:bg-white/10 transition-colors backdrop-blur-sm"
         >
           <Menu className="w-6 h-6" />
         </button>
@@ -69,18 +68,18 @@ export default function DriverDashboard() {
                 <motion.button
                   whileTap={{ scale: 0.95 }}
                   onClick={() => setActivePage("bookings")}
-                  className="relative w-full py-6 bg-white rounded-xl shadow-lg text-xl font-semibold flex items-center justify-center space-x-2 text-blue-600 hover:shadow-xl transition-shadow"
+                  className="relative w-full py-6 bg-white/10 backdrop-blur-xl border border-white/20 rounded-2xl shadow-2xl text-xl font-semibold flex items-center justify-center space-x-2 text-white hover:bg-white/20 transition-all"
                 >
                   <ClipboardList className="w-6 h-6" />
                   <span>Bookings</span>
 
-                  {/* 🔴 Notification Badge */}
+                  {/* Notification Badge */}
                   {!countLoading && bookingCount > 0 && (
                     <motion.div
                       initial={{ scale: 0 }}
                       animate={{ scale: 1 }}
                       transition={{ type: "spring", stiffness: 500, damping: 30 }}
-                      className="absolute -top-2 -right-2 bg-red-500 text-white text-sm font-bold rounded-full h-6 w-6 flex items-center justify-center shadow-lg border-2 border-white"
+                      className="absolute -top-2 -right-2 bg-red-500 text-white text-sm font-bold rounded-full h-7 w-7 flex items-center justify-center shadow-lg border-2 border-purple-800"
                     >
                       {bookingCount > 99 ? '99+' : bookingCount}
                     </motion.div>
@@ -88,8 +87,8 @@ export default function DriverDashboard() {
 
                   {/* Loading indicator for badge */}
                   {countLoading && (
-                    <div className="absolute -top-2 -right-2 bg-gray-300 rounded-full h-6 w-6 flex items-center justify-center border-2 border-white">
-                      <div className="animate-pulse bg-gray-400 rounded-full h-3 w-3"></div>
+                    <div className="absolute -top-2 -right-2 bg-white/20 rounded-full h-7 w-7 flex items-center justify-center border-2 border-purple-800">
+                      <div className="animate-pulse bg-white/40 rounded-full h-4 w-4"></div>
                     </div>
                   )}
                 </motion.button>
@@ -97,7 +96,7 @@ export default function DriverDashboard() {
                 <motion.button
                   whileTap={{ scale: 0.95 }}
                   onClick={() => setActivePage("schedule")}
-                  className="w-full py-6 bg-white rounded-xl shadow-lg text-xl font-semibold flex items-center justify-center space-x-2 text-purple-600 hover:shadow-xl transition-shadow"
+                  className="w-full py-6 bg-white/10 backdrop-blur-xl border border-white/20 rounded-2xl shadow-2xl text-xl font-semibold flex items-center justify-center space-x-2 text-white hover:bg-white/20 transition-all"
                 >
                   <Calendar className="w-6 h-6" />
                   <span>Schedule</span>
@@ -115,7 +114,6 @@ export default function DriverDashboard() {
               transition={{ duration: 0.4 }}
               className="h-full"
             >
-              {/* Use the actual DriverBookings component */}
               <DriverBookings />
             </motion.div>
           )}
@@ -129,9 +127,10 @@ export default function DriverDashboard() {
               transition={{ duration: 0.4 }}
               className="flex items-center justify-center text-white text-center p-6"
             >
-              <div>
+              <div className="bg-white/10 backdrop-blur-xl border border-white/20 rounded-2xl p-8 shadow-2xl">
+                <Calendar className="w-16 h-16 mx-auto mb-4 text-purple-300" />
                 <h2 className="text-2xl font-bold mb-2">Your Schedule</h2>
-                <p className="text-sm opacity-90">Schedule details will show here.</p>
+                <p className="text-sm text-purple-200">Schedule details will show here.</p>
               </div>
             </motion.div>
           )}
@@ -145,7 +144,7 @@ export default function DriverDashboard() {
               transition={{ duration: 0.4 }}
               className="h-full"
             >
-              <DriverProfile /> {/* 🔹 Show profile inside dashboard */}
+              <DriverProfile />
             </motion.div>
           )}
         </AnimatePresence>
@@ -168,16 +167,16 @@ export default function DriverDashboard() {
               animate={{ x: 0 }}
               exit={{ x: "100%" }}
               transition={{ type: "tween", duration: 0.3 }}
-              className="fixed top-0 right-0 w-64 h-full bg-white shadow-lg z-50 flex flex-col"
+              className="fixed top-0 right-0 w-64 h-full bg-white/95 backdrop-blur-xl shadow-2xl z-50 flex flex-col"
             >
               {/* Header */}
-              <div className="flex items-center justify-between p-4 border-b">
-                <h2 className="text-lg font-bold text-gray-800">Menu</h2>
+              <div className="flex items-center justify-between p-4 border-b border-purple-100">
+                <h2 className="text-lg font-bold text-purple-900">Menu</h2>
                 <button
                   onClick={() => setMenuOpen(false)}
-                  className="p-2 rounded-md hover:bg-gray-100"
+                  className="p-2 rounded-lg hover:bg-purple-100 transition-colors"
                 >
-                  <X className="w-5 h-5" />
+                  <X className="w-5 h-5 text-purple-900" />
                 </button>
               </div>
 
@@ -186,23 +185,23 @@ export default function DriverDashboard() {
                 <button
                   onClick={() => {
                     setMenuOpen(false);
-                    setActivePage("profile"); // 🔹 Open profile in dashboard
+                    setActivePage("profile");
                   }}
-                  className="flex items-center w-full p-2 rounded-md text-gray-700 hover:bg-gray-100"
+                  className="flex items-center w-full p-3 rounded-lg text-purple-900 hover:bg-purple-100 transition-colors"
                 >
-                  <User className="w-5 h-5 mr-2" />
-                  Profile
+                  <User className="w-5 h-5 mr-3" />
+                  <span className="font-medium">Profile</span>
                 </button>
               </div>
 
               {/* Logout */}
-              <div className="p-4 border-t">
+              <div className="p-4 border-t border-purple-100">
                 <button
                   onClick={handleLogout}
-                  className="flex items-center w-full p-2 rounded-md text-red-600 hover:bg-red-100"
+                  className="flex items-center w-full p-3 rounded-lg text-red-600 hover:bg-red-50 transition-colors"
                 >
-                  <LogOut className="w-5 h-5 mr-2" />
-                  Logout
+                  <LogOut className="w-5 h-5 mr-3" />
+                  <span className="font-medium">Logout</span>
                 </button>
               </div>
             </motion.div>

@@ -58,22 +58,20 @@ export default function LoginPage() {
         transition={{ duration: 0.6 }}
         className="w-full max-w-md relative z-10"
       >
-        {/* Logo and Brand Section */}
+        {/* Logo Banner Header */}
         <motion.div
           initial={{ opacity: 0, y: -20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.2, duration: 0.6 }}
           className="text-center mb-8"
         >
-          <div className="inline-flex items-center justify-center w-20 h-20 bg-white/10 backdrop-blur-xl border border-white/20 rounded-2xl mb-6 shadow-2xl">
+          <div className="bg-white/10 backdrop-blur-xl border border-white/20 rounded-2xl p-4 mb-4 shadow-2xl">
             <img 
               src="/src/assets/bestaccord_logo.png" 
-              alt="Bestaccord Logo" 
-              className="w-full h-full object-contain"
+              alt="Bestaccord Transportation" 
+              className="w-full h-23 object-contain"
             />
           </div>
-          <h1 className="text-3xl font-bold text-white mb-2 tracking-wide">BESTACCORD</h1>
-          <p className="text-purple-200 text-sm font-medium uppercase tracking-wider">Transportation</p>
         </motion.div>
 
         {/* Main Card */}
@@ -163,7 +161,8 @@ export default function LoginPage() {
                       value={formData.name}
                       onChange={handleChange}
                       required
-                      className="block w-full pl-12 pr-4 py-4 bg-white/5 border border-white/10 rounded-2xl text-white focus:outline-none focus:ring-2 focus:ring-purple-400 focus:border-transparent transition-all duration-300 backdrop-blur-sm"
+                      placeholder="Enter your full name"
+                      className="block w-full pl-12 pr-4 py-4 bg-white/5 border border-white/10 rounded-2xl text-white placeholder-purple-300/50 focus:outline-none focus:ring-2 focus:ring-purple-400 focus:border-transparent transition-all duration-300 backdrop-blur-sm"
                     />
                   </div>
                 </motion.div>
@@ -185,7 +184,8 @@ export default function LoginPage() {
                     value={formData.email}
                     onChange={handleChange}
                     required
-                    className="block w-full pl-12 pr-4 py-4 bg-white/5 border border-white/10 rounded-2xl text-white focus:outline-none focus:ring-2 focus:ring-purple-400 focus:border-transparent transition-all duration-300 backdrop-blur-sm"
+                    placeholder="Enter your email"
+                    className="block w-full pl-12 pr-4 py-4 bg-white/5 border border-white/10 rounded-2xl text-white placeholder-purple-300/50 focus:outline-none focus:ring-2 focus:ring-purple-400 focus:border-transparent transition-all duration-300 backdrop-blur-sm"
                   />
                 </div>
               </div>
@@ -206,7 +206,8 @@ export default function LoginPage() {
                     value={formData.password}
                     onChange={handleChange}
                     required
-                    className="block w-full pl-12 pr-4 py-4 bg-white/5 border border-white/10 rounded-2xl text-white focus:outline-none focus:ring-2 focus:ring-purple-400 focus:border-transparent transition-all duration-300 backdrop-blur-sm"
+                    placeholder={isRegister ? "Create a password" : "Enter your password"}
+                    className="block w-full pl-12 pr-4 py-4 bg-white/5 border border-white/10 rounded-2xl text-white placeholder-purple-300/50 focus:outline-none focus:ring-2 focus:ring-purple-400 focus:border-transparent transition-all duration-300 backdrop-blur-sm"
                   />
                 </div>
               </div>

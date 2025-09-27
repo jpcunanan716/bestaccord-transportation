@@ -20,6 +20,7 @@ import DriverSchedule from "./pages/DriverSchedule";
 import BookingInfo from "./pages/BookingInfo";
 import PendingStaff from "./pages/PendingStaff";
 
+// Admin/Staff Private Route
 function PrivateRoute({ children, roles }) {
   const role = localStorage.getItem("role");
   const token = localStorage.getItem("token");
@@ -33,18 +34,62 @@ function PrivateRoute({ children, roles }) {
   return children;
 }
 
+// Driver Private Route (separate auth for drivers)
+function DriverPrivateRoute({ children }) {
+  const driverToken = localStorage.getItem("driverToken");
+
+  // Redirect to driver login if no driver token
+  if (!driverToken) {
+    console.log("❌ No driver token found, redirecting to driver-login");
+    return <Navigate to="/driver-login" />;
+  }
+
+  console.log("✅ Driver token found, allowing access");
+  return children;
+}
+
 export default function App() {
   return (
     <Routes>
+      {/* Public Routes */}
       <Route path="/login" element={<LoginPage />} />
-      <Route path="driver-login" element={<DriverLogin/>} />
+      <Route path="/driver-login" element={<DriverLogin />} />
 
-        <Route path="/driver/driver-login" element={<DriverLogin />} />
-        <Route path="/driver/dashboard" element={<DriverDashboard />} />
-        <Route path="/driver/profile" element={<DriverProfile />} />
-        <Route path="/driver/bookings" element={<DriverBookings />} />
-        <Route path="/driver/schedule" element={<DriverSchedule />} />
+      {/* Driver Routes - Protected */}
+      <Route
+        path="/driver-dashboard"
+        element={
+          <DriverPrivateRoute>
+            <DriverDashboard />
+          </DriverPrivateRoute>
+        }
+      />
+      <Route
+        path="/driver/profile"
+        element={
+          <DriverPrivateRoute>
+            <DriverProfile />
+          </DriverPrivateRoute>
+        }
+      />
+      <Route
+        path="/driver/bookings"
+        element={
+          <DriverPrivateRoute>
+            <DriverBookings />
+          </DriverPrivateRoute>
+        }
+      />
+      <Route
+        path="/driver/schedule"
+        element={
+          <DriverPrivateRoute>
+            <DriverSchedule />
+          </DriverPrivateRoute>
+        }
+      />
 
+      {/* Admin/Staff Routes - Protected */}
       <Route
         path="/dashboard"
         element={
@@ -58,7 +103,6 @@ export default function App() {
         <Route path="booking/:id" element={<BookingInfo />} />
         <Route path="monitoring" element={<Monitoring />} />
         <Route path="trip-report" element={<TripReport />} />
-
 
         {/* Admin-only */}
         <Route
@@ -129,7 +173,19 @@ export default function App() {
         />
       </Route>
 
-      <Route path="*" element={<Navigate to="/login" />} />
+      {/* Catch-all: Redirect to appropriate login based on current token */}
+      <Route
+        path="*"
+        element={
+          localStorage.getItem("driverToken") ? (
+            <Navigate to="/driver-dashboard" />
+          ) : localStorage.getItem("token") ? (
+            <Navigate to="/dashboard" />
+          ) : (
+            <Navigate to="/login" />
+          )
+        }
+      />
     </Routes>
   );
 }

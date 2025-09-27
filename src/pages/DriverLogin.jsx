@@ -26,21 +26,33 @@ export default function DriverLogin() {
     }
 
     try {
+      console.log("🔐 Attempting login with:", { employeeId, password });
+      
       const res = await axios.post("http://localhost:5000/api/driver/driver-login", {
         employeeId,
         password,
       });
 
-      setSuccess(`Welcome ${res.data.fullName} (${res.data.role})`);
-      localStorage.setItem("driverToken", res.data.token);
+      console.log("✅ Login response:", res.data);
 
-      // Redirect after showing success briefly
+      setSuccess(`Welcome ${res.data.fullName} (${res.data.role})`);
+      
+      // Store token with a specific key for driver
+      localStorage.setItem("driverToken", res.data.token);
+      localStorage.setItem("driverRole", res.data.role);
+      localStorage.setItem("driverEmployeeId", res.data.employeeId);
+      localStorage.setItem("driverName", res.data.fullName);
+
+      
+      // Use window.location for hard navigation
       setTimeout(() => {
-        navigate("/driver/dashboard");
-      }, 1200);
+        window.location.href = "/driver-dashboard";
+      }, 800);
+      
     } catch (err) {
+      console.error("❌ Login error:", err);
+      console.error("❌ Error response:", err.response?.data);
       setError(err.response?.data?.msg || "Login failed");
-    } finally {
       setLoading(false);
     }
   };
@@ -60,22 +72,20 @@ export default function DriverLogin() {
         transition={{ duration: 0.6, ease: "easeOut" }}
         className="w-full max-w-sm relative z-10"
       >
-        {/* Mobile-Optimized Header */}
+        {/* Logo Banner Header */}
         <motion.div
           initial={{ opacity: 0, y: -20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.2, duration: 0.5 }}
           className="text-center mb-8"
         >
-          <div className="inline-flex items-center justify-center w-16 h-16 bg-white/15 backdrop-blur-xl border border-white/20 rounded-2xl mb-4 shadow-2xl p-2">
+          <div className="bg-white/10 backdrop-blur-xl border border-white/20 rounded-2xl p-4 mb-4 shadow-2xl">
             <img 
               src="/src/assets/bestaccord_logo.png" 
-              alt="Bestaccord Logo" 
-              className="w-full h-full object-contain"
+              alt="Bestaccord Transportation" 
+              className="w-full h-auto object-contain"
             />
           </div>
-          <h1 className="text-2xl font-bold text-white mb-1 tracking-wide">BESTACCORD</h1>
-          <p className="text-purple-200 text-xs font-medium uppercase tracking-wider mb-3">Transportation</p>
           <div className="inline-flex items-center justify-center px-4 py-2 bg-purple-600/30 backdrop-blur-sm rounded-full border border-purple-400/30">
             <svg className="w-4 h-4 text-purple-300 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z"/>
@@ -151,7 +161,8 @@ export default function DriverLogin() {
                   type="text"
                   value={employeeId}
                   onChange={(e) => setEmployeeId(e.target.value)}
-                  className="block w-full pl-12 pr-4 py-4 bg-white/5 border border-white/10 rounded-2xl text-white focus:outline-none focus:ring-2 focus:ring-purple-400 focus:border-transparent transition-all duration-300 backdrop-blur-sm text-base"
+                  placeholder="Enter your employee ID"
+                  className="block w-full pl-12 pr-4 py-4 bg-white/5 border border-white/10 rounded-2xl text-white placeholder-purple-300/50 focus:outline-none focus:ring-2 focus:ring-purple-400 focus:border-transparent transition-all duration-300 backdrop-blur-sm text-base"
                 />
               </div>
             </motion.div>
@@ -174,7 +185,8 @@ export default function DriverLogin() {
                   type={showPassword ? "text" : "password"}
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  className="block w-full pl-12 pr-14 py-4 bg-white/5 border border-white/10 rounded-2xl text-white focus:outline-none focus:ring-2 focus:ring-purple-400 focus:border-transparent transition-all duration-300 backdrop-blur-sm text-base"
+                  placeholder="Enter your password"
+                  className="block w-full pl-12 pr-14 py-4 bg-white/5 border border-white/10 rounded-2xl text-white placeholder-purple-300/50 focus:outline-none focus:ring-2 focus:ring-purple-400 focus:border-transparent transition-all duration-300 backdrop-blur-sm text-base"
                 />
                 <button
                   type="button"
