@@ -5,6 +5,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { Menu, X, User, LogOut, ArrowLeft, Calendar, ClipboardList, } from "lucide-react";
 import DriverProfile from "./DriverProfile";
 import DriverBookings from "./DriverBookings";
+import DriverSchedule from "./DriverSchedule"; // ADD THIS IMPORT
 import { useDriverBookingCount } from "../hooks/useDriverBookingCount";
 
 export default function DriverDashboard() {
@@ -118,6 +119,7 @@ export default function DriverDashboard() {
             </motion.div>
           )}
 
+          {/* FIXED: Replace placeholder with actual DriverSchedule component */}
           {activePage === "schedule" && (
             <motion.div
               key="schedule"
@@ -125,13 +127,9 @@ export default function DriverDashboard() {
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -30 }}
               transition={{ duration: 0.4 }}
-              className="flex items-center justify-center text-white text-center p-6"
+              className="h-full"
             >
-              <div className="bg-white/10 backdrop-blur-xl border border-white/20 rounded-2xl p-8 shadow-2xl">
-                <Calendar className="w-16 h-16 mx-auto mb-4 text-purple-300" />
-                <h2 className="text-2xl font-bold mb-2">Your Schedule</h2>
-                <p className="text-sm text-purple-200">Schedule details will show here.</p>
-              </div>
+              <DriverSchedule />
             </motion.div>
           )}
 
