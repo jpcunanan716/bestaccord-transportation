@@ -52,6 +52,7 @@ export default function App() {
   return (
     <Routes>
       {/* Public Routes */}
+      <Route path="/" element={<Navigate to="/login" />} /> {/* 👈 Landing page */}
       <Route path="/login" element={<LoginPage />} />
       <Route path="/driver-login" element={<DriverLogin />} />
 
@@ -173,19 +174,8 @@ export default function App() {
         />
       </Route>
 
-      {/* Catch-all: Redirect to appropriate login based on current token */}
-      <Route
-        path="*"
-        element={
-          localStorage.getItem("driverToken") ? (
-            <Navigate to="/driver-dashboard" />
-          ) : localStorage.getItem("token") ? (
-            <Navigate to="/dashboard" />
-          ) : (
-            <Navigate to="/login" />
-          )
-        }
-      />
+      {/* Catch-all: Redirect unknown routes to login */}
+      <Route path="*" element={<Navigate to="/login" />} />
     </Routes>
   );
 }
