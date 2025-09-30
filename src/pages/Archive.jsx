@@ -9,6 +9,8 @@ export default function Archive() {
   const [error, setError] = useState(null);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [itemToDelete, setItemToDelete] = useState(null);
+  const [deleteConfirmation, setDeleteConfirmation] = useState('');
+  const [isDeleteEnabled, setIsDeleteEnabled] = useState(false);
 
   // Fetch archived data based on active tab
   useEffect(() => {
@@ -48,15 +50,25 @@ export default function Archive() {
   const openDeleteModal = (item) => {
     setItemToDelete(item);
     setShowDeleteModal(true);
+    setDeleteConfirmation('');
+    setIsDeleteEnabled(false);
   };
 
   const closeDeleteModal = () => {
     setItemToDelete(null);
     setShowDeleteModal(false);
+    setDeleteConfirmation('');
+    setIsDeleteEnabled(false);
+  };
+
+  const handleDeleteConfirmationChange = (e) => {
+    const value = e.target.value;
+    setDeleteConfirmation(value);
+    setIsDeleteEnabled(value.toLowerCase() === 'delete');
   };
 
   const handlePermanentDelete = async () => {
-    if (!itemToDelete) return;
+    if (!itemToDelete || !isDeleteEnabled) return;
 
     try {
       await axios.delete(`http://localhost:5000/api/${activeTab}/${itemToDelete._id}`);
@@ -179,9 +191,28 @@ export default function Archive() {
               <p className="text-gray-700 mb-3">
                 Are you absolutely sure you want to permanently delete this {activeTab.slice(0, -1)}?
               </p>
-              <div className="bg-red-50 border border-red-200 rounded-lg p-3">
+              <div className="bg-red-50 border border-red-200 rounded-lg p-3 mb-4">
                 <p className="text-sm text-red-800 font-medium">
                   Warning: This will permanently remove all data associated with this item from the database. This action is irreversible.
+                </p>
+              </div>
+
+              {/* Delete Confirmation Input */}
+              <div className="space-y-2">
+                <label htmlFor="deleteConfirmation" className="block text-sm font-medium text-gray-700">
+                  Type "delete" to confirm:
+                </label>
+                <input
+                  type="text"
+                  id="deleteConfirmation"
+                  value={deleteConfirmation}
+                  onChange={handleDeleteConfirmationChange}
+                  placeholder="Type 'delete' here"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-red-500"
+                  autoComplete="off"
+                />
+                <p className="text-xs text-gray-500">
+                  This extra step ensures you really want to permanently delete this data.
                 </p>
               </div>
             </div>
@@ -195,7 +226,13 @@ export default function Archive() {
               </button>
               <button
                 onClick={handlePermanentDelete}
-                className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition duration-150 font-medium"
+                disabled={!isDeleteEnabled}
+                className={`
+                  px-4 py-2 rounded-lg transition duration-150 font-medium
+                  ${isDeleteEnabled
+                    ? 'bg-red-600 text-white hover:bg-red-700'
+                    : 'bg-gray-200 text-gray-500 cursor-not-allowed'}
+                `}
               >
                 Delete Permanently
               </button>

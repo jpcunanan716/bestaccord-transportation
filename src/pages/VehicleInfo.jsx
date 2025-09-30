@@ -54,12 +54,6 @@ function VehicleInfo() {
             <h2 className="text-2xl font-bold text-center text-gray-800">Vehicle Information</h2>
             <div className="flex justify-between items-center mb-6">
                 <button
-                    // onClick={() => navigate("/dashboard/vehicle")}
-                    className="px-4 py-2 bg-red-500 text-white rounded-lg shadow hover:bg-red-700 transition"
-                >
-                    View History
-                </button>
-                <button
                     onClick={() => navigate("/dashboard/vehicle")}
                     className="px-4 py-2 bg-gray-600 text-white rounded-lg shadow hover:bg-gray-700 transition"
                 >
