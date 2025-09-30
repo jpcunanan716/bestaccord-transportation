@@ -35,28 +35,30 @@ export default function PendingStaff() {
 
   return (
     <div>
-      <h1 className="text-2xl font-bold mb-4">Pending Staff Approvals</h1>
+      <h1 className="text-2xl font-bold bg-gradient-to-r from-purple-900 via-indigo-800 to-purple-900 bg-clip-text text-transparent mb-4">
+        Pending Staff Approvals
+      </h1>
       {staff.length === 0 ? (
         <p className="text-gray-600">No pending staff at the moment.</p>
       ) : (
-        <div className="bg-white shadow-md rounded-lg overflow-hidden">
+        <div className="bg-white shadow-md rounded-lg overflow-hidden border border-purple-100">
           <table className="w-full">
-            <thead className="bg-gray-100">
+            <thead className="bg-gradient-to-r from-purple-50 to-indigo-50">
               <tr>
-                <th className="px-6 py-3 text-left text-sm font-medium text-gray-700">Name</th>
-                <th className="px-6 py-3 text-left text-sm font-medium text-gray-700">Email</th>
-                <th className="px-6 py-3 text-sm font-medium text-gray-700">Action</th>
+                <th className="px-6 py-3 text-left text-sm font-medium text-purple-900">Name</th>
+                <th className="px-6 py-3 text-left text-sm font-medium text-purple-900">Email</th>
+                <th className="px-6 py-3 text-sm font-medium text-purple-900">Action</th>
               </tr>
             </thead>
             <tbody>
               {staff.map((s) => (
-                <tr key={s._id} className="border-t">
+                <tr key={s._id} className="border-t border-purple-100 hover:bg-purple-50/50 transition-colors">
                   <td className="px-6 py-3">{s.name}</td>
                   <td className="px-6 py-3">{s.email}</td>
                   <td className="px-6 py-3 text-center">
                     <button
                       onClick={() => approveStaff(s._id)}
-                      className="bg-green-600 hover:bg-green-700 text-white px-4 py-1.5 rounded-md transition"
+                      className="bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white px-4 py-1.5 rounded-md transition-all duration-300 shadow-md hover:shadow-lg"
                     >
                       Approve
                     </button>
