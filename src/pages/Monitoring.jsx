@@ -115,7 +115,7 @@ export default function Monitoring() {
     visible: {
       opacity: 1,
       x: 0,
-      transition: { duration: 0.4 }
+      transition: { duration: 0.2 }
     },
     hover: {
       backgroundColor: "#f9fafb",
@@ -457,10 +457,12 @@ export default function Monitoring() {
           className="flex justify-between items-center mb-6 p-6 bg-white border-b border-purple-100"
           initial={{ y: -20, opacity: 0 }}
           animate={{ y: 0, opacity: 1 }}
-          transition={{ duration: 0.4 }}
+          transition={{ duration: 0.2 }}
         >
           <div>
-            <h1 className="text-2xl font-bold text-gray-800">Trip Monitoring</h1>
+            <h1 className="text-3xl font-bold bg-gradient-to-r from-purple-900 via-indigo-800 to-purple-900 bg-clip-text text-transparent mb-2">
+              Trip Monitoring
+            </h1>
             <p className="text-gray-600 text-sm">Track and manage ongoing trips and delivery status</p>
           </div>
 
@@ -503,7 +505,7 @@ export default function Monitoring() {
           className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6 px-6"
           initial={{ y: 20, opacity: 0 }}
           animate={{ y: 0, opacity: 1 }}
-          transition={{ duration: 0.4, delay: 0.1 }}
+          transition={{ duration: 0.2, delay: 0.1 }}
         >
           <motion.input
             type="text"
@@ -531,7 +533,7 @@ export default function Monitoring() {
           className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6 px-6"
           initial={{ y: 20, opacity: 0 }}
           animate={{ y: 0, opacity: 1 }}
-          transition={{ duration: 0.4, delay: 0.2 }}
+          transition={{ duration: 0.2, delay: 0.2 }}
         >
           {Object.entries(
             bookings.reduce((acc, booking) => {
@@ -582,7 +584,7 @@ export default function Monitoring() {
           className="bg-white rounded-lg shadow-sm mx-6 overflow-hidden"
           initial={{ y: 20, opacity: 0 }}
           animate={{ y: 0, opacity: 1 }}
-          transition={{ duration: 0.4, delay: 0.3 }}
+          transition={{ duration: 0.2, delay: 0.3 }}
         >
           {loading ? (
             <motion.div
@@ -736,7 +738,7 @@ export default function Monitoring() {
                   className="text-center py-12"
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.4 }}
+                  transition={{ duration: 0.2 }}
                 >
                   <Package className="w-12 h-12 text-gray-400 mx-auto mb-4" />
                   <h3 className="text-lg font-medium text-gray-900 mb-2">No trips found</h3>
@@ -829,7 +831,7 @@ export default function Monitoring() {
                                   className="flex flex-col items-center relative flex-1"
                                   initial={{ opacity: 0, y: 20 }}
                                   animate={{ opacity: 1, y: 0 }}
-                                  transition={{ delay: 0.4 + index * 0.1 }}
+                                  transition={{ delay: 0.2 + index * 0.1 }}
                                 >
                                   <motion.div
                                     className={`w-10 h-10 rounded-full flex items-center justify-center border-2 z-10 bg-white ${isActive ? 'bg-purple-600 border-purple-600 text-white' :
@@ -906,7 +908,7 @@ export default function Monitoring() {
                         className="bg-white rounded-lg border border-gray-200 p-6"
                         initial={{ opacity: 0, y: 20 }}
                         animate={{ opacity: 1, y: 0 }}
-                        transition={{ duration: 0.5, delay: 0.4 }}
+                        transition={{ duration: 0.3, delay: 0.2 }}
                       >
                         <h3 className="font-semibold text-gray-900 mb-4">Route Timeline</h3>
                         <div className="space-y-4">
@@ -996,7 +998,7 @@ export default function Monitoring() {
                         className="bg-white rounded-lg border border-gray-200 p-6"
                         initial={{ opacity: 0, y: 20 }}
                         animate={{ opacity: 1, y: 0 }}
-                        transition={{ duration: 0.5, delay: 0.4 }}
+                        transition={{ duration: 0.3, delay: 0.2 }}
                       >
                         <div className="grid grid-cols-2 gap-6">
                           <div>

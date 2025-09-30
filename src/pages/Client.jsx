@@ -1,7 +1,8 @@
 import { useState, useEffect, useRef } from "react";
-import { Eye, Pencil, Trash2 } from "lucide-react";
+import { Eye, Pencil, Trash2, Plus, X } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
+import { motion, AnimatePresence } from "framer-motion";
 
 function Client() {
   const [clients, setClients] = useState([]);
@@ -70,9 +71,7 @@ function Client() {
     }
     const fetchProvinces = async () => {
       try {
-        // NCR region code is 130000000
         if (formData.region === "130000000") {
-          // NCR: fetch all districts, then all provinces from each district
           const districtsRes = await axios.get("https://psgc.gitlab.io/api/regions/130000000/districts/");
           const districts = districtsRes.data;
           let allProvinces = [];
@@ -82,7 +81,6 @@ function Client() {
               allProvinces = allProvinces.concat(provRes.data);
             } catch (err) {
               if (err.response && err.response.status === 404) {
-                // Skip districts with no provinces
                 continue;
               } else {
                 console.error(`Error fetching provinces for district ${district.code}`, err);
@@ -103,11 +101,9 @@ function Client() {
 
   // Fetch cities/municipalities when province changes
   useEffect(() => {
-    // NCR region code is 130000000
     if (formData.region === "130000000") {
       const fetchNcrCities = async () => {
         try {
-          // Get all districts in NCR
           const districtsRes = await axios.get("https://psgc.gitlab.io/api/regions/130000000/districts/");
           const districts = districtsRes.data;
           let allCities = [];
@@ -115,7 +111,6 @@ function Client() {
             let districtHasProvinces = true;
             let provinces = [];
             try {
-              // Get all provinces in the district
               const provRes = await axios.get(`https://psgc.gitlab.io/api/districts/${district.code}/provinces/`);
               provinces = provRes.data;
             } catch (err) {
@@ -128,12 +123,10 @@ function Client() {
             if (districtHasProvinces && provinces.length > 0) {
               for (const province of provinces) {
                 try {
-                  // Get all cities/municipalities in the province
                   const cityRes = await axios.get(`https://psgc.gitlab.io/api/provinces/${province.code}/cities-municipalities/`);
                   allCities = allCities.concat(cityRes.data);
                 } catch (err) {
                   if (err.response && err.response.status === 404) {
-                    // Suppress expected 404 errors
                     continue;
                   } else {
                     console.error(`Error fetching cities for province ${province.code}`, err);
@@ -141,13 +134,11 @@ function Client() {
                 }
               }
             } else {
-              // Try to fetch cities/municipalities directly under the district
               try {
                 const cityRes = await axios.get(`https://psgc.gitlab.io/api/districts/${district.code}/cities-municipalities/`);
                 allCities = allCities.concat(cityRes.data);
               } catch (err) {
                 if (err.response && err.response.status === 404) {
-                  // Suppress expected 404 errors
                   continue;
                 } else {
                   console.error(`Error fetching cities for district ${district.code}`, err);
@@ -163,7 +154,6 @@ function Client() {
       fetchNcrCities();
       return;
     }
-    // Non-NCR: fetch cities/municipalities for selected province
     if (!formData.province) {
       setCities([]);
       return;
@@ -201,12 +191,10 @@ function Client() {
   const fetchClients = async () => {
     try {
       const res = await axios.get("http://localhost:5000/api/clients");
-      // Filter out archived clients
       const activeClients = res.data.filter(client => !client.isArchived);
       setClients(activeClients);
       setFilteredClients(activeClients);
 
-      // Extract unique values from active clients only
       setUniqueNames([...new Set(activeClients.map((c) => c.clientName))]);
       setUniqueBranches([...new Set(activeClients.map((c) => c.clientBranch))]);
       setUniqueLocations([...new Set(activeClients.map((c) => c.location))]);
@@ -262,7 +250,7 @@ function Client() {
     }
 
     setFilteredClients(results);
-    setCurrentPage(1); // reset to page 1 when filters change
+    setCurrentPage(1);
   }, [searchName, searchBranch, searchLocation, searchDate, generalSearch, clients]);
 
   // Pagination logic
@@ -305,7 +293,6 @@ function Client() {
 
   const handleChange = (e) => {
     const { name, value } = e.target;
-    // Reset dependent fields when parent changes
     if (name === "region") {
       setFormData({ ...formData, region: value, province: "", city: "", barangay: "" });
     } else if (name === "province") {
@@ -320,7 +307,6 @@ function Client() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
-      // Helper to get name from code
       const getName = (list, code) => {
         const found = list.find((item) => item.code === code);
         return found ? found.name : code;
@@ -353,7 +339,6 @@ function Client() {
     }
   };
 
-  //Archive Handler
   const handleDelete = async (id) => {
     if (!window.confirm("Are you sure you want to archive this client?")) return;
 
@@ -369,34 +354,49 @@ function Client() {
     }
   };
 
-  // Navigate to client Info Page
-  const viewCLient = (client) => {
+  const viewClient = (client) => {
     navigate(`/dashboard/client/${client._id}`);
   };
 
   return (
-    <>
-      {/* Page Content */}
-      <div
-        ref={containerRef}
-        className={`transition duration-200 ${showModal ? "filter blur-sm" : ""}`}
+    <div className="space-y-8">
+      <motion.div
+        initial={{ opacity: 0, y: -20 }}
+        animate={{ opacity: 1, y: 0 }}
+        className="relative"
       >
-        <div className="flex justify-between items-center mb-6">
-          <h1 className="text-2xl font-bold text-gray-800">Clients</h1>
-          <button
+        <div className="absolute inset-0 bg-gradient-to-r from-purple-600/5 via-indigo-600/5 to-purple-600/5 rounded-2xl -z-10"></div>
+        <div className="flex justify-between items-center py-6">
+          <div>
+            <h1 className="text-3xl font-bold bg-gradient-to-r from-purple-900 via-indigo-800 to-purple-900 bg-clip-text text-transparent mb-2">
+              Clients
+            </h1>
+            <p className="text-sm text-gray-600">Manage your client relationships and information</p>
+          </div>
+          <motion.button
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.95 }}
             onClick={() => openModal()}
-            className="px-5 py-2 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-lg shadow-lg hover:scale-105 transform transition"
+            className="px-6 py-3 bg-gradient-to-r from-purple-600 to-indigo-600 text-white rounded-xl shadow-lg hover:shadow-xl inline-flex items-center gap-2 transform transition-all duration-300 font-medium"
           >
+            <Plus size={20} />
             Add Client
-          </button>
+          </motion.button>
         </div>
+      </motion.div>
 
-        {/* Filters */}
-        <div className="grid grid-cols-1 md:grid-cols-5 gap-4 mb-6">
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.1 }}
+        className="bg-white/80 backdrop-blur-sm rounded-2xl shadow-sm border border-purple-100 p-6"
+      >
+        <h3 className="text-lg font-semibold text-gray-900 mb-4">Filters</h3>
+        <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
           <select
             value={searchName}
             onChange={(e) => setSearchName(e.target.value)}
-            className="border rounded px-3 py-2"
+            className="px-4 py-2.5 border border-purple-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-400 focus:border-transparent bg-white/50 text-sm"
           >
             <option value="">All Clients</option>
             {uniqueNames.map((name, i) => (
@@ -409,7 +409,7 @@ function Client() {
           <select
             value={searchBranch}
             onChange={(e) => setSearchBranch(e.target.value)}
-            className="border rounded px-3 py-2"
+            className="px-4 py-2.5 border border-purple-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-400 focus:border-transparent bg-white/50 text-sm"
           >
             <option value="">All Branches</option>
             {uniqueBranches.map((branch, i) => (
@@ -422,7 +422,7 @@ function Client() {
           <select
             value={searchLocation}
             onChange={(e) => setSearchLocation(e.target.value)}
-            className="border rounded px-3 py-2"
+            className="px-4 py-2.5 border border-purple-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-400 focus:border-transparent bg-white/50 text-sm"
           >
             <option value="">All Locations</option>
             {uniqueLocations.map((location, i) => (
@@ -435,7 +435,7 @@ function Client() {
           <select
             value={searchDate}
             onChange={(e) => setSearchDate(e.target.value)}
-            className="border rounded px-3 py-2"
+            className="px-4 py-2.5 border border-purple-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-400 focus:border-transparent bg-white/50 text-sm"
           >
             <option value="">All Dates</option>
             {uniqueDates.map((date, i) => (
@@ -444,228 +444,298 @@ function Client() {
               </option>
             ))}
           </select>
+
           <input
             type="text"
             placeholder="General Search"
             value={generalSearch}
             onChange={(e) => setGeneralSearch(e.target.value)}
-            className="border rounded px-3 py-2"
+            className="px-4 py-2.5 border border-purple-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-400 focus:border-transparent bg-white/50 text-sm"
           />
         </div>
+      </motion.div>
 
-        {/* Table */}
-        <div className="bg-white rounded-xl shadow-lg p-4">
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm table-auto">
-              <thead className="bg-gray-100 rounded-t-lg">
-                <tr>
-                  <th className="px-6 py-3 text-left font-semibold text-gray-700">No</th>
-                  <th className="px-6 py-3 text-left font-semibold text-gray-700">Client Name</th>
-                  <th className="px-6 py-3 text-left font-semibold text-gray-700">Branch</th>
-                  <th className="px-6 py-3 text-left font-semibold text-gray-700">Address</th>
-                  <th className="px-6 py-3 text-left font-semibold text-gray-700">Date Added</th>
-                  <th className="px-6 py-3 text-center font-semibold text-gray-700">Actions</th>
-                </tr>
-              </thead>
-              <tbody>
-                {paginatedClients.map((client, index) => {
-                  // Location and branch display logic
-                  let city = "";
-                  let barangay = "";
-                  if (client.city || client.barangay) {
-                    city = client.city;
-                    barangay = client.barangay;
-                  } else if (client.address) {
-                    city = client.address.city || "";
-                    barangay = client.address.barangay || "";
-                  }
-                  return (
-                    <tr
-                      key={client._id}
-                      className="border-b last:border-none hover:bg-gray-50 transition duration-150"
-                    >
-                      <td className="px-6 py-3">{startIndex + index + 1}</td>
-                      <td className="px-6 py-3">{client.clientName}</td>
-                      <td className="px-6 py-3">{client.clientBranch}</td>
-                      <td className="px-6 py-3">
-                        {[client.address.barangay, client.address.city, client.address.province, client.address.region]
-                          .filter(Boolean)
-                          .join(', ')}
-                      </td>
-                      <td className="px-6 py-3">{new Date(client.createdAt).toLocaleDateString()}</td>
-                      <td className="px-6 py-3 text-center space-x-2 inline-flex">
-                        <button
-                          onClick={() => viewCLient(client)}
-                          className="text-blue-600 hover:text-blue-800 px-3 py-1 rounded hover:bg-blue-50 inline-flex items-center gap-1 transition transform hover:scale-105"
-                        >
-                          <Eye />
-                        </button>
-                        <button
-                          onClick={() => openModal(client)}
-                          className="text-yellow-600 hover:text-yellow-800 px-3 py-1 rounded hover:bg-yellow-50 inline-flex items-center gap-1 transition transform hover:scale-105"
-                        >
-                          <Pencil />
-                        </button>
-                        <button
-                          onClick={() => handleDelete(client._id)}
-                          className="text-red-600 hover:text-red-800 px-3 py-1 rounded hover:bg-red-50 inline-flex items-center gap-1 transition transform hover:scale-105"
-                        >
-                          <Trash2 />
-                        </button>
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          </div>
-
-          {/* Pagination Controls */}
-          <div className="flex justify-between items-center mt-4">
-            <button
-              onClick={() => setCurrentPage((p) => Math.max(p - 1, 1))}
-              disabled={currentPage === 1}
-              className={`px-4 py-2 rounded-lg shadow ${currentPage === 1
-                ? "bg-gray-300 text-gray-600 cursor-not-allowed"
-                : "bg-blue-600 text-white hover:bg-blue-700"
-                }`}
-            >
-              Previous
-            </button>
-            <p className="text-gray-600 text-sm">
-              Page {currentPage} of {totalPages}
-            </p>
-            <button
-              onClick={() => setCurrentPage((p) => Math.min(p + 1, totalPages))}
-              disabled={currentPage === totalPages}
-              className={`px-4 py-2 rounded-lg shadow ${currentPage === totalPages
-                ? "bg-gray-300 text-gray-600 cursor-not-allowed"
-                : "bg-blue-600 text-white hover:bg-blue-700"
-                }`}
-            >
-              Next
-            </button>
-          </div>
-        </div>
-      </div>
-
-      {/* Floating Modal */}
-      {showModal && (
-        <div className="fixed inset-0 z-50 flex justify-center items-center">
-          <div
-            className="absolute inset-0 bg-black opacity-20"
-            onClick={closeModal}
-          ></div>
-
-          <div className="relative bg-white rounded-xl shadow-xl w-full max-w-md ml-32 p-6 z-10 animate-fade-in">
-            <h2 className="text-xl font-bold mb-4">
-              {editClient ? "Edit Client" : "Add Client"}
-            </h2>
-
-            <form onSubmit={handleSubmit} className="grid gap-3 grid-cols-1">
-              <input
-                type="text"
-                name="clientName"
-                placeholder="Client Name"
-                value={formData.clientName}
-                onChange={handleChange}
-                required
-                className="border p-2 rounded focus:ring-2 focus:ring-indigo-400"
-              />
-
-              <input
-                type="text"
-                name="clientBranch"
-                placeholder="Client Branch"
-                value={formData.clientBranch}
-                onChange={handleChange}
-                required
-                className="border p-2 rounded focus:ring-2 focus:ring-indigo-400"
-              />
-
-
-              {/* Address Fields */}
-              <select
-                name="region"
-                value={formData.region}
-                onChange={handleChange}
-                required
-                className="border p-2 rounded focus:ring-2 focus:ring-indigo-400"
-              >
-                <option value="">Select Region</option>
-                {regions.map((r) => (
-                  <option key={r.code} value={r.code}>{r.name}</option>
-                ))}
-              </select>
-              {formData.region !== "130000000" ? (
-                <select
-                  name="province"
-                  value={formData.province}
-                  onChange={handleChange}
-                  required={!!formData.region}
-                  className="border p-2 rounded focus:ring-2 focus:ring-indigo-400"
-                  disabled={!formData.region}
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.2 }}
+        className="bg-white/80 backdrop-blur-sm rounded-2xl shadow-sm border border-purple-100 overflow-hidden"
+      >
+        <div className="overflow-x-auto">
+          <table className="w-full">
+            <thead className="bg-gradient-to-r from-purple-50 to-indigo-50 border-b border-purple-100">
+              <tr>
+                <th className="px-6 py-4 text-left text-sm font-semibold text-gray-900">No</th>
+                <th className="px-6 py-4 text-left text-sm font-semibold text-gray-900">Client Name</th>
+                <th className="px-6 py-4 text-left text-sm font-semibold text-gray-900">Branch</th>
+                <th className="px-6 py-4 text-left text-sm font-semibold text-gray-900">Address</th>
+                <th className="px-6 py-4 text-left text-sm font-semibold text-gray-900">Date Added</th>
+                <th className="px-6 py-4 text-center text-sm font-semibold text-gray-900">Actions</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-purple-50">
+              {paginatedClients.map((client, index) => (
+                <motion.tr
+                  key={client._id}
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: index * 0.05 }}
+                  className="hover:bg-purple-50/50 transition-colors duration-200"
                 >
-                  <option value="">Select Province</option>
-                  {provinces.map((p) => (
-                    <option key={p.code} value={p.code}>{p.name}</option>
-                  ))}
-                </select>
-              ) : (
-                <div>
-                  <label className="block text-sm font-medium text-gray-700">Province</label>
-                  <div className="mt-1 block w-full px-3 py-2 border border-gray-200 rounded-md shadow-sm bg-gray-50 text-gray-700">
-                    Metro Manila (National Capital Region)
+                  <td className="px-6 py-4 text-sm text-gray-900">{startIndex + index + 1}</td>
+                  <td className="px-6 py-4 text-sm font-semibold text-gray-900">{client.clientName}</td>
+                  <td className="px-6 py-4 text-sm text-gray-900">{client.clientBranch}</td>
+                  <td className="px-6 py-4 text-sm text-gray-600">
+                    {[client.address?.barangay, client.address?.city, client.address?.province, client.address?.region]
+                      .filter(Boolean)
+                      .join(', ')}
+                  </td>
+                  <td className="px-6 py-4 text-sm text-gray-600">
+                    {new Date(client.createdAt).toLocaleDateString()}
+                  </td>
+                  <td className="px-6 py-4">
+                    <div className="flex items-center justify-center gap-2">
+                      <motion.button
+                        whileHover={{ scale: 1.1 }}
+                        whileTap={{ scale: 0.9 }}
+                        onClick={() => viewClient(client)}
+                        className="p-2 text-purple-600 hover:bg-purple-50 rounded-lg transition-colors"
+                      >
+                        <Eye size={18} />
+                      </motion.button>
+                      <motion.button
+                        whileHover={{ scale: 1.1 }}
+                        whileTap={{ scale: 0.9 }}
+                        onClick={() => openModal(client)}
+                        className="p-2 text-indigo-600 hover:bg-indigo-50 rounded-lg transition-colors"
+                      >
+                        <Pencil size={18} />
+                      </motion.button>
+                      <motion.button
+                        whileHover={{ scale: 1.1 }}
+                        whileTap={{ scale: 0.9 }}
+                        onClick={() => handleDelete(client._id)}
+                        className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                      >
+                        <Trash2 size={18} />
+                      </motion.button>
+                    </div>
+                  </td>
+                </motion.tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+
+        <div className="flex justify-between items-center px-6 py-4 bg-gradient-to-r from-purple-50/50 to-indigo-50/50 border-t border-purple-100">
+          <motion.button
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.95 }}
+            onClick={() => setCurrentPage(p => Math.max(p - 1, 1))}
+            disabled={currentPage === 1}
+            className={`px-5 py-2.5 rounded-xl font-medium transition-all duration-300 ${currentPage === 1
+              ? "bg-gray-100 text-gray-400 cursor-not-allowed"
+              : "bg-gradient-to-r from-purple-600 to-indigo-600 text-white hover:shadow-lg"
+              }`}
+          >
+            Previous
+          </motion.button>
+          <div className="flex items-center gap-2">
+            <span className="text-sm text-gray-600">
+              Page <span className="font-bold text-purple-700">{currentPage}</span> of <span className="font-bold text-purple-700">{totalPages}</span>
+            </span>
+          </div>
+          <motion.button
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.95 }}
+            onClick={() => setCurrentPage(p => Math.min(p + 1, totalPages))}
+            disabled={currentPage === totalPages}
+            className={`px-5 py-2.5 rounded-xl font-medium transition-all duration-300 ${currentPage === totalPages
+              ? "bg-gray-100 text-gray-400 cursor-not-allowed"
+              : "bg-gradient-to-r from-purple-600 to-indigo-600 text-white hover:shadow-lg"
+              }`}
+          >
+            Next
+          </motion.button>
+        </div>
+      </motion.div>
+
+      <AnimatePresence>
+        {showModal && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-50 flex justify-center items-center p-4 bg-black/40 backdrop-blur-sm"
+            onClick={closeModal}
+          >
+            <motion.div
+              initial={{ scale: 0.9, opacity: 0, y: 20 }}
+              animate={{ scale: 1, opacity: 1, y: 0 }}
+              exit={{ scale: 0.9, opacity: 0, y: 20 }}
+              onClick={(e) => e.stopPropagation()}
+              className="bg-white rounded-3xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto border border-purple-100"
+            >
+              <div className="sticky top-0 bg-gradient-to-r from-purple-600 to-indigo-600 px-8 py-6 rounded-t-3xl z-10">
+                <div className="flex justify-between items-center">
+                  <div>
+                    <h2 className="text-2xl font-bold text-white">
+                      {editClient ? "Edit Client" : "Add Client"}
+                    </h2>
+                    <p className="text-purple-100 text-sm mt-1">
+                      Enter client details and address information
+                    </p>
+                  </div>
+                  <motion.button
+                    whileHover={{ scale: 1.1 }}
+                    whileTap={{ scale: 0.9 }}
+                    onClick={closeModal}
+                    className="p-2 hover:bg-white/20 rounded-full transition-colors"
+                  >
+                    <X size={24} className="text-white" />
+                  </motion.button>
+                </div>
+              </div>
+
+              <form onSubmit={handleSubmit} className="p-8 space-y-6">
+                <div className="bg-gradient-to-r from-purple-50 to-indigo-50 p-6 rounded-2xl border border-purple-100">
+                  <h3 className="text-lg font-semibold text-gray-900 mb-4">Client Information</h3>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">Client Name *</label>
+                      <input
+                        type="text"
+                        name="clientName"
+                        value={formData.clientName}
+                        onChange={handleChange}
+                        required
+                        className="w-full px-4 py-2.5 border border-purple-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-400 focus:border-transparent"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">Client Branch *</label>
+                      <input
+                        type="text"
+                        name="clientBranch"
+                        value={formData.clientBranch}
+                        onChange={handleChange}
+                        required
+                        className="w-full px-4 py-2.5 border border-purple-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-400 focus:border-transparent"
+                      />
+                    </div>
                   </div>
                 </div>
-              )}
-              <select
-                name="city"
-                value={formData.city}
-                onChange={handleChange}
-                required={formData.region === "130000000" || !!formData.province}
-                className="border p-2 rounded focus:ring-2 focus:ring-indigo-400"
-                disabled={formData.region !== "130000000" && !formData.province}
-              >
-                <option value="">Select City/Municipality</option>
-                {cities.map((c) => (
-                  <option key={c.code} value={c.code}>{c.name}</option>
-                ))}
-              </select>
-              <select
-                name="barangay"
-                value={formData.barangay}
-                onChange={handleChange}
-                required={!!formData.city}
-                className="border p-2 rounded focus:ring-2 focus:ring-indigo-400"
-                disabled={!formData.city}
-              >
-                <option value="">Select Barangay</option>
-                {barangays.map((b) => (
-                  <option key={b.code} value={b.code}>{b.name}</option>
-                ))}
-              </select>
 
-              <div className="flex justify-end space-x-2 mt-3">
-                <button
-                  type="button"
-                  onClick={closeModal}
-                  className="px-5 py-2 bg-gray-300 rounded-lg shadow hover:scale-105 transform transition"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  className="px-5 py-2 bg-blue-600 text-white rounded-lg shadow hover:scale-105 transform transition"
-                >
-                  {editClient ? "Update" : "Add"}
-                </button>
+                <div className="bg-gradient-to-r from-indigo-50 to-violet-50 p-6 rounded-2xl border border-indigo-100">
+                  <h3 className="text-lg font-semibold text-gray-900 mb-4">Address Information</h3>
+                  <div className="space-y-4">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">Region *</label>
+                      <select
+                        name="region"
+                        value={formData.region}
+                        onChange={handleChange}
+                        required
+                        className="w-full px-4 py-2.5 border border-indigo-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-400 focus:border-transparent"
+                      >
+                        <option value="">Select Region</option>
+                        {regions.map((r) => (
+                          <option key={r.code} value={r.code}>{r.name}</option>
+                        ))}
+                      </select>
+                    </div>
+
+                    {formData.region !== "130000000" ? (
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">Province *</label>
+                        <select
+                          name="province"
+                          value={formData.province}
+                          onChange={handleChange}
+                          required={!!formData.region}
+                          className="w-full px-4 py-2.5 border border-indigo-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-400 focus:border-transparent"
+                          disabled={!formData.region}
+                        >
+                          <option value="">Select Province</option>
+                          {provinces.map((p) => (
+                            <option key={p.code} value={p.code}>{p.name}</option>
+                          ))}
+                        </select>
+                      </div>
+                    ) : (
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">Province</label>
+                        <div className="w-full px-4 py-2.5 border border-indigo-200 rounded-xl bg-gray-50 text-gray-700">
+                          Metro Manila (National Capital Region)
+                        </div>
+                      </div>
+                    )}
+
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">City/Municipality *</label>
+                      <select
+                        name="city"
+                        value={formData.city}
+                        onChange={handleChange}
+                        required={formData.region === "130000000" || !!formData.province}
+                        className="w-full px-4 py-2.5 border border-indigo-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-400 focus:border-transparent"
+                        disabled={formData.region !== "130000000" && !formData.province}
+                      >
+                        <option value="">Select City/Municipality</option>
+                        {cities.map((c) => (
+                          <option key={c.code} value={c.code}>{c.name}</option>
+                        ))}
+                      </select>
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">Barangay *</label>
+                      <select
+                        name="barangay"
+                        value={formData.barangay}
+                        onChange={handleChange}
+                        required={!!formData.city}
+                        className="w-full px-4 py-2.5 border border-indigo-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-400 focus:border-transparent"
+                        disabled={!formData.city}
+                      >
+                        <option value="">Select Barangay</option>
+                        {barangays.map((b) => (
+                          <option key={b.code} value={b.code}>{b.name}</option>
+                        ))}
+                      </select>
+                    </div>
+                  </div>
+                </div>
+              </form>
+
+              <div className="sticky bottom-0 bg-gradient-to-r from-gray-50 to-gray-100 px-8 py-6 rounded-b-3xl border-t border-gray-200">
+                <div className="flex justify-between items-center gap-4">
+                  <motion.button
+                    whileHover={{ scale: 1.05 }}
+                    whileTap={{ scale: 0.95 }}
+                    type="button"
+                    onClick={closeModal}
+                    className="px-6 py-3 bg-white border-2 border-gray-300 text-gray-700 rounded-xl font-medium hover:bg-gray-50 transition-all duration-300 shadow-sm"
+                  >
+                    Cancel
+                  </motion.button>
+
+                  <motion.button
+                    whileHover={{ scale: 1.05 }}
+                    whileTap={{ scale: 0.95 }}
+                    type="button"
+                    onClick={handleSubmit}
+                    className="px-6 py-3 bg-gradient-to-r from-purple-600 to-indigo-600 text-white rounded-xl font-medium hover:shadow-lg transition-all duration-300"
+                  >
+                    {editClient ? "Update Client" : "Add Client"}
+                  </motion.button>
+                </div>
               </div>
-            </form>
-          </div>
-        </div>
-      )}
-    </>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </div>
   );
 }
 
