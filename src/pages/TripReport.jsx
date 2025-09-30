@@ -378,15 +378,15 @@ export default function TripReport() {
   // Get document type badge color
   const getDocumentTypeBadge = (type) => {
     const colors = {
-      'PDF': 'bg-red-100 text-red-800',
-      'DOC': 'bg-blue-100 text-blue-800',
-      'DOCX': 'bg-blue-100 text-blue-800',
-      'Excel': 'bg-green-100 text-green-800',
-      'JPG': 'bg-purple-100 text-purple-800',
-      'JPEG': 'bg-purple-100 text-purple-800',
-      'PNG': 'bg-purple-100 text-purple-800',
-      'TXT': 'bg-gray-100 text-gray-800',
-      'Other': 'bg-yellow-100 text-yellow-800'
+      'PDF': 'bg-purple-100 text-purple-800',
+      'DOC': 'bg-indigo-100 text-indigo-800',
+      'DOCX': 'bg-indigo-100 text-indigo-800',
+      'Excel': 'bg-violet-100 text-violet-800',
+      'JPG': 'bg-fuchsia-100 text-fuchsia-800',
+      'JPEG': 'bg-fuchsia-100 text-fuchsia-800',
+      'PNG': 'bg-fuchsia-100 text-fuchsia-800',
+      'TXT': 'bg-purple-100 text-purple-800',
+      'Other': 'bg-purple-100 text-purple-800'
     };
     return colors[type] || colors['Other'];
   };
@@ -450,13 +450,15 @@ export default function TripReport() {
       {/* Header */}
       <div className="flex justify-between items-center">
         <div>
-          <h1 className="text-2xl font-bold text-gray-800">Trip Reports</h1>
+          <h1 className="text-2xl font-bold bg-gradient-to-r from-purple-900 via-indigo-800 to-purple-900 bg-clip-text text-transparent">
+            Trip Reports
+          </h1>
           <p className="text-gray-600 text-sm">Manage and view uploaded trip documents and receipts</p>
         </div>
 
         <button
           onClick={() => setShowUploadModal(true)}
-          className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg shadow hover:bg-blue-700 transition"
+          className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-purple-600 to-indigo-600 text-white rounded-lg shadow hover:from-purple-700 hover:to-indigo-700 transition-all duration-300"
         >
           <Plus className="w-4 h-4" />
           Upload Document
@@ -465,7 +467,7 @@ export default function TripReport() {
 
       {/* Success/Error Messages */}
       {success && (
-        <div className="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded-lg flex items-center">
+        <div className="bg-emerald-100 border border-emerald-400 text-emerald-700 px-4 py-3 rounded-lg flex items-center">
           <CheckCircle className="w-5 h-5 mr-2" />
           {success}
         </div>
@@ -493,14 +495,14 @@ export default function TripReport() {
             placeholder="Search receipts, files..."
             value={generalSearch}
             onChange={(e) => setGeneralSearch(e.target.value)}
-            className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-400 focus:border-transparent"
+            className="w-full pl-10 pr-4 py-2 border border-purple-200 rounded-lg focus:ring-2 focus:ring-purple-400 focus:border-transparent"
           />
         </div>
 
         <select
           value={documentTypeFilter}
           onChange={(e) => setDocumentTypeFilter(e.target.value)}
-          className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-400 focus:border-transparent"
+          className="px-4 py-2 border border-purple-200 rounded-lg focus:ring-2 focus:ring-purple-400 focus:border-transparent"
         >
           {uniqueDocumentTypes.map(type => (
             <option key={type} value={type}>{type === 'All' ? 'All Types' : type}</option>
@@ -510,7 +512,7 @@ export default function TripReport() {
         <select
           value={uploadedByFilter}
           onChange={(e) => setUploadedByFilter(e.target.value)}
-          className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-400 focus:border-transparent"
+          className="px-4 py-2 border border-purple-200 rounded-lg focus:ring-2 focus:ring-purple-400 focus:border-transparent"
         >
           {uniqueUploadedBy.map(uploader => (
             <option key={uploader} value={uploader}>{uploader === 'All' ? 'All Uploaders' : uploader}</option>
@@ -518,7 +520,7 @@ export default function TripReport() {
         </select>
 
         <div className="flex items-center space-x-2 text-sm text-gray-600">
-          <FileText className="w-4 h-4" />
+          <FileText className="w-4 h-4 text-purple-600" />
           <span>
             {pagination.totalItems || 0} total documents
           </span>
@@ -526,54 +528,54 @@ export default function TripReport() {
       </div>
 
       {/* Trip Reports Table */}
-      <div className="bg-white rounded-xl shadow-lg overflow-hidden">
+      <div className="bg-white rounded-xl shadow-lg overflow-hidden border border-purple-100">
         {loading ? (
           <div className="flex items-center justify-center py-12">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-600"></div>
             <span className="ml-2 text-gray-600">Loading trip reports...</span>
           </div>
         ) : (
           <div className="overflow-x-auto">
-            <table className="min-w-full divide-y divide-gray-200">
-              <thead className="bg-gray-50">
+            <table className="min-w-full divide-y divide-purple-100">
+              <thead className="bg-gradient-to-r from-purple-50 to-indigo-50">
                 <tr>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="px-6 py-3 text-left text-xs font-medium text-purple-900 uppercase tracking-wider">
                     No
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="px-6 py-3 text-left text-xs font-medium text-purple-900 uppercase tracking-wider">
                     Receipt Number
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="px-6 py-3 text-left text-xs font-medium text-purple-900 uppercase tracking-wider">
                     Document Type
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="px-6 py-3 text-left text-xs font-medium text-purple-900 uppercase tracking-wider">
                     File Name
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="px-6 py-3 text-left text-xs font-medium text-purple-900 uppercase tracking-wider">
                     File Size
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="px-6 py-3 text-left text-xs font-medium text-purple-900 uppercase tracking-wider">
                     Uploaded By
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="px-6 py-3 text-left text-xs font-medium text-purple-900 uppercase tracking-wider">
                     Date
                   </th>
-                  <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="px-6 py-3 text-center text-xs font-medium text-purple-900 uppercase tracking-wider">
                     Actions
                   </th>
                 </tr>
               </thead>
-              <tbody className="bg-white divide-y divide-gray-200">
+              <tbody className="bg-white divide-y divide-purple-100">
                 {tripReports.map((report, index) => {
                   const displayNumber = ((currentPage - 1) * itemsPerPage) + index + 1;
 
                   return (
-                    <tr key={report._id} className="hover:bg-gray-50 transition-colors">
+                    <tr key={report._id} className="hover:bg-purple-50/50 transition-colors">
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                         {displayNumber}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="text-sm font-medium text-blue-600">
+                        <div className="text-sm font-medium text-purple-600">
                           {report.receiptNumber}
                         </div>
                         {report.tripNumber && (
@@ -615,13 +617,13 @@ export default function TripReport() {
                       <td className="px-6 py-4 whitespace-nowrap text-center text-sm font-medium space-x-2">
                         <button
                           onClick={() => handleView(report._id)}
-                          className="text-blue-600 hover:text-blue-800 px-3 py-1 rounded hover:bg-blue-50 inline-flex items-center gap-1 transition transform hover:scale-105"
+                          className="text-purple-600 hover:text-purple-800 px-3 py-1 rounded hover:bg-purple-50 inline-flex items-center gap-1 transition transform hover:scale-105"
                         >
                           <Eye />
                         </button>
                         <button
                           onClick={() => handleDownload(report._id, report.originalFileName)}
-                          className="text-green-600 hover:text-green-800 px-3 py-1 rounded hover:bg-green-50 inline-flex items-center gap-1 transition transform hover:scale-105"
+                          className="text-indigo-600 hover:text-indigo-800 px-3 py-1 rounded hover:bg-indigo-50 inline-flex items-center gap-1 transition transform hover:scale-105"
                         >
                           <Download />
                         </button>
@@ -640,7 +642,7 @@ export default function TripReport() {
 
             {tripReports.length === 0 && !loading && (
               <div className="text-center py-12">
-                <FileText className="w-12 h-12 text-gray-400 mx-auto mb-4" />
+                <FileText className="w-12 h-12 text-purple-400 mx-auto mb-4" />
                 <h3 className="text-lg font-medium text-gray-900 mb-2">No trip reports found</h3>
                 <p className="text-gray-500">
                   {generalSearch || documentTypeFilter !== 'All' || uploadedByFilter !== 'All'
@@ -649,7 +651,7 @@ export default function TripReport() {
                 </p>
                 <button
                   onClick={() => setShowUploadModal(true)}
-                  className="mt-4 inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition"
+                  className="mt-4 inline-flex items-center px-4 py-2 bg-gradient-to-r from-purple-600 to-indigo-600 text-white rounded-lg hover:from-purple-700 hover:to-indigo-700 transition-all duration-300"
                 >
                   <Plus className="w-4 h-4 mr-2" />
                   Upload Document
@@ -661,7 +663,7 @@ export default function TripReport() {
 
         {/* Pagination */}
         {pagination.totalPages > 1 && (
-          <div className="bg-white px-4 py-3 border-t border-gray-200 sm:px-6">
+          <div className="bg-white px-4 py-3 border-t border-purple-200 sm:px-6">
             <div className="flex items-center justify-between">
               <div className="flex-1 flex justify-between sm:hidden">
                 <button
@@ -671,7 +673,7 @@ export default function TripReport() {
                   }}
                   disabled={!pagination.hasPrev}
                   className={`relative inline-flex items-center px-4 py-2 border text-sm font-medium rounded-md ${pagination.hasPrev
-                    ? 'border-gray-300 text-gray-700 bg-white hover:bg-gray-50'
+                    ? 'border-purple-300 text-purple-700 bg-white hover:bg-purple-50'
                     : 'border-gray-200 text-gray-400 bg-gray-100 cursor-not-allowed'
                     }`}
                 >
@@ -684,7 +686,7 @@ export default function TripReport() {
                   }}
                   disabled={!pagination.hasNext}
                   className={`ml-3 relative inline-flex items-center px-4 py-2 border text-sm font-medium rounded-md ${pagination.hasNext
-                    ? 'border-gray-300 text-gray-700 bg-white hover:bg-gray-50'
+                    ? 'border-purple-300 text-purple-700 bg-white hover:bg-purple-50'
                     : 'border-gray-200 text-gray-400 bg-gray-100 cursor-not-allowed'
                     }`}
                 >
@@ -708,7 +710,7 @@ export default function TripReport() {
                       }}
                       disabled={!pagination.hasPrev}
                       className={`relative inline-flex items-center px-2 py-2 rounded-l-md border text-sm font-medium ${pagination.hasPrev
-                        ? 'border-gray-300 text-gray-500 bg-white hover:bg-gray-50'
+                        ? 'border-purple-300 text-purple-700 bg-white hover:bg-purple-50'
                         : 'border-gray-200 text-gray-300 bg-gray-100 cursor-not-allowed'
                         }`}
                     >
@@ -721,7 +723,7 @@ export default function TripReport() {
                       }}
                       disabled={!pagination.hasNext}
                       className={`relative inline-flex items-center px-2 py-2 rounded-r-md border text-sm font-medium ${pagination.hasNext
-                        ? 'border-gray-300 text-gray-500 bg-white hover:bg-gray-50'
+                        ? 'border-purple-300 text-purple-700 bg-white hover:bg-purple-50'
                         : 'border-gray-200 text-gray-300 bg-gray-100 cursor-not-allowed'
                         }`}
                     >
@@ -752,7 +754,7 @@ export default function TripReport() {
               <form onSubmit={handleUpload}>
                 {/* Modal Header */}
                 <div
-                  className="bg-gradient-to-r from-blue-600 to-blue-700 px-6 py-4"
+                  className="bg-gradient-to-r from-purple-600 to-indigo-600 px-6 py-4"
                   initial={{ y: -20, opacity: 0 }}
                   animate={{ y: 0, opacity: 1 }}
                   transition={{ delay: 0.1, duration: 0.3 }}
@@ -760,7 +762,7 @@ export default function TripReport() {
                   <div className="flex items-center justify-between">
                     <div className="flex items-center space-x-3">
                       <div
-                        className="p-2 bg-blue-500 rounded-lg"
+                        className="p-2 bg-purple-500 rounded-lg"
                         initial={{ scale: 0, rotate: -180 }}
                         animate={{ scale: 1, rotate: 0 }}
                         transition={{ delay: 0.2, duration: 0.4, type: "spring" }}
@@ -769,7 +771,7 @@ export default function TripReport() {
                       </div>
                       <div>
                         <h3 className="text-xl font-bold text-white">Upload Trip Report</h3>
-                        <p className="text-blue-100 text-sm">Add a new document to your trip reports</p>
+                        <p className="text-purple-100 text-sm">Add a new document to your trip reports</p>
                       </div>
                     </div>
                     <button
@@ -779,7 +781,7 @@ export default function TripReport() {
                         resetUploadForm();
                         setError('');
                       }}
-                      className="text-blue-100 hover:text-white transition-colors p-2 rounded-lg hover:bg-blue-600"
+                      className="text-purple-100 hover:text-white transition-colors p-2 rounded-lg hover:bg-purple-500"
                     >
                       <X className="w-5 h-5" />
                     </button>
@@ -804,10 +806,10 @@ export default function TripReport() {
                       {/* Upload Area */}
                       <div
                         className={`relative border-2 border-dashed rounded-xl p-8 text-center transition-all duration-300 ${isDragOver
-                          ? 'border-blue-400 bg-blue-50 scale-105'
+                          ? 'border-purple-400 bg-purple-50 scale-105'
                           : selectedFile
-                            ? 'border-green-400 bg-green-50'
-                            : 'border-gray-300 hover:border-gray-400 bg-gray-50 hover:scale-102'
+                            ? 'border-emerald-400 bg-emerald-50'
+                            : 'border-purple-300 hover:border-purple-400 bg-purple-50/30 hover:scale-102'
                           }`}
                         onDragOver={handleDragOver}
                         onDragLeave={handleDragLeave}
@@ -823,11 +825,11 @@ export default function TripReport() {
                           >
                             <div className="flex items-center justify-center">
                               <div
-                                className="p-3 bg-green-100 rounded-full"
+                                className="p-3 bg-emerald-100 rounded-full"
                                 animate={{ rotate: [0, 10, -10, 0] }}
                                 transition={{ duration: 0.5 }}
                               >
-                                <Paperclip className="w-8 h-8 text-green-600" />
+                                <Paperclip className="w-8 h-8 text-emerald-600" />
                               </div>
                             </div>
                             <div>
@@ -854,14 +856,14 @@ export default function TripReport() {
                           <div className="space-y-4">
                             <div className="flex items-center justify-center">
                               <div
-                                className={`p-4 rounded-full transition-all duration-300 ${isDragOver ? 'bg-blue-100' : 'bg-gray-100'
+                                className={`p-4 rounded-full transition-all duration-300 ${isDragOver ? 'bg-purple-100' : 'bg-purple-100/50'
                                   }`}
                                 animate={isDragOver ? {
                                   y: [-5, 5, -5],
                                   transition: { repeat: Infinity, duration: 1 }
                                 } : {}}
                               >
-                                <CloudUpload className={`w-12 h-12 transition-colors duration-300 ${isDragOver ? 'text-blue-600' : 'text-gray-400'
+                                <CloudUpload className={`w-12 h-12 transition-colors duration-300 ${isDragOver ? 'text-purple-600' : 'text-purple-400'
                                   }`} />
                               </div>
                             </div>
@@ -874,7 +876,7 @@ export default function TripReport() {
                                 <button
                                   type="button"
                                   onClick={() => fileInputRef.current?.click()}
-                                  className="text-blue-600 hover:text-blue-700 font-medium underline"
+                                  className="text-purple-600 hover:text-purple-700 font-medium underline"
                                 >
                                   browse files
                                 </button>
@@ -887,19 +889,19 @@ export default function TripReport() {
                               transition={{ delay: 0.4, duration: 0.3 }}
                             >
                               <span className="flex items-center">
-                                <span className="w-2 h-2 bg-red-400 rounded-full mr-1"></span>
+                                <span className="w-2 h-2 bg-purple-400 rounded-full mr-1"></span>
                                 PDF
                               </span>
                               <span className="flex items-center">
-                                <span className="w-2 h-2 bg-blue-400 rounded-full mr-1"></span>
+                                <span className="w-2 h-2 bg-indigo-400 rounded-full mr-1"></span>
                                 DOC/DOCX
                               </span>
                               <span className="flex items-center">
-                                <span className="w-2 h-2 bg-green-400 rounded-full mr-1"></span>
+                                <span className="w-2 h-2 bg-violet-400 rounded-full mr-1"></span>
                                 Excel
                               </span>
                               <span className="flex items-center">
-                                <span className="w-2 h-2 bg-purple-400 rounded-full mr-1"></span>
+                                <span className="w-2 h-2 bg-fuchsia-400 rounded-full mr-1"></span>
                                 Images
                               </span>
                             </div>
@@ -929,7 +931,7 @@ export default function TripReport() {
                         value={uploadForm.receiptNumber}
                         onChange={(e) => setUploadForm({ ...uploadForm, receiptNumber: e.target.value })}
                         placeholder="e.g., RCP001234"
-                        className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
+                        className="w-full px-4 py-3 border border-purple-200 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all duration-200"
                       />
                     </div>
 
@@ -943,7 +945,7 @@ export default function TripReport() {
                         value={uploadForm.notes}
                         onChange={(e) => setUploadForm({ ...uploadForm, notes: e.target.value })}
                         placeholder="Add any notes about this document..."
-                        className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 resize-none"
+                        className="w-full px-4 py-3 border border-purple-200 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all duration-200 resize-none"
                       />
                     </div>
 
@@ -964,7 +966,7 @@ export default function TripReport() {
 
                 {/* Modal Footer */}
                 <div
-                  className="bg-gray-50 px-6 py-4 sm:flex sm:flex-row-reverse sm:space-x-reverse sm:space-x-3"
+                  className="bg-gradient-to-r from-purple-50 to-indigo-50 px-6 py-4 sm:flex sm:flex-row-reverse sm:space-x-reverse sm:space-x-3"
                   initial={{ y: 20, opacity: 0 }}
                   animate={{ y: 0, opacity: 1 }}
                   transition={{ delay: 0.4, duration: 0.3 }}
@@ -972,7 +974,7 @@ export default function TripReport() {
                   <button
                     type="submit"
                     disabled={uploading || !selectedFile || !uploadForm.receiptNumber.trim()}
-                    className="w-full sm:w-auto inline-flex justify-center items-center rounded-lg border border-transparent shadow-sm px-6 py-3 bg-blue-600 text-base font-medium text-white hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                    className="w-full sm:w-auto inline-flex justify-center items-center rounded-lg border border-transparent shadow-sm px-6 py-3 bg-gradient-to-r from-purple-600 to-indigo-600 text-base font-medium text-white hover:from-purple-700 hover:to-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-purple-500 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-300"
                   >
                     {uploading ? (
                       <>
@@ -993,7 +995,7 @@ export default function TripReport() {
                       resetUploadForm();
                       setError('');
                     }}
-                    className="mt-3 sm:mt-0 w-full sm:w-auto inline-flex justify-center rounded-lg border border-gray-300 shadow-sm px-6 py-3 bg-white text-base font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors"
+                    className="mt-3 sm:mt-0 w-full sm:w-auto inline-flex justify-center rounded-lg border border-purple-300 shadow-sm px-6 py-3 bg-white text-base font-medium text-gray-700 hover:bg-purple-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-purple-500 transition-colors"
                   >
                     Cancel
                   </button>
