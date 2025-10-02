@@ -21,7 +21,8 @@ import {
   Weight,
   Award
 } from "lucide-react";
-import axios from "axios";
+import { axiosClient } from "../api/axiosClient";
+
 
 export default function DriverBookings() {
   const [bookings, setBookings] = useState([]);
@@ -58,7 +59,7 @@ export default function DriverBookings() {
   };
 
   // [All your existing functions remain the same - initializeMap, createMap, startTrip, markAsDelivered, markAsCompleted, fetchBookings, etc.]
-  
+
   // Initialize map with CORS proxy
   const initializeMap = async () => {
     if (!selectedBooking || !mapRef.current) return;
@@ -198,8 +199,8 @@ export default function DriverBookings() {
     try {
       const token = localStorage.getItem("driverToken");
 
-      const response = await axios.put(
-        `http://localhost:5000/api/driver/bookings/${selectedBooking._id}/status`,
+      const response = await axiosClient.put(
+        `/api/driver/bookings/${selectedBooking._id}/status`,
         { status: "In Transit" },
         {
           headers: {
@@ -240,8 +241,8 @@ export default function DriverBookings() {
     try {
       const token = localStorage.getItem("driverToken");
 
-      const response = await axios.put(
-        `http://localhost:5000/api/driver/bookings/${selectedBooking._id}/status`,
+      const response = await axiosClient.put(
+        `/api/driver/bookings/${selectedBooking._id}/status`,
         { status: "Delivered" },
         {
           headers: {
@@ -282,8 +283,8 @@ export default function DriverBookings() {
     try {
       const token = localStorage.getItem("driverToken");
 
-      const response = await axios.put(
-        `http://localhost:5000/api/driver/bookings/${selectedBooking._id}/status`,
+      const response = await axiosClient.put(
+        `/api/driver/bookings/${selectedBooking._id}/status`,
         { status: "Completed" },
         {
           headers: {
@@ -331,7 +332,7 @@ export default function DriverBookings() {
         return;
       }
 
-      const res = await axios.get("http://localhost:5000/api/driver/bookings", {
+      const res = await axiosClient.get("/api/driver/bookings", {
         headers: {
           Authorization: `Bearer ${token}`,
         },

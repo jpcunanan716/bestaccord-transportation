@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import axios from "axios";
+import { axiosClient } from "../api/axiosClient";
+
 import { motion } from "framer-motion";
 
 export default function LoginPage() {
@@ -16,28 +17,28 @@ export default function LoginPage() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
-    if (isRegister) {
-      // Staff registration
-      await axios.post("http://localhost:5000/api/auth/register", {
-        name: formData.name,
-        email: formData.email,
-        password: formData.password,
-        role: "staff",
-      });
+      if (isRegister) {
+        // Staff registration
+        await axiosClient.post("/api/auth/register", {
+          name: formData.name,
+          email: formData.email,
+          password: formData.password,
+          role: "staff",
+        });
 
-      alert("Registration successful! Your account is pending admin approval.");
-      setIsRegister(false);
-      setFormData({ name: "", email: "", password: "" });
-    } else {
-      // Login
-      const res = await axios.post("http://localhost:5000/api/auth/login", {
-        email: formData.email,
-        password: formData.password,
-      });
-      localStorage.setItem("token", res.data.token);
-      localStorage.setItem("role", res.data.role);
-      navigate("/dashboard");
-    }
+        alert("Registration successful! Your account is pending admin approval.");
+        setIsRegister(false);
+        setFormData({ name: "", email: "", password: "" });
+      } else {
+        // Login
+        const res = await axiosClient.post("/api/auth/login", {
+          email: formData.email,
+          password: formData.password,
+        });
+        localStorage.setItem("token", res.data.token);
+        localStorage.setItem("role", res.data.role);
+        navigate("/dashboard");
+      }
     } catch (err) {
       setError(err.response?.data?.msg || "Something went wrong");
     }
@@ -66,9 +67,9 @@ export default function LoginPage() {
           className="text-center mb-8"
         >
           <div className="bg-white/10 backdrop-blur-xl border border-white/20 rounded-2xl p-4 mb-4 shadow-2xl">
-            <img 
-              src="/src/assets/bestaccord_logo.png" 
-              alt="Bestaccord Transportation" 
+            <img
+              src="/src/assets/bestaccord_logo.png"
+              alt="Bestaccord Transportation"
               className="w-full h-23 object-contain"
             />
           </div>
@@ -86,22 +87,20 @@ export default function LoginPage() {
             <motion.button
               whileTap={{ scale: 0.98 }}
               onClick={() => setIsRegister(false)}
-              className={`flex-1 py-3 px-4 rounded-xl text-sm font-semibold transition-all duration-300 ${
-                !isRegister
-                  ? "bg-gradient-to-r from-purple-500 to-purple-600 text-white shadow-lg shadow-purple-500/25"
-                  : "text-purple-200 hover:text-white"
-              }`}
+              className={`flex-1 py-3 px-4 rounded-xl text-sm font-semibold transition-all duration-300 ${!isRegister
+                ? "bg-gradient-to-r from-purple-500 to-purple-600 text-white shadow-lg shadow-purple-500/25"
+                : "text-purple-200 hover:text-white"
+                }`}
             >
               Login
             </motion.button>
             <motion.button
               whileTap={{ scale: 0.98 }}
               onClick={() => setIsRegister(true)}
-              className={`flex-1 py-3 px-4 rounded-xl text-sm font-semibold transition-all duration-300 ${
-                isRegister
-                  ? "bg-gradient-to-r from-purple-500 to-purple-600 text-white shadow-lg shadow-purple-500/25"
-                  : "text-purple-200 hover:text-white"
-              }`}
+              className={`flex-1 py-3 px-4 rounded-xl text-sm font-semibold transition-all duration-300 ${isRegister
+                ? "bg-gradient-to-r from-purple-500 to-purple-600 text-white shadow-lg shadow-purple-500/25"
+                : "text-purple-200 hover:text-white"
+                }`}
             >
               Staff Registration
             </motion.button>
@@ -125,14 +124,14 @@ export default function LoginPage() {
             </div>
 
             {error && (
-              <motion.div 
+              <motion.div
                 initial={{ opacity: 0, y: -10 }}
                 animate={{ opacity: 1, y: 0 }}
                 className="mb-6 p-4 rounded-2xl bg-red-500/10 border border-red-500/20 backdrop-blur-sm"
               >
                 <div className="flex items-center gap-3">
                   <svg className="w-5 h-5 text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 9v2m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 9v2m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                   </svg>
                   <p className="text-red-200 text-sm">{error}</p>
                 </div>
@@ -152,7 +151,7 @@ export default function LoginPage() {
                   <div className="relative">
                     <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
                       <svg className="h-5 w-5 text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/>
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
                       </svg>
                     </div>
                     <input
@@ -175,7 +174,7 @@ export default function LoginPage() {
                 <div className="relative">
                   <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
                     <svg className="h-5 w-5 text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 8l7.89 4.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/>
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 8l7.89 4.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
                     </svg>
                   </div>
                   <input
@@ -197,7 +196,7 @@ export default function LoginPage() {
                 <div className="relative">
                   <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
                     <svg className="h-5 w-5 text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/>
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
                     </svg>
                   </div>
                   <input

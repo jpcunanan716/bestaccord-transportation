@@ -1,7 +1,8 @@
 import { useState, useEffect, useRef } from "react";
 import { Eye, Pencil, Trash2, Plus, X } from "lucide-react";
 import { useNavigate } from "react-router-dom";
-import axios from "axios";
+import { axiosClient } from "../api/axiosClient";
+
 import { motion, AnimatePresence } from "framer-motion";
 
 function Employee() {
@@ -45,7 +46,7 @@ function Employee() {
 
   const fetchEmployees = async () => {
     try {
-      const res = await axios.get("http://localhost:5000/api/employees");
+      const res = await axiosClient.get("/api/employees");
       const activeEmployees = res.data.filter(emp => !emp.isArchived);
       setEmployees(activeEmployees);
       setFilteredEmployees(activeEmployees);
@@ -196,13 +197,13 @@ function Employee() {
     }
     try {
       if (editEmployee) {
-        await axios.put(
-          `http://localhost:5000/api/employees/${editEmployee._id}`,
+        await axiosClient.put(
+          `/api/employees/${editEmployee._id}`,
           { ...formData, employeeId: editEmployee.employeeId }
         );
       } else {
         const { employeed, sameAsCurrent, ...dataToSend } = formData;
-        await axios.post("http://localhost:5000/api/employees", dataToSend);
+        await axiosClient.post("/api/employees", dataToSend);
       }
       closeModal();
       fetchEmployees();
@@ -223,7 +224,7 @@ function Employee() {
   const handleDelete = async (id) => {
     if (!window.confirm("Are you sure you want to archive this employee?")) return;
     try {
-      await axios.patch(`http://localhost:5000/api/employees/${id}/archive`, {
+      await axiosClient.patch(`/api/employees/${id}/archive`, {
         isArchived: true
       });
       alert("Employee archived successfully");
@@ -353,10 +354,10 @@ function Employee() {
                   <td className="px-6 py-4">
                     <span
                       className={`px-3 py-1 rounded-full text-xs font-semibold ${emp.status === "Available"
-                          ? "bg-green-100 text-green-800"
-                          : emp.status === "On Trip"
-                            ? "bg-yellow-100 text-yellow-800"
-                            : "bg-red-100 text-red-800"
+                        ? "bg-green-100 text-green-800"
+                        : emp.status === "On Trip"
+                          ? "bg-yellow-100 text-yellow-800"
+                          : "bg-red-100 text-red-800"
                         }`}
                     >
                       {emp.status}
@@ -403,8 +404,8 @@ function Employee() {
             onClick={() => setCurrentPage(p => Math.max(p - 1, 1))}
             disabled={currentPage === 1}
             className={`px-5 py-2.5 rounded-xl font-medium transition-all duration-300 ${currentPage === 1
-                ? "bg-gray-100 text-gray-400 cursor-not-allowed"
-                : "bg-gradient-to-r from-purple-600 to-indigo-600 text-white hover:shadow-lg"
+              ? "bg-gray-100 text-gray-400 cursor-not-allowed"
+              : "bg-gradient-to-r from-purple-600 to-indigo-600 text-white hover:shadow-lg"
               }`}
           >
             Previous
@@ -420,8 +421,8 @@ function Employee() {
             onClick={() => setCurrentPage(p => Math.min(p + 1, totalPages))}
             disabled={currentPage === totalPages}
             className={`px-5 py-2.5 rounded-xl font-medium transition-all duration-300 ${currentPage === totalPages
-                ? "bg-gray-100 text-gray-400 cursor-not-allowed"
-                : "bg-gradient-to-r from-purple-600 to-indigo-600 text-white hover:shadow-lg"
+              ? "bg-gray-100 text-gray-400 cursor-not-allowed"
+              : "bg-gradient-to-r from-purple-600 to-indigo-600 text-white hover:shadow-lg"
               }`}
           >
             Next
@@ -625,8 +626,8 @@ function Employee() {
                             key={s}
                             onClick={() => setFormData({ ...formData, shift: s })}
                             className={`px-6 py-3 rounded-xl font-medium transition-all duration-300 ${formData.shift === s
-                                ? "bg-gradient-to-r from-purple-600 to-indigo-600 text-white shadow-lg"
-                                : "bg-white border-2 border-purple-200 text-gray-700 hover:border-purple-400"
+                              ? "bg-gradient-to-r from-purple-600 to-indigo-600 text-white shadow-lg"
+                              : "bg-white border-2 border-purple-200 text-gray-700 hover:border-purple-400"
                               }`}
                           >
                             {s}

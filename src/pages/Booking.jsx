@@ -1,7 +1,8 @@
 import { useState, useEffect, useRef } from "react";
 import { Eye, Pencil, Trash2, Plus, ChevronLeft, ChevronRight, X } from "lucide-react";
 import { useNavigate } from "react-router-dom";
-import axios from "axios";
+import { axiosClient } from "../api/axiosClient";
+
 import { motion, AnimatePresence } from "framer-motion";
 import addressDefaults from "../constants/addressDefaults";
 
@@ -83,7 +84,7 @@ function Booking() {
   // Fetch all required data
   const fetchBookings = async () => {
     try {
-      const res = await axios.get("http://localhost:5000/api/bookings");
+      const res = await axiosClient.get("/api/bookings");
       const activeBookings = res.data.filter(booking => !booking.isArchived);
       setBookings(activeBookings);
       setFilteredBookings(activeBookings);
@@ -106,7 +107,7 @@ function Booking() {
 
   const fetchClients = async () => {
     try {
-      const res = await axios.get("http://localhost:5000/api/clients");
+      const res = await axiosClient.get("/api/clients");
       const activeClients = res.data.filter(client => !client.isArchived);
       setClients(activeClients);
     } catch (err) {
@@ -116,7 +117,7 @@ function Booking() {
 
   const fetchVehicles = async () => {
     try {
-      const res = await axios.get("http://localhost:5000/api/vehicles");
+      const res = await axiosClient.get("/api/vehicles");
       setVehicles(res.data);
     } catch (err) {
       console.error("Error fetching vehicles:", err);
@@ -125,7 +126,7 @@ function Booking() {
 
   const fetchEmployees = async () => {
     try {
-      const res = await axios.get("http://localhost:5000/api/employees");
+      const res = await axiosClient.get("/api/employees");
       setEmployees(res.data);
     } catch (err) {
       console.error("Error fetching employees:", err);
@@ -539,13 +540,13 @@ function Booking() {
       };
 
       if (editBooking) {
-        await axios.put(
-          `http://localhost:5000/api/bookings/${editBooking._id}`,
+        await axiosClient.put(
+          `/api/bookings/${editBooking._id}`,
           submitData
         );
         alert('Booking updated successfully!');
       } else {
-        await axios.post("http://localhost:5000/api/bookings", submitData);
+        await axiosClient.post("/api/bookings", submitData);
         alert('Booking created successfully!');
       }
       closeModal();
@@ -570,7 +571,7 @@ function Booking() {
     if (!window.confirm("Are you sure you want to archive this booking?")) return;
 
     try {
-      await axios.patch(`http://localhost:5000/api/bookings/${id}/archive`, {
+      await axiosClient.patch(`/api/bookings/${id}/archive`, {
         isArchived: true
       });
       alert('Booking archived successfully');
@@ -752,10 +753,10 @@ function Booking() {
                   </td>
                   <td className="px-6 py-4">
                     <span className={`px-3 py-1 rounded-full text-xs font-semibold ${(booking.status || "Pending") === "Pending" ? "bg-yellow-100 text-yellow-800" :
-                        (booking.status || "Pending") === "In Transit" ? "bg-blue-100 text-blue-800" :
-                          (booking.status || "Pending") === "Delivered" ? "bg-green-100 text-green-800" :
-                            (booking.status || "Pending") === "Completed" ? "bg-gray-200 text-gray-800" :
-                              "bg-gray-100 text-gray-800"
+                      (booking.status || "Pending") === "In Transit" ? "bg-blue-100 text-blue-800" :
+                        (booking.status || "Pending") === "Delivered" ? "bg-green-100 text-green-800" :
+                          (booking.status || "Pending") === "Completed" ? "bg-gray-200 text-gray-800" :
+                            "bg-gray-100 text-gray-800"
                       }`}>
                       {booking.status || "Pending"}
                     </span>
@@ -794,8 +795,8 @@ function Booking() {
                         }}
                         disabled={booking.status === "In Transit" || booking.status === "Delivered" || booking.status === "Completed"}
                         className={`p-2 rounded-lg transition-colors ${booking.status === "In Transit" || booking.status === "Delivered" || booking.status === "Completed"
-                            ? "text-gray-400 cursor-not-allowed bg-gray-100"
-                            : "text-indigo-600 hover:bg-indigo-50"
+                          ? "text-gray-400 cursor-not-allowed bg-gray-100"
+                          : "text-indigo-600 hover:bg-indigo-50"
                           }`}
                         title={
                           booking.status === "In Transit"
@@ -834,8 +835,8 @@ function Booking() {
             onClick={() => setCurrentPage(p => Math.max(p - 1, 1))}
             disabled={currentPage === 1}
             className={`px-5 py-2.5 rounded-xl font-medium transition-all duration-300 ${currentPage === 1
-                ? "bg-gray-100 text-gray-400 cursor-not-allowed"
-                : "bg-gradient-to-r from-purple-600 to-indigo-600 text-white hover:shadow-lg"
+              ? "bg-gray-100 text-gray-400 cursor-not-allowed"
+              : "bg-gradient-to-r from-purple-600 to-indigo-600 text-white hover:shadow-lg"
               }`}
           >
             Previous
@@ -851,8 +852,8 @@ function Booking() {
             onClick={() => setCurrentPage(p => Math.min(p + 1, totalPages))}
             disabled={currentPage === totalPages}
             className={`px-5 py-2.5 rounded-xl font-medium transition-all duration-300 ${currentPage === totalPages
-                ? "bg-gray-100 text-gray-400 cursor-not-allowed"
-                : "bg-gradient-to-r from-purple-600 to-indigo-600 text-white hover:shadow-lg"
+              ? "bg-gray-100 text-gray-400 cursor-not-allowed"
+              : "bg-gradient-to-r from-purple-600 to-indigo-600 text-white hover:shadow-lg"
               }`}
           >
             Next

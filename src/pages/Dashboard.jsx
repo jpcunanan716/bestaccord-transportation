@@ -1,10 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { 
-  Calendar, 
-  Truck, 
-  Clock, 
-  CheckCircle, 
+import {
+  Calendar,
+  Truck,
+  Clock,
+  CheckCircle,
   TrendingUp,
   Package,
   MapPin,
@@ -43,24 +43,24 @@ export default function Dashboard() {
 
   const fetchDashboardData = async () => {
     try {
-      const response = await fetch('http://localhost:5000/api/bookings');
-      
+      const response = await fetch('api/bookings');
+
       if (!response.ok) {
         throw new Error('Failed to fetch bookings');
       }
-      
+
       const bookings = await response.json();
-      
+
       const counts = {
         upcoming: bookings.filter(booking => booking.status === 'Ready to go').length,
         ongoing: bookings.filter(booking => booking.status === 'In Transit').length,
         pending: bookings.filter(booking => booking.status === 'Pending').length,
-        delivered: bookings.filter(booking => 
+        delivered: bookings.filter(booking =>
           booking.status === 'Delivered' || booking.status === 'Completed'
         ).length,
         loading: false
       };
-      
+
       setDashboardData(counts);
     } catch (error) {
       console.error('Error fetching dashboard data:', error);
@@ -77,19 +77,19 @@ export default function Dashboard() {
   const fetchChartData = async () => {
     setChartLoading(true);
     try {
-      const response = await fetch('http://localhost:5000/api/bookings');
-      
+      const response = await fetch('api/bookings');
+
       if (!response.ok) {
         throw new Error('Failed to fetch bookings');
       }
-      
+
       const bookings = await response.json();
-      
+
       // Generate date range
       const start = new Date(dateRange.start);
       const end = new Date(dateRange.end);
       const dateArray = [];
-      
+
       for (let date = new Date(start); date <= end; date.setDate(date.getDate() + 1)) {
         dateArray.push({
           date: new Date(date),
@@ -98,7 +98,7 @@ export default function Dashboard() {
           trips: 0
         });
       }
-      
+
       // Count bookings created on each day
       bookings.forEach(booking => {
         if (booking.createdAt) {
@@ -109,7 +109,7 @@ export default function Dashboard() {
           }
         }
       });
-      
+
       setChartData(dateArray);
       setChartLoading(false);
     } catch (error) {
@@ -134,17 +134,17 @@ export default function Dashboard() {
 
   const cardVariants = {
     hidden: { opacity: 0, scale: 0.9, y: 20 },
-    visible: (index) => ({ 
-      opacity: 1, 
+    visible: (index) => ({
+      opacity: 1,
       scale: 1,
       y: 0,
-      transition: { 
+      transition: {
         duration: 0.4,
         delay: index * 0.1,
         ease: [0.25, 0.25, 0.25, 0.75]
       }
     }),
-    hover: { 
+    hover: {
       scale: 1.02,
       y: -4,
       transition: { duration: 0.2, ease: "easeOut" }
@@ -222,7 +222,7 @@ export default function Dashboard() {
           <div className="h-8 bg-gray-200 rounded-lg w-96 mx-auto animate-pulse"></div>
           <div className="h-4 bg-gray-200 rounded w-64 mx-auto animate-pulse"></div>
         </div>
-        
+
         {/* Cards Skeleton */}
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-6">
           {[...Array(4)].map((_, i) => (
@@ -245,7 +245,7 @@ export default function Dashboard() {
   return (
     <div className="space-y-8">
       {/* Enhanced Header with Purple Theme */}
-      <motion.div 
+      <motion.div
         initial={{ opacity: 0, y: -20 }}
         animate={{ opacity: 1, y: 0 }}
         className="text-center relative"
@@ -284,7 +284,7 @@ export default function Dashboard() {
             {/* Decorative Elements */}
             <div className="absolute -top-6 -right-6 w-20 h-20 rounded-full bg-white/10 group-hover:scale-110 transition-transform duration-500"></div>
             <div className="absolute -bottom-4 -left-4 w-12 h-12 rounded-full bg-white/5"></div>
-            
+
             {/* Card Content */}
             <div className="p-6 h-full flex flex-col relative z-10">
               {/* Header */}
@@ -296,7 +296,7 @@ export default function Dashboard() {
                   <ArrowUpRight className="w-3 h-3" />
                 </div>
               </div>
-              
+
               {/* Main Content */}
               <div className="flex-1 flex flex-col justify-center">
                 <div className="text-3xl font-bold text-gray-900 mb-2 group-hover:scale-105 transition-transform duration-200">
@@ -318,7 +318,7 @@ export default function Dashboard() {
       </div>
 
       {/* Enhanced Trip Analytics Line Chart with Date Range Selector */}
-      <motion.div 
+      <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.3 }}
@@ -340,7 +340,7 @@ export default function Dashboard() {
                 </div>
                 <div className="text-sm text-gray-500">Total Active</div>
               </div>
-              
+
               {/* Date Range Picker */}
               <div className="relative">
                 <button
@@ -350,7 +350,7 @@ export default function Dashboard() {
                   <CalendarRange className="w-4 h-4" />
                   <span>Date Range</span>
                 </button>
-                
+
                 {showDatePicker && (
                   <motion.div
                     initial={{ opacity: 0, y: -10 }}
@@ -367,7 +367,7 @@ export default function Dashboard() {
                           ×
                         </button>
                       </div>
-                      
+
                       {/* Quick Range Buttons */}
                       <div className="grid grid-cols-3 gap-2 mb-4">
                         {[7, 14, 30].map(days => (
@@ -380,7 +380,7 @@ export default function Dashboard() {
                           </button>
                         ))}
                       </div>
-                      
+
                       {/* Date Inputs */}
                       <div className="space-y-3">
                         <div>
@@ -409,7 +409,7 @@ export default function Dashboard() {
                           />
                         </div>
                       </div>
-                      
+
                       <button
                         onClick={() => setShowDatePicker(false)}
                         className="w-full mt-4 bg-gradient-to-r from-purple-500 to-indigo-600 text-white py-2.5 rounded-lg font-medium hover:from-purple-600 hover:to-indigo-700 transition-all duration-300 shadow-md hover:shadow-lg"
@@ -423,7 +423,7 @@ export default function Dashboard() {
             </div>
           </div>
         </div>
-        
+
         <div className="p-8">
           {chartLoading ? (
             <div className="h-64 flex items-center justify-center">
@@ -437,14 +437,14 @@ export default function Dashboard() {
                   <motion.div
                     key={`${day.dayName}-${index}`}
                     initial={{ height: 0, opacity: 0 }}
-                    animate={{ 
+                    animate={{
                       height: `${Math.max((day.trips / maxChartValue) * 100, 4)}%`,
                       opacity: 1
                     }}
-                    transition={{ 
-                      delay: 0.1 * index, 
-                      duration: 0.8, 
-                      ease: "easeOut" 
+                    transition={{
+                      delay: 0.1 * index,
+                      duration: 0.8,
+                      ease: "easeOut"
                     }}
                     className="flex-1 bg-gradient-to-t from-purple-600 via-purple-500 to-indigo-400 rounded-t-lg relative group shadow-sm hover:shadow-lg transition-all duration-200 hover:from-purple-700 hover:via-purple-600 hover:to-indigo-500"
                     style={{ minHeight: '16px' }}
@@ -458,7 +458,7 @@ export default function Dashboard() {
                   </motion.div>
                 ))}
               </div>
-              
+
               {/* X-axis Labels */}
               <div className="flex justify-between text-xs text-gray-600 border-t border-purple-100 pt-4 overflow-x-auto">
                 {chartData.map((day, index) => (
@@ -476,7 +476,7 @@ export default function Dashboard() {
       </motion.div>
 
       {/* Enhanced Quick Actions with Purple Theme */}
-      <motion.div 
+      <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.4 }}

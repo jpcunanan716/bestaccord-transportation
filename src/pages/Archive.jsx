@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import axios from 'axios';
+import { axiosClient } from '../api/axiosClient';
 import { Archive as ArchiveIcon, Package, Car, Users, Building, FileText, Trash, History } from 'lucide-react';
 
 export default function Archive() {
@@ -17,7 +17,7 @@ export default function Archive() {
     const fetchArchivedData = async () => {
       setLoading(true);
       try {
-        const response = await axios.get(`http://localhost:5000/api/archive/${activeTab}/archived`);
+        const response = await axiosClient.get(`/api/archive/${activeTab}/archived`);
         setArchivedData(response.data);
         setError(null);
       } catch (err) {
@@ -33,8 +33,8 @@ export default function Archive() {
 
   const handleRestore = async (id) => {
     try {
-      await axios.patch(`http://localhost:5000/api/archive/${activeTab}/${id}/restore`);
-      const response = await axios.get(`http://localhost:5000/api/archive/${activeTab}/archived`);
+      await axiosClient.patch(`/api/archive/${activeTab}/${id}/restore`);
+      const response = await axiosClient.get(`api/archive/${activeTab}/archived`);
       setArchivedData(response.data);
       alert('Item restored successfully');
     } catch (err) {
@@ -67,8 +67,8 @@ export default function Archive() {
     if (!itemToDelete || !isDeleteEnabled) return;
 
     try {
-      await axios.delete(`http://localhost:5000/api/${activeTab}/${itemToDelete._id}`);
-      const response = await axios.get(`http://localhost:5000/api/archive/${activeTab}/archived`);
+      await axiosClient.delete(`/api/${activeTab}/${itemToDelete._id}`);
+      const response = await axiosClient.get(`/api/archive/${activeTab}/archived`);
       setArchivedData(response.data);
       closeDeleteModal();
       alert('Item permanently deleted');

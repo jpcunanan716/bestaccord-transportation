@@ -1,7 +1,8 @@
 import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { ArrowLeft, Calendar, Clock, User, Building, Package, Truck, MapPin } from "lucide-react";
-import axios from "axios";
+import { axiosClient } from "../api/axiosClient";
+
 
 function BookingInfo() {
     const { id } = useParams();
@@ -11,7 +12,7 @@ function BookingInfo() {
 
     const fetchBooking = async () => {
         try {
-            const res = await axios.get(`http://localhost:5000/api/bookings/${id}`);
+            const res = await axiosClient.get(`/api/bookings/${id}`);
             setBooking(res.data);
             setLoading(false);
         } catch (err) {

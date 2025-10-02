@@ -18,7 +18,6 @@ import {
   Paperclip,
   CloudUpload
 } from 'lucide-react';
-import axios from 'axios';
 
 export default function TripReport() {
   const [tripReports, setTripReports] = useState([]);

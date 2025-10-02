@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
-import axios from "axios";
+import { axiosClient } from "../api/axiosClient";
+
 import { ChevronLeft, ChevronRight, Calendar, Clock, MapPin, Package, X, Truck, RefreshCw, ChevronDown, ChevronUp } from "lucide-react";
 
 export default function DriverSchedule() {
@@ -24,7 +25,7 @@ export default function DriverSchedule() {
         return;
       }
 
-      const res = await axios.get("http://localhost:5000/api/driver/bookings", {
+      const res = await axiosClient.get("/api/driver/bookings", {
         headers: {
           Authorization: `Bearer ${token}`,
         },
@@ -37,7 +38,7 @@ export default function DriverSchedule() {
       }
     } catch (err) {
       console.error("❌ Error fetching bookings for schedule:", err);
-      
+
       if (err.response?.status === 401) {
         setError("Session expired. Please log in again.");
         localStorage.removeItem("driverToken");
@@ -92,16 +93,16 @@ export default function DriverSchedule() {
   const getBookingsForDate = (date) => {
     const filtered = bookings.filter(booking => {
       if (!booking.dateNeeded) return false;
-      
+
       const bookingDate = new Date(booking.dateNeeded);
       const targetDate = new Date(date);
-      
+
       // Set time to 00:00:00 for both dates to compare only the date part
       bookingDate.setHours(0, 0, 0, 0);
       targetDate.setHours(0, 0, 0, 0);
-      
+
       const matches = bookingDate.getTime() === targetDate.getTime();
-      
+
       if (matches) {
         console.log(`📅 Found booking for ${targetDate.toDateString()}:`, {
           company: booking.companyName,
@@ -110,10 +111,10 @@ export default function DriverSchedule() {
           targetDate: targetDate.toDateString()
         });
       }
-      
+
       return matches;
     });
-    
+
     return filtered;
   };
 
@@ -159,7 +160,7 @@ export default function DriverSchedule() {
   const getUpcomingBookings = () => {
     const today = new Date();
     today.setHours(0, 0, 0, 0);
-    
+
     return bookings
       .filter(booking => new Date(booking.dateNeeded) >= today)
       .sort((a, b) => new Date(a.dateNeeded) - new Date(b.dateNeeded))
@@ -226,21 +227,19 @@ export default function DriverSchedule() {
           <div className="flex bg-white/10 rounded-lg p-1 mb-4">
             <button
               onClick={() => setViewMode("calendar")}
-              className={`flex-1 py-2 px-3 rounded-md text-sm font-medium transition ${
-                viewMode === "calendar"
-                  ? "bg-purple-600 text-white shadow-sm"
-                  : "text-purple-200 hover:text-white"
-              }`}
+              className={`flex-1 py-2 px-3 rounded-md text-sm font-medium transition ${viewMode === "calendar"
+                ? "bg-purple-600 text-white shadow-sm"
+                : "text-purple-200 hover:text-white"
+                }`}
             >
               Calendar
             </button>
             <button
               onClick={() => setViewMode("list")}
-              className={`flex-1 py-2 px-3 rounded-md text-sm font-medium transition ${
-                viewMode === "list"
-                  ? "bg-purple-600 text-white shadow-sm"
-                  : "text-purple-200 hover:text-white"
-              }`}
+              className={`flex-1 py-2 px-3 rounded-md text-sm font-medium transition ${viewMode === "list"
+                ? "bg-purple-600 text-white shadow-sm"
+                : "text-purple-200 hover:text-white"
+                }`}
             >
               List
             </button>
@@ -314,9 +313,8 @@ export default function DriverSchedule() {
                 return (
                   <div
                     key={`calendar-day-${day}`}
-                    className={`bg-white/5 backdrop-blur-sm border rounded-lg p-1 h-12 hover:bg-white/10 transition relative ${
-                      isToday ? 'border-purple-400 border-2 bg-purple-400/10' : 'border-white/10'
-                    }`}
+                    className={`bg-white/5 backdrop-blur-sm border rounded-lg p-1 h-12 hover:bg-white/10 transition relative ${isToday ? 'border-purple-400 border-2 bg-purple-400/10' : 'border-white/10'
+                      }`}
                     onClick={() => {
                       if (dayBookings.length > 0) {
                         if (dayBookings.length === 1) {
@@ -329,18 +327,16 @@ export default function DriverSchedule() {
                       }
                     }}
                   >
-                    <div className={`text-xs font-semibold ${
-                      isToday ? 'text-purple-300' : 'text-white'
-                    }`}>
+                    <div className={`text-xs font-semibold ${isToday ? 'text-purple-300' : 'text-white'
+                      }`}>
                       {day}
                     </div>
-                    
+
                     {/* Booking indicators - Enhanced visibility */}
                     {dayBookings.length > 0 && (
                       <div className="absolute bottom-0 left-0 right-0 flex justify-center items-center">
-                        <div className={`w-3 h-3 rounded-full border border-white/50 ${
-                          statusColors[dayBookings[0].status] || 'bg-gray-500'
-                        } shadow-sm`}>
+                        <div className={`w-3 h-3 rounded-full border border-white/50 ${statusColors[dayBookings[0].status] || 'bg-gray-500'
+                          } shadow-sm`}>
                         </div>
                         {dayBookings.length > 1 && (
                           <div className="w-2 h-2 rounded-full bg-white border border-purple-300 ml-1 shadow-sm"></div>
@@ -383,7 +379,7 @@ export default function DriverSchedule() {
           <div className="space-y-4">
             <div className="bg-white/10 backdrop-blur-xl border border-white/20 rounded-2xl shadow-2xl p-4">
               <h3 className="text-lg font-semibold text-white mb-4">Upcoming Bookings</h3>
-              
+
               {getUpcomingBookings().length === 0 ? (
                 <div className="text-center py-6">
                   <Calendar className="w-10 h-10 text-purple-300 mx-auto mb-3" />
@@ -409,13 +405,12 @@ export default function DriverSchedule() {
                           <Clock className="w-4 h-4 ml-2" />
                           {booking.timeNeeded}
                         </div>
-                        <div className={`px-2 py-1 rounded-full text-xs font-semibold ${
-                          booking.status === 'Pending' ? 'bg-yellow-100 text-yellow-800' :
+                        <div className={`px-2 py-1 rounded-full text-xs font-semibold ${booking.status === 'Pending' ? 'bg-yellow-100 text-yellow-800' :
                           booking.status === 'Ready to go' ? 'bg-blue-100 text-blue-800' :
-                          booking.status === 'In Transit' || booking.status === 'On Trip' ? 'bg-purple-100 text-purple-800' :
-                          booking.status === 'Delivered' ? 'bg-green-100 text-green-800' :
-                          'bg-gray-100 text-gray-800'
-                        }`}>
+                            booking.status === 'In Transit' || booking.status === 'On Trip' ? 'bg-purple-100 text-purple-800' :
+                              booking.status === 'Delivered' ? 'bg-green-100 text-green-800' :
+                                'bg-gray-100 text-gray-800'
+                          }`}>
                           {booking.status === "In Transit" ? "On Trip" : booking.status}
                         </div>
                       </div>
@@ -460,13 +455,12 @@ export default function DriverSchedule() {
                       <h3 className="font-bold text-gray-900 text-lg">{selectedBooking.reservationId}</h3>
                       <p className="text-sm text-gray-600">{selectedBooking.tripNumber}</p>
                     </div>
-                    <div className={`px-2 py-1 rounded-full text-xs font-semibold ${
-                      selectedBooking.status === 'Pending' ? 'bg-yellow-100 text-yellow-800' :
+                    <div className={`px-2 py-1 rounded-full text-xs font-semibold ${selectedBooking.status === 'Pending' ? 'bg-yellow-100 text-yellow-800' :
                       selectedBooking.status === 'Ready to go' ? 'bg-blue-100 text-blue-800' :
-                      selectedBooking.status === 'In Transit' || selectedBooking.status === 'On Trip' ? 'bg-purple-100 text-purple-800' :
-                      selectedBooking.status === 'Delivered' ? 'bg-green-100 text-green-800' :
-                      'bg-gray-100 text-gray-800'
-                    }`}>
+                        selectedBooking.status === 'In Transit' || selectedBooking.status === 'On Trip' ? 'bg-purple-100 text-purple-800' :
+                          selectedBooking.status === 'Delivered' ? 'bg-green-100 text-green-800' :
+                            'bg-gray-100 text-gray-800'
+                      }`}>
                       {selectedBooking.status === "In Transit" ? "On Trip" : selectedBooking.status}
                     </div>
                     <button

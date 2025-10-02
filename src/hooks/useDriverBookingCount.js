@@ -1,6 +1,6 @@
 // src/hooks/useDriverBookingCount.js
 import { useState, useEffect } from "react";
-import axios from "axios";
+import { axiosClient } from "../api/axiosClient";
 
 export const useDriverBookingCount = () => {
   const [bookingCount, setBookingCount] = useState(0);
@@ -10,7 +10,7 @@ export const useDriverBookingCount = () => {
   const fetchBookingCount = async () => {
     try {
       const token = localStorage.getItem("driverToken");
-      
+
       if (!token) {
         setLoading(false);
         return;
@@ -18,7 +18,7 @@ export const useDriverBookingCount = () => {
 
       console.log("🔢 Frontend: Fetching booking count...");
 
-      const res = await axios.get("http://localhost:5000/api/driver/bookings/count", {
+      const res = await axiosClient.get("/api/driver/bookings/count", {
         headers: {
           Authorization: `Bearer ${token}`,
         },
@@ -41,13 +41,13 @@ export const useDriverBookingCount = () => {
   useEffect(() => {
     console.log("🚀 Frontend: useDriverBookingCount hook initialized");
     fetchBookingCount();
-    
+
     // Refresh count every 30 seconds
     const interval = setInterval(() => {
       console.log("🔄 Frontend: Auto-refreshing booking count...");
       fetchBookingCount();
     }, 30000);
-    
+
     return () => {
       console.log("🛑 Frontend: Cleaning up booking count interval");
       clearInterval(interval);

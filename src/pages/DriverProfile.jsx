@@ -1,6 +1,7 @@
 // src/pages/DriverProfile.jsx
 import React, { useEffect, useState } from "react";
-import axios from "axios";
+import { axiosClient } from "../api/axiosClient";
+
 import { User, Phone, MapPin, Calendar, Briefcase, Clock, Mail } from "lucide-react";
 
 export default function DriverProfile() {
@@ -19,7 +20,7 @@ export default function DriverProfile() {
           return;
         }
 
-        const res = await axios.get("http://localhost:5000/api/driver/profile", {
+        const res = await axiosClient.get("/api/driver/profile", {
           headers: {
             Authorization: `Bearer ${token}`,
           },
@@ -29,7 +30,7 @@ export default function DriverProfile() {
         setError("");
       } catch (err) {
         console.error("Error fetching driver profile:", err);
-        
+
         if (err.response?.status === 401) {
           setError("Session expired. Please log in again.");
           localStorage.removeItem("driverToken");
@@ -143,7 +144,7 @@ export default function DriverProfile() {
                 <div className="flex justify-between">
                   <span className="text-purple-200">Date Hired:</span>
                   <span className="font-medium text-white">
-                    {profile.dateHired 
+                    {profile.dateHired
                       ? new Date(profile.dateHired).toLocaleDateString()
                       : "N/A"
                     }
@@ -194,7 +195,7 @@ export default function DriverProfile() {
 
         {/* Last Updated */}
         <div className="text-center text-purple-300 text-xs opacity-75">
-          Last updated: {profile.updatedAt 
+          Last updated: {profile.updatedAt
             ? new Date(profile.updatedAt).toLocaleString()
             : "Unknown"
           }

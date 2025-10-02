@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
-import axios from "axios";
+import { axiosClient } from "../api/axiosClient";
+
 
 export default function PendingStaff() {
   const [staff, setStaff] = useState([]);
@@ -7,7 +8,7 @@ export default function PendingStaff() {
 
   const fetchPending = async () => {
     try {
-      const res = await axios.get("http://localhost:5000/api/staff/pending");
+      const res = await axiosClient.get("/api/staff/pending");
       setStaff(res.data);
     } catch (err) {
       console.error(err);
@@ -18,7 +19,7 @@ export default function PendingStaff() {
 
   const approveStaff = async (id) => {
     try {
-      await axios.put(`http://localhost:5000/api/staff/approve/${id}`);
+      await axiosClient.put(`/api/staff/approve/${id}`);
       setStaff(staff.filter((s) => s._id !== id));
       alert("Staff approved successfully!");
     } catch (err) {

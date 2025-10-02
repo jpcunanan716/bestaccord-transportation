@@ -10,7 +10,7 @@ function EmployeeInfo() {
 
     // Fetch all employees (to know the sequence)
     useEffect(() => {
-        fetch("http://localhost:5000/api/employees")
+        fetch("api/employees")
             .then((res) => res.json())
             .then((data) => setEmployees(data))
             .catch((err) => console.error(err));
@@ -19,7 +19,7 @@ function EmployeeInfo() {
     // Fetch single employee info when id changes
     useEffect(() => {
         if (!id) return;
-        fetch(`http://localhost:5000/api/employees/${id}`)
+        fetch(`api/employees/${id}`)
             .then((res) => res.json())
             .then((data) => setEmployee(data))
             .catch((err) => console.error(err));

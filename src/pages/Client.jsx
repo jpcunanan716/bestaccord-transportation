@@ -1,7 +1,9 @@
 import { useState, useEffect, useRef } from "react";
 import { Eye, Pencil, Trash2, Plus, X } from "lucide-react";
 import { useNavigate } from "react-router-dom";
-import axios from "axios";
+import { axiosClient } from "../api/axiosClient";
+import axios from 'axios';
+
 import { motion, AnimatePresence } from "framer-motion";
 
 function Client() {
@@ -190,7 +192,7 @@ function Client() {
 
   const fetchClients = async () => {
     try {
-      const res = await axios.get("http://localhost:5000/api/clients");
+      const res = await axiosClient.get("/api/clients");
       const activeClients = res.data.filter(client => !client.isArchived);
       setClients(activeClients);
       setFilteredClients(activeClients);
@@ -323,12 +325,12 @@ function Client() {
       };
       if (editClient) {
         await axios.put(
-          `http://localhost:5000/api/clients/${editClient._id}`,
+          `/api/clients/${editClient._id}`,
           payload
         );
         alert('Client updated successfully!');
       } else {
-        await axios.post("http://localhost:5000/api/clients", payload);
+        await axios.post("/api/clients", payload);
         alert('Client created successfully!');
       }
       closeModal();
@@ -343,7 +345,7 @@ function Client() {
     if (!window.confirm("Are you sure you want to archive this client?")) return;
 
     try {
-      await axios.patch(`http://localhost:5000/api/clients/${id}/archive`, {
+      await axios.patch(`/api/clients/${id}/archive`, {
         isArchived: true
       });
       alert('Client archived successfully');

@@ -10,7 +10,7 @@ function ClientInfo() {
 
     // Fetch all clients (to know the sequence)
     useEffect(() => {
-        fetch("http://localhost:5000/api/clients")
+        fetch("api/clients")
             .then((res) => res.json())
             .then((data) => setClients(data))
             .catch((err) => console.error(err));
@@ -19,7 +19,7 @@ function ClientInfo() {
     // Fetch single client info when id changes
     useEffect(() => {
         if (!id) return;
-        fetch(`http://localhost:5000/api/clients/${id}`)
+        fetch(`api/clients/${id}`)
             .then((res) => res.json())
             .then((data) => setClient(data))
             .catch((err) => console.error(err));
