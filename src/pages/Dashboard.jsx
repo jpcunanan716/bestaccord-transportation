@@ -32,6 +32,9 @@ export default function Dashboard() {
   });
   const [showDatePicker, setShowDatePicker] = useState(false);
 
+  //VITE API base URL
+  const baseURL = import.meta.env.VITE_API_BASE_URL;
+
   // Fetch dashboard data from your API
   useEffect(() => {
     fetchDashboardData();
@@ -43,7 +46,7 @@ export default function Dashboard() {
 
   const fetchDashboardData = async () => {
     try {
-      const response = await fetch('api/bookings');
+      const response = await fetch(`${baseURL}/api/bookings`);
 
       if (!response.ok) {
         throw new Error('Failed to fetch bookings');
@@ -77,7 +80,7 @@ export default function Dashboard() {
   const fetchChartData = async () => {
     setChartLoading(true);
     try {
-      const response = await fetch('api/bookings');
+      const response = await fetch(`${baseURL}/api/bookings`);
 
       if (!response.ok) {
         throw new Error('Failed to fetch bookings');
