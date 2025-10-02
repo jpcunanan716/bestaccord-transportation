@@ -34,6 +34,8 @@ export default function Monitoring() {
   const mapRef = useRef(null);
   const mapInstance = useRef(null);
 
+  const baseURL = import.meta.env.VITE_API_BASE_URL;
+
   // Animation variants
   const containerVariants = {
     hidden: { opacity: 0, y: 20 },
@@ -195,7 +197,7 @@ export default function Monitoring() {
   const updateBookingStatus = async (bookingId, newStatus) => {
     setUpdating(true);
     try {
-      const response = await fetch(`http://localhost:5000/api/bookings/${bookingId}`, {
+      const response = await fetch(`${baseURL}/api/bookings/${bookingId}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -240,7 +242,7 @@ export default function Monitoring() {
     try {
       console.log("🔄 Fetching bookings from API...");
 
-      const response = await fetch("http://localhost:5000/api/bookings", {
+      const response = await fetch(`${baseURL}/api/bookings`, {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',

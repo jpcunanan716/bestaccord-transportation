@@ -8,9 +8,12 @@ function VehicleInfo() {
     const [currentIndex, setCurrentIndex] = useState(-1);
     const navigate = useNavigate();
 
+    //VITE API BASE URL
+    const baseURL = import.meta.env.VITE_API_BASE_URL;
+
     // Fetch all vehicles (to know the sequence)
     useEffect(() => {
-        fetch("http://localhost:5000/api/vehicles")
+        fetch(`${baseURL}/api/vehicles`)
             .then((res) => res.json())
             .then((data) => setVehicles(data))
             .catch((err) => console.error(err));
@@ -19,7 +22,7 @@ function VehicleInfo() {
     // Fetch single vehicle info when id changes
     useEffect(() => {
         if (!id) return;
-        fetch(`http://localhost:5000/api/vehicles/${id}`)
+        fetch(`${baseURL}/api/vehicles/${id}`)
             .then((res) => res.json())
             .then((data) => setVehicle(data))
             .catch((err) => console.error(err));

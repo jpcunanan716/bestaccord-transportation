@@ -27,6 +27,9 @@ export default function TripReport() {
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
 
+  //VITE API base URL
+  const baseURL = import.meta.env.VITE_API_BASE_URL;
+
   // Pagination states
   const [currentPage, setCurrentPage] = useState(1);
   const [pagination, setPagination] = useState({});
@@ -112,7 +115,7 @@ export default function TripReport() {
         ...(generalSearch && { search: generalSearch })
       });
 
-      const data = await makeAPICall(`http://localhost:5000/api/trip-reports?${params}`);
+      const data = await makeAPICall(`${baseURL}/api/trip-reports?${params}`);
 
       setTripReports(data.tripReports || []);
       setPagination(data.pagination || {});
@@ -239,7 +242,7 @@ export default function TripReport() {
       }
 
       // Make the upload request with enhanced error handling
-      const data = await makeAPICall('http://localhost:5000/api/trip-reports', {
+      const data = await makeAPICall(`${baseURL}/api/trip-reports`, {
         method: 'POST',
         body: formData,
         // Don't set Content-Type header for FormData - let browser handle it
@@ -296,7 +299,7 @@ export default function TripReport() {
     if (!window.confirm('Are you sure you want to archive this document?')) return;
     setError('');
     try {
-      const response = await fetch(`http://localhost:5000/api/trip-reports/${id}/archive`, {
+      const response = await fetch(`${baseURL}/api/trip-reports/${id}/archive`, {
         method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',
@@ -319,7 +322,7 @@ export default function TripReport() {
   // Handle download with enhanced error handling
   const handleDownload = async (id, fileName) => {
     try {
-      const response = await fetch(`http://localhost:5000/api/trip-reports/download/${id}`);
+      const response = await fetch(`${baseURL}/api/trip-reports/download/${id}`);
 
       if (!response.ok) {
         const errorText = await response.text();
@@ -346,7 +349,7 @@ export default function TripReport() {
   // Handle view/preview with enhanced error handling
   const handleView = async (id) => {
     try {
-      const url = `http://localhost:5000/api/trip-reports/view/${id}`;
+      const url = `${baseURL}/api/trip-reports/view/${id}`;
       window.open(url, '_blank');
     } catch (err) {
       console.error('Error viewing file:', err);
@@ -429,7 +432,7 @@ export default function TripReport() {
   useEffect(() => {
     const testConnection = async () => {
       try {
-        const response = await fetch('http://localhost:5000/api/trip-reports/stats/overview');
+        const response = await fetch(`${baseURL}/api/trip-reports/stats/overview`);
         if (!response.ok) {
           console.warn('Server connection test failed:', response.status);
         } else {
