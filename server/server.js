@@ -5,7 +5,7 @@ import cors from "cors";
 import archiveRoutes from "./routes/archive.js";
 import vehicleRoutes from "./routes/vehicle.js";
 import employeeRoutes from "./routes/employees.js";
-import authRoutes from "./routes/Auth.js";
+import authRoutes from "./routes/auth.js";
 import clientRoutes from "./routes/clients.js";
 import bookingRoutes from "./routes/bookings.js";
 import driverAuthRoutes from "./routes/driverAuth.js";
@@ -17,7 +17,14 @@ dotenv.config();
 
 const app = express();
 app.use(express.json());
-app.use(cors());
+app.use(cors({
+  origin: [
+    'http://localhost:5173',
+    'http://localhost:3000',
+    'https://your-app.vercel.app' // replace with your actual deployed frontend URL
+  ],
+  credentials: true
+}));
 
 // routes
 app.use("/api/auth", authRoutes);
@@ -35,7 +42,7 @@ mongoose
   .connect(process.env.MONGO_URI)
   .then(() => {
     app.listen(PORT, () =>
-      console.log(`🚀 Server running on http://localhost:${PORT}`)
+      console.log(`Server running on http://localhost:${PORT}`)
     );
   })
-  .catch((err) => console.error("❌ MongoDB connection error:", err));
+  .catch((err) => console.error("MongoDB connection error:", err));
