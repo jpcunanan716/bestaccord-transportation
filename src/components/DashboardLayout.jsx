@@ -16,6 +16,7 @@ import logo from "../assets/bestaccord_logo.png";
 
 export default function DashboardLayout() {
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
+  const [showLogoutModal, setShowLogoutModal] = useState(false);
   const role = localStorage.getItem("role");
 
   const menuItems = [
@@ -34,6 +35,12 @@ export default function DashboardLayout() {
       { name: "Pending Staff", path: "/dashboard/pending-staff", icon: <Users size={20} /> }
     );
   }
+
+  const handleLogout = () => {
+    localStorage.removeItem("token");
+    localStorage.removeItem("role");
+    window.location.href = "/login";
+  };
 
   return (
     <div className="flex min-h-screen bg-gray-50">
@@ -152,11 +159,7 @@ export default function DashboardLayout() {
             }`}
         >
           <button
-            onClick={() => {
-              localStorage.removeItem("token");
-              localStorage.removeItem("role");
-              window.location.href = "/login";
-            }}
+            onClick={() => setShowLogoutModal(true)}
             className={`group flex items-center w-full rounded-xl transition-all duration-300 text-slate-300 hover:text-white hover:bg-red-600/20 hover:shadow-lg ${isSidebarCollapsed ? "p-3 justify-center" : "p-4"
               }`}
           >
@@ -182,6 +185,46 @@ export default function DashboardLayout() {
           </button>
         </div>
       </div>
+
+      {/* Logout Confirmation Modal */}
+      {showLogoutModal && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full transform transition-all animate-in fade-in zoom-in duration-300">
+            {/* Modal Header */}
+            <div className="bg-gradient-to-r from-purple-950 to-purple-800 text-white p-6 rounded-t-2xl">
+              <div className="flex items-center gap-3">
+                <div className="bg-white/20 backdrop-blur-sm p-2 rounded-lg">
+                  <LogOut size={24} />
+                </div>
+                <h3 className="text-xl font-semibold">Confirm Logout</h3>
+              </div>
+            </div>
+
+            {/* Modal Body */}
+            <div className="p-6">
+              <p className="text-gray-600 text-base">
+                Are you sure you want to logout? You'll need to sign in again to access your dashboard.
+              </p>
+            </div>
+
+            {/* Modal Footer */}
+            <div className="flex gap-3 p-6 pt-0">
+              <button
+                onClick={() => setShowLogoutModal(false)}
+                className="flex-1 px-4 py-3 bg-gray-100 text-gray-700 rounded-xl font-medium hover:bg-gray-200 transition-all duration-300 hover:shadow-md"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleLogout}
+                className="flex-1 px-4 py-3 bg-gradient-to-r from-purple-950 to-purple-800 text-white rounded-xl font-medium hover:from-purple-900 hover:to-purple-700 transition-all duration-300 hover:shadow-lg hover:shadow-purple-500/30"
+              >
+                Logout
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Main Content */}
       <div className="flex-1 min-w-0 bg-gray-50 transition-all duration-300">
