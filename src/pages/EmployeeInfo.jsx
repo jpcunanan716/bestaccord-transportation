@@ -8,6 +8,9 @@ function EmployeeInfo() {
     const [currentIndex, setCurrentIndex] = useState(-1);
     const navigate = useNavigate();
 
+    //VITE API BASE URL
+    const baseURL = import.meta.env.VITE_API_BASE_URL;
+
     // Fetch all employees (to know the sequence)
     useEffect(() => {
         fetch(`${baseURL}/api/employees`)

@@ -345,7 +345,7 @@ function Client() {
     if (!window.confirm("Are you sure you want to archive this client?")) return;
 
     try {
-      await axios.patch(`/api/clients/${id}/archive`, {
+      await axiosClient.patch(`/api/clients/${id}/archive`, {
         isArchived: true
       });
       alert('Client archived successfully');
