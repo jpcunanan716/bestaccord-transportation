@@ -324,13 +324,13 @@ function Client() {
         address,
       };
       if (editClient) {
-        await axios.put(
+        await axiosClient.put(
           `/api/clients/${editClient._id}`,
           payload
         );
         alert('Client updated successfully!');
       } else {
-        await axios.post("/api/clients", payload);
+        await axiosClient.post("/api/clients", payload);
         alert('Client created successfully!');
       }
       closeModal();
