@@ -177,7 +177,7 @@ function EmployeeInfo() {
 
             {/* Employee History Modal*/}
             {showModal && (
-                <div className="fixed inset-0 bg-black bg-opacity-50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+                <div className="fixed inset-0 bg-opacity-50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
                     <div className="bg-white rounded-lg shadow-2xl w-full max-w-6xl max-h-[90vh] flex flex-col">
                         {/* Modal Header */}
                         <div className="flex justify-between items-center p-6 border-b">
@@ -211,7 +211,6 @@ function EmployeeInfo() {
                                                 <th className="px-4 py-3">Company Name</th>
                                                 <th className="px-4 py-3">Vehicle Used</th>
                                                 <th className="px-4 py-3">Plate Number</th>
-                                                <th className="px-4 py-3">Date Needed</th>
                                             </tr>
                                         </thead>
                                         <tbody className="divide-y divide-gray-200">

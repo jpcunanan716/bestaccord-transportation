@@ -73,7 +73,7 @@ function BookingInfo() {
                     <h3 className="text-sm font-medium opacity-90">Reservation ID</h3>
                     <p className="text-2xl font-bold font-mono">{booking.reservationId}</p>
                 </div>
-                <div className="bg-gradient-to-r from-green-500 to-purple-600 text-white p-4 rounded-lg">
+                <div className="bg-gradient-to-r from-blue-600 to-purple-500 text-white p-4 rounded-lg">
                     <h3 className="text-sm font-medium opacity-90">Trip Number</h3>
                     <p className="text-2xl font-bold font-mono">{booking.tripNumber}</p>
                 </div>

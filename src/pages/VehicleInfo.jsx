@@ -170,7 +170,7 @@ function VehicleInfo() {
 
             {/* Employee History Modal*/}
             {showModal && (
-                <div className="fixed inset-0 bg-black bg-opacity-50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+                <div className="fixed inset-0 bg-opacity-50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
                     <div className="bg-white rounded-lg shadow-2xl w-full max-w-6xl max-h-[90vh] flex flex-col">
                         {/* Modal Header */}
                         <div className="flex justify-between items-center p-6 border-b">
@@ -210,7 +210,7 @@ function VehicleInfo() {
                                         <tbody className="divide-y divide-gray-200">
                                             {bookings.map((booking) => (
                                                 <tr key={booking._id} className="hover:bg-gray-50">
-                                                    <td className="px-4 py-3">
+                                                    <td className="px-4 py-3 font-medium text-purple-600">
                                                         {booking.tripNumber || "N/A"}
                                                     </td>
                                                     <td className="px-4 py-3">

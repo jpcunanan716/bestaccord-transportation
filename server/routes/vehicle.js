@@ -75,10 +75,12 @@ router.get("/:id/bookings", async (req, res) => {
     const vehicle = await Vehicle.findById(req.params.id);
     if (!vehicle) return res.status(404).json({ message: "Vehicle not found" });
 
+    // Use the vehicle's MongoDB _id to find related bookings
     const bookings = await Booking.find({
-      vehicleId: vehicle.vehicleId,
+      vehicleId: vehicle._id,
       isArchived: false
-    }).sort({ createdAt: -1 });
+    }).populate('vehicleId') // This will now work
+      .sort({ createdAt: -1 });
 
     res.json(bookings);
   } catch (err) {
@@ -86,6 +88,7 @@ router.get("/:id/bookings", async (req, res) => {
     res.status(500).json({ message: err.message });
   }
 });
+
 
 // POST create new vehicle
 router.post("/", async (req, res) => {
