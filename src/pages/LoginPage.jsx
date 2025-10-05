@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { axiosClient } from "../api/axiosClient";
-
+import logo from "../assets/bestaccord_logo.png";
 import { motion } from "framer-motion";
 
 export default function LoginPage() {
@@ -68,7 +68,7 @@ export default function LoginPage() {
         >
           <div className="bg-white/10 backdrop-blur-xl border border-white/20 rounded-2xl p-4 mb-4 shadow-2xl">
             <img
-              src="/src/assets/bestaccord_logo.png"
+              src={logo}
               alt="Bestaccord Transportation"
               className="w-full h-23 object-contain"
             />
