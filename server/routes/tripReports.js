@@ -1,37 +1,33 @@
 import express from "express";
 import multer from "multer";
-import fs from "fs";
+import mongoose from "mongoose";
 import TripReport from "../models/TripReport.js";
+import { Readable } from "stream";
+import { getGridFSBucket } from "../config/gridfs.js";
 
 const router = express.Router();
 
-// Create uploads directory if it doesn't exist
-const uploadsDir = 'uploads/trip-reports';
-if (!fs.existsSync(uploadsDir)) {
-    fs.mkdirSync(uploadsDir, { recursive: true });
-    console.log(`Created uploads directory: ${uploadsDir}`);
-}
+let gridfsBucket;
 
-// Configure multer for file uploads
-const storage = multer.diskStorage({
-    destination: function (req, file, cb) {
-        cb(null, uploadsDir);
-    },
-    filename: function (req, file, cb) {
-        // Generate unique filename with timestamp
-        const timestamp = Date.now();
-        const originalName = file.originalname.replace(/[^a-zA-Z0-9.-]/g, '_');
-        const uniqueFileName = `${timestamp}_${originalName}`;
-        cb(null, uniqueFileName);
-    }
-});
+// Initialize GridFS
+export const initGridFS = () => {
+    const conn = mongoose.connection;
 
-// File filter to validate file types
+    conn.once('open', () => {
+        gridfsBucket = new mongoose.mongo.GridFSBucket(conn.db, {
+            bucketName: 'uploads'
+        });
+        console.log('✅ GridFS initialized for trip reports');
+    });
+};
+
+// Configure multer with memory storage
+const storage = multer.memoryStorage();
+
 const fileFilter = (req, file, cb) => {
     console.log('File filter - File details:', {
         originalname: file.originalname,
-        mimetype: file.mimetype,
-        size: file.size
+        mimetype: file.mimetype
     });
 
     const allowedTypes = [
@@ -60,14 +56,10 @@ const upload = multer({
     fileFilter: fileFilter,
     limits: {
         fileSize: 20 * 1024 * 1024 // 20MB limit
-    },
-    onError: function (err, next) {
-        console.error('Multer error:', err);
-        next(err);
     }
 });
 
-// Helper function to determine document type from mime type
+// Helper function to determine document type
 const getDocumentType = (mimeType) => {
     const typeMap = {
         'application/pdf': 'PDF',
@@ -83,57 +75,6 @@ const getDocumentType = (mimeType) => {
     return typeMap[mimeType] || 'Other';
 };
 
-// Enhanced error handler middleware
-const handleErrors = (err, req, res, next) => {
-    console.error('Route error:', err);
-
-    // Multer errors
-    if (err instanceof multer.MulterError) {
-        if (err.code === 'LIMIT_FILE_SIZE') {
-            return res.status(400).json({
-                message: 'File too large. Maximum file size is 20MB.',
-                error: 'FILE_TOO_LARGE'
-            });
-        }
-        if (err.code === 'LIMIT_UNEXPECTED_FILE') {
-            return res.status(400).json({
-                message: 'Unexpected file field. Please use "document" field name.',
-                error: 'UNEXPECTED_FILE'
-            });
-        }
-    }
-
-    // File filter errors
-    if (err.message && err.message.includes('Invalid file type')) {
-        return res.status(400).json({
-            message: err.message,
-            error: 'INVALID_FILE_TYPE'
-        });
-    }
-
-    // MongoDB duplicate key error
-    if (err.code === 11000) {
-        return res.status(409).json({
-            message: 'Receipt number already exists. Please use a different receipt number.',
-            error: 'DUPLICATE_RECEIPT'
-        });
-    }
-
-    // Validation errors
-    if (err.name === 'ValidationError') {
-        return res.status(400).json({
-            message: 'Validation failed: ' + Object.values(err.errors).map(e => e.message).join(', '),
-            error: 'VALIDATION_ERROR'
-        });
-    }
-
-    // Default error
-    res.status(500).json({
-        message: err.message || 'An unexpected error occurred.',
-        error: 'INTERNAL_SERVER_ERROR'
-    });
-};
-
 // GET all trip reports
 router.get("/", async (req, res) => {
     try {
@@ -142,7 +83,6 @@ router.get("/", async (req, res) => {
         const { page = 1, limit = 10, documentType, uploadedBy, search } = req.query;
         const skip = (page - 1) * limit;
 
-        // Build query
         let query = { isArchived: false };
 
         if (documentType && documentType !== 'All') {
@@ -156,19 +96,15 @@ router.get("/", async (req, res) => {
         if (search) {
             query.$or = [
                 { receiptNumber: { $regex: search, $options: 'i' } },
-                { fileName: { $regex: search, $options: 'i' } },
                 { originalFileName: { $regex: search, $options: 'i' } },
                 { tripNumber: { $regex: search, $options: 'i' } },
-                { reservationId: { $regex: search, $options: 'i' } }
+                { reservationId: { $regex: search, $options: 'i' } },
+                { notes: { $regex: search, $options: 'i' } }
             ];
         }
 
-        console.log('Query:', query);
-
-        // Get total count for pagination
         const total = await TripReport.countDocuments(query);
 
-        // Get paginated results
         const tripReports = await TripReport.find(query)
             .populate('bookingId', 'tripNumber reservationId companyName')
             .sort({ createdAt: -1 })
@@ -183,6 +119,7 @@ router.get("/", async (req, res) => {
                 currentPage: parseInt(page),
                 totalPages: Math.ceil(total / limit),
                 totalItems: total,
+                itemsPerPage: parseInt(limit),
                 hasNext: skip + tripReports.length < total,
                 hasPrev: page > 1
             }
@@ -196,13 +133,146 @@ router.get("/", async (req, res) => {
     }
 });
 
-// GET single trip report
-router.get("/:id", async (req, res) => {
-    try {
-        console.log(`GET /trip-reports/${req.params.id}`);
+// POST upload new trip report
+router.post("/", upload.single('document'), async (req, res) => {
+    let uploadStreamId = null;
 
-        const tripReport = await TripReport.findById(req.params.id)
-            .populate('bookingId', 'tripNumber reservationId companyName');
+    try {
+        console.log('POST /trip-reports - Starting upload process');
+
+        if (!req.file) {
+            return res.status(400).json({
+                message: "No file uploaded. Please select a document to upload.",
+                error: 'NO_FILE'
+            });
+        }
+
+        console.log('File upload details:', {
+            originalname: req.file.originalname,
+            mimetype: req.file.mimetype,
+            size: req.file.size
+        });
+
+        const { receiptNumber, notes, bookingId, tripNumber, reservationId } = req.body;
+
+        if (!receiptNumber || !receiptNumber.trim()) {
+            return res.status(400).json({
+                message: "Receipt number is required and cannot be empty.",
+                error: 'MISSING_RECEIPT_NUMBER'
+            });
+        }
+
+        // Check if receipt number already exists
+        const existingReport = await TripReport.findOne({
+            receiptNumber: receiptNumber.trim(),
+            isArchived: false
+        });
+
+        if (existingReport) {
+            return res.status(409).json({
+                message: "A document with this receipt number already exists. Please use a different receipt number.",
+                error: 'DUPLICATE_RECEIPT'
+            });
+        }
+
+        // Create readable stream from buffer
+        const readableStream = new Readable();
+        readableStream.push(req.file.buffer);
+        readableStream.push(null);
+
+        // Generate unique filename
+        const timestamp = Date.now();
+        const filename = `${timestamp}_${req.file.originalname}`;
+
+        // Upload to GridFS
+        const uploadStream = gridfsBucket.openUploadStream(filename, {
+            metadata: {
+                originalName: req.file.originalname,
+                uploadedBy: req.body.uploadedBy || 'Admin',
+                mimeType: req.file.mimetype
+            }
+        });
+
+        uploadStreamId = uploadStream.id;
+
+        // Pipe file to GridFS
+        readableStream.pipe(uploadStream);
+
+        // Wait for upload to complete
+        await new Promise((resolve, reject) => {
+            uploadStream.on('finish', resolve);
+            uploadStream.on('error', reject);
+        });
+
+        const documentType = getDocumentType(req.file.mimetype);
+
+        // Create new trip report
+        const newTripReport = new TripReport({
+            receiptNumber: receiptNumber.trim(),
+            documentType,
+            gridfsFileId: uploadStreamId,
+            originalFileName: req.file.originalname,
+            fileSize: req.file.size,
+            mimeType: req.file.mimetype,
+            bookingId: bookingId || null,
+            tripNumber: tripNumber || null,
+            reservationId: reservationId || null,
+            uploadedBy: req.body.uploadedBy || 'Admin',
+            notes: notes ? notes.trim() : ''
+        });
+
+        console.log('Saving trip report to database...');
+        const savedReport = await newTripReport.save();
+        console.log('Trip report saved successfully:', savedReport._id);
+
+        await savedReport.populate('bookingId', 'tripNumber reservationId companyName');
+
+        res.status(201).json({
+            message: "Trip report uploaded successfully",
+            tripReport: savedReport,
+            success: true
+        });
+
+    } catch (err) {
+        console.error("Error uploading trip report:", err);
+
+        // Delete file from GridFS if save failed
+        if (uploadStreamId) {
+            try {
+                await gridfsBucket.delete(uploadStreamId);
+                console.log('Cleaned up GridFS file due to error');
+            } catch (deleteErr) {
+                console.error('Error cleaning up GridFS file:', deleteErr);
+            }
+        }
+
+        if (err.code === 11000) {
+            return res.status(409).json({
+                message: "Receipt number already exists",
+                error: 'DUPLICATE_RECEIPT'
+            });
+        }
+
+        if (err.name === 'ValidationError') {
+            return res.status(400).json({
+                message: 'Validation failed: ' + Object.values(err.errors).map(e => e.message).join(', '),
+                error: 'VALIDATION_ERROR'
+            });
+        }
+
+        res.status(500).json({
+            message: `Upload failed: ${err.message}`,
+            error: 'UPLOAD_FAILED'
+        });
+    }
+});
+
+// GET view/preview file
+router.get("/view/:id", async (req, res) => {
+    try {
+        console.log(`GET /trip-reports/view/${req.params.id}`);
+
+        const tripReport = await TripReport.findById(req.params.id);
 
         if (!tripReport) {
             return res.status(404).json({
@@ -211,191 +281,65 @@ router.get("/:id", async (req, res) => {
             });
         }
 
-        res.json(tripReport);
+        // Check if file exists in GridFS
+        const files = await gridfsBucket.find({ _id: tripReport.gridfsFileId }).toArray();
+
+        if (!files || files.length === 0) {
+            return res.status(404).json({
+                message: "File not found in database",
+                error: 'FILE_NOT_FOUND'
+            });
+        }
+
+        res.setHeader('Content-Type', tripReport.mimeType);
+        res.setHeader('Content-Disposition', `inline; filename="${tripReport.originalFileName}"`);
+
+        const downloadStream = gridfsBucket.openDownloadStream(tripReport.gridfsFileId);
+        downloadStream.pipe(res);
+
     } catch (err) {
-        console.error("Error fetching trip report:", err);
+        console.error("Error viewing trip report:", err);
         res.status(500).json({
-            message: `Failed to fetch trip report: ${err.message}`,
-            error: 'FETCH_ERROR'
+            message: `View failed: ${err.message}`,
+            error: 'VIEW_FAILED'
         });
     }
 });
 
-// POST upload new trip report
-router.post("/", (req, res) => {
-    console.log('POST /trip-reports - Starting upload process');
-    console.log('Request headers:', req.headers);
-
-    upload.single('document')(req, res, async (err) => {
-        try {
-            console.log('Upload middleware executed');
-
-            // Handle multer errors
-            if (err) {
-                console.error('Multer error:', err);
-
-                // Clean up any uploaded file
-                if (req.file && fs.existsSync(req.file.path)) {
-                    fs.unlinkSync(req.file.path);
-                    console.log('Cleaned up uploaded file due to error');
-                }
-
-                return handleErrors(err, req, res, null);
-            }
-
-            console.log('File upload details:', req.file ? {
-                originalname: req.file.originalname,
-                filename: req.file.filename,
-                mimetype: req.file.mimetype,
-                size: req.file.size,
-                path: req.file.path
-            } : 'No file uploaded');
-
-            console.log('Request body:', req.body);
-
-            // Validate file upload
-            if (!req.file) {
-                return res.status(400).json({
-                    message: "No file uploaded. Please select a document to upload.",
-                    error: 'NO_FILE'
-                });
-            }
-
-            const { receiptNumber, notes, bookingId, tripNumber, reservationId } = req.body;
-
-            // Validate required fields
-            if (!receiptNumber || !receiptNumber.trim()) {
-                // Clean up uploaded file
-                if (fs.existsSync(req.file.path)) {
-                    fs.unlinkSync(req.file.path);
-                }
-                return res.status(400).json({
-                    message: "Receipt number is required and cannot be empty.",
-                    error: 'MISSING_RECEIPT_NUMBER'
-                });
-            }
-
-            // Check if receipt number already exists
-            const existingReport = await TripReport.findOne({
-                receiptNumber: receiptNumber.trim(),
-                isArchived: false
-            });
-
-            if (existingReport) {
-                // Delete uploaded file if receipt number already exists
-                if (fs.existsSync(req.file.path)) {
-                    fs.unlinkSync(req.file.path);
-                    console.log('Cleaned up duplicate file');
-                }
-                return res.status(409).json({
-                    message: "A document with this receipt number already exists. Please use a different receipt number.",
-                    error: 'DUPLICATE_RECEIPT'
-                });
-            }
-
-            const documentType = getDocumentType(req.file.mimetype);
-            console.log('Determined document type:', documentType);
-
-            // Create new trip report
-            const newTripReport = new TripReport({
-                receiptNumber: receiptNumber.trim(),
-                documentType,
-                fileName: req.file.filename,
-                originalFileName: req.file.originalname,
-                filePath: req.file.path,
-                fileSize: req.file.size,
-                mimeType: req.file.mimetype,
-                bookingId: bookingId || null,
-                tripNumber: tripNumber || null,
-                reservationId: reservationId || null,
-                uploadedBy: req.body.uploadedBy || 'Admin',
-                notes: notes ? notes.trim() : ''
-            });
-
-            console.log('Saving trip report to database...');
-            const savedReport = await newTripReport.save();
-            console.log('Trip report saved successfully:', savedReport._id);
-
-            // Populate the booking details
-            await savedReport.populate('bookingId', 'tripNumber reservationId companyName');
-
-            res.status(201).json({
-                message: "Trip report uploaded successfully",
-                tripReport: savedReport,
-                success: true
-            });
-
-        } catch (err) {
-            // Delete uploaded file if database save fails
-            if (req.file && fs.existsSync(req.file.path)) {
-                fs.unlinkSync(req.file.path);
-            }
-
-            console.error("Error uploading trip report:", err);
-
-            if (err.code === 11000) {
-                return res.status(409).json({ message: "Receipt number already exists" });
-            }
-
-            if (err.name === 'ValidationError') {
-                return res.status(400).json({
-                    message: 'Validation failed: ' + Object.values(err.errors).map(e => e.message).join(', '),
-                    error: 'VALIDATION_ERROR'
-                });
-            }
-
-            res.status(500).json({
-                message: `Upload failed: ${err.message}`,
-                error: 'UPLOAD_FAILED'
-            });
-        }
-    });
-});
-
-// PUT update trip report
-router.put("/:id", async (req, res) => {
+// GET download file
+router.get("/download/:id", async (req, res) => {
     try {
-        console.log(`PUT /trip-reports/${req.params.id}`, req.body);
+        console.log(`GET /trip-reports/download/${req.params.id}`);
 
-        const { receiptNumber, notes, uploadedBy } = req.body;
+        const tripReport = await TripReport.findById(req.params.id);
 
-        const updatedReport = await TripReport.findByIdAndUpdate(
-            req.params.id,
-            {
-                receiptNumber,
-                notes,
-                uploadedBy,
-                updatedAt: new Date()
-            },
-            { new: true, runValidators: true }
-        ).populate('bookingId', 'tripNumber reservationId companyName');
-
-        if (!updatedReport) {
+        if (!tripReport) {
             return res.status(404).json({
                 message: "Trip report not found",
                 error: 'NOT_FOUND'
             });
         }
 
-        res.json({
-            message: "Trip report updated successfully",
-            tripReport: updatedReport,
-            success: true
-        });
+        const files = await gridfsBucket.find({ _id: tripReport.gridfsFileId }).toArray();
 
-    } catch (err) {
-        console.error("Error updating trip report:", err);
-
-        if (err.code === 11000) {
-            return res.status(409).json({
-                message: "Receipt number already exists. Please use a different receipt number.",
-                error: 'DUPLICATE_RECEIPT'
+        if (!files || files.length === 0) {
+            return res.status(404).json({
+                message: "File not found in database",
+                error: 'FILE_NOT_FOUND'
             });
         }
 
+        res.setHeader('Content-Type', tripReport.mimeType);
+        res.setHeader('Content-Disposition', `attachment; filename="${tripReport.originalFileName}"`);
+
+        const downloadStream = gridfsBucket.openDownloadStream(tripReport.gridfsFileId);
+        downloadStream.pipe(res);
+
+    } catch (err) {
+        console.error("Error downloading trip report:", err);
         res.status(500).json({
-            message: `Update failed: ${err.message}`,
-            error: 'UPDATE_FAILED'
+            message: `Download failed: ${err.message}`,
+            error: 'DOWNLOAD_FAILED'
         });
     }
 });
@@ -407,10 +351,7 @@ router.patch("/:id/archive", async (req, res) => {
 
         const tripReport = await TripReport.findByIdAndUpdate(
             req.params.id,
-            {
-                isArchived: true,
-                updatedAt: new Date()
-            },
+            { isArchived: true, updatedAt: new Date() },
             { new: true }
         );
 
@@ -430,43 +371,7 @@ router.patch("/:id/archive", async (req, res) => {
     }
 });
 
-// PATCH restore trip report
-router.patch("/:id/restore", async (req, res) => {
-    try {
-        console.log(`PATCH /trip-reports/${req.params.id}/restore`);
-
-        const tripReport = await TripReport.findByIdAndUpdate(
-            req.params.id,
-            {
-                isArchived: false,
-                updatedAt: new Date()
-            },
-            { new: true }
-        );
-
-        if (!tripReport) {
-            return res.status(404).json({
-                message: "Trip report not found",
-                error: 'NOT_FOUND'
-            });
-        }
-
-        res.json({
-            message: "Trip report restored successfully",
-            tripReport,
-            success: true
-        });
-
-    } catch (err) {
-        console.error("Error restoring trip report:", err);
-        res.status(500).json({
-            message: `Restore failed: ${err.message}`,
-            error: 'RESTORE_FAILED'
-        });
-    }
-});
-
-// DELETE trip report (also delete file)
+// DELETE trip report (delete from GridFS and database)
 router.delete("/:id", async (req, res) => {
     try {
         console.log(`DELETE /trip-reports/${req.params.id}`);
@@ -480,23 +385,13 @@ router.delete("/:id", async (req, res) => {
             });
         }
 
-        console.log('Trip report found:', {
-            id: tripReport._id,
-            filePath: tripReport.filePath,
-            fileExists: tripReport.filePath ? fs.existsSync(tripReport.filePath) : 'No file path'
-        });
-
-        // Delete file from filesystem
-        if (tripReport.filePath) {
-            if (fs.existsSync(tripReport.filePath)) {
-                fs.unlinkSync(tripReport.filePath);
-                console.log('Deleted file:', tripReport.filePath);
-            } else {
-                console.warn('File not found at path:', tripReport.filePath);
-                // Continue with database deletion even if file doesn't exist
-            }
-        } else {
-            console.log('No file path stored for this trip report');
+        // Delete file from GridFS
+        try {
+            await gridfsBucket.delete(tripReport.gridfsFileId);
+            console.log('Deleted file from GridFS');
+        } catch (gridfsErr) {
+            console.warn('GridFS deletion warning:', gridfsErr.message);
+            // Continue with database deletion even if GridFS file doesn't exist
         }
 
         // Delete from database
@@ -512,78 +407,6 @@ router.delete("/:id", async (req, res) => {
         res.status(500).json({
             message: `Delete failed: ${err.message}`,
             error: 'DELETE_FAILED'
-        });
-    }
-});
-
-// GET download file
-router.get("/download/:id", async (req, res) => {
-    try {
-        console.log(`GET /trip-reports/download/${req.params.id}`);
-
-        const tripReport = await TripReport.findById(req.params.id);
-
-        if (!tripReport) {
-            return res.status(404).json({
-                message: "Trip report not found",
-                error: 'NOT_FOUND'
-            });
-        }
-
-        if (!fs.existsSync(tripReport.filePath)) {
-            return res.status(404).json({
-                message: "File not found on server. The file may have been moved or deleted.",
-                error: 'FILE_NOT_FOUND'
-            });
-        }
-
-        res.setHeader('Content-Type', tripReport.mimeType);
-        res.setHeader('Content-Disposition', `attachment; filename="${tripReport.originalFileName}"`);
-
-        const fileStream = fs.createReadStream(tripReport.filePath);
-        fileStream.pipe(res);
-
-    } catch (err) {
-        console.error("Error downloading trip report:", err);
-        res.status(500).json({
-            message: `Download failed: ${err.message}`,
-            error: 'DOWNLOAD_FAILED'
-        });
-    }
-});
-
-// GET view/preview file (for PDF, images)
-router.get("/view/:id", async (req, res) => {
-    try {
-        console.log(`GET /trip-reports/view/${req.params.id}`);
-
-        const tripReport = await TripReport.findById(req.params.id);
-
-        if (!tripReport) {
-            return res.status(404).json({
-                message: "Trip report not found",
-                error: 'NOT_FOUND'
-            });
-        }
-
-        if (!fs.existsSync(tripReport.filePath)) {
-            return res.status(404).json({
-                message: "File not found on server. The file may have been moved or deleted.",
-                error: 'FILE_NOT_FOUND'
-            });
-        }
-
-        res.setHeader('Content-Type', tripReport.mimeType);
-        res.setHeader('Content-Disposition', `inline; filename="${tripReport.originalFileName}"`);
-
-        const fileStream = fs.createReadStream(tripReport.filePath);
-        fileStream.pipe(res);
-
-    } catch (err) {
-        console.error("Error viewing trip report:", err);
-        res.status(500).json({
-            message: `View failed: ${err.message}`,
-            error: 'VIEW_FAILED'
         });
     }
 });
@@ -609,8 +432,6 @@ router.get("/stats/overview", async (req, res) => {
             archived: stats[4]
         };
 
-        console.log('Statistics:', result);
-
         res.json(result);
 
     } catch (err) {
@@ -621,19 +442,5 @@ router.get("/stats/overview", async (req, res) => {
         });
     }
 });
-
-// Health check endpoint
-router.get("/health", (req, res) => {
-    res.json({
-        status: 'OK',
-        message: 'Trip reports API is running',
-        timestamp: new Date().toISOString(),
-        uploadsDir: uploadsDir,
-        uploadsDirExists: fs.existsSync(uploadsDir)
-    });
-});
-
-// Apply error handling middleware
-router.use(handleErrors);
 
 export default router;
