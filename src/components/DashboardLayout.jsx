@@ -2,7 +2,7 @@ import { useState } from "react";
 import { Outlet, NavLink } from "react-router-dom";
 import {
   LayoutDashboard,
-  Monitor,
+  Navigation,
   FileText,
   Truck,
   Users,
@@ -22,7 +22,7 @@ export default function DashboardLayout() {
   const menuItems = [
     { name: "Dashboard", path: "/dashboard", icon: <LayoutDashboard size={20} /> },
     { name: "Booking", path: "/dashboard/booking", icon: <Package size={20} /> },
-    { name: "Monitoring", path: "/dashboard/monitoring", icon: <Monitor size={20} /> },
+    { name: "Monitoring", path: "/dashboard/monitoring", icon: <Navigation size={20} /> },
     { name: "Trip Report", path: "/dashboard/trip-report", icon: <FileText size={20} /> },
   ];
 
