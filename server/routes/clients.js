@@ -1,5 +1,6 @@
 import express from "express";
 import Client from "../models/Client.js";
+import Booking from "../models/Booking.js";
 
 const router = express.Router();
 
@@ -43,7 +44,6 @@ router.get("/:id/bookings", async (req, res) => {
     const client = await Client.findById(req.params.id);
     if (!client) return res.status(404).json({ message: "Client not found" });
 
-    // Import Booking model at the top: import Booking from "../models/Booking.js";
     const bookings = await Booking.find({
       customerEstablishmentName: client.clientName,
       isArchived: false
