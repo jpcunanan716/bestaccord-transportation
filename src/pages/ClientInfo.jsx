@@ -100,12 +100,12 @@ function ClientInfo() {
                                 <td className="px-6 py-3">{client.clientName}</td>
                             </tr>
                             <tr className="border-b">
-                                <th className="px-6 py-3 font-semibold bg-gray-100">Location</th>
-                                <td className="px-6 py-3">{client.location}</td>
+                                <th className="px-6 py-3 font-semibold bg-gray-100">Branch</th>
+                                <td className="px-6 py-3">{client.clientBranch}</td>
                             </tr>
                             <tr className="border-b">
-                                <th className="px-6 py-3 font-semibold bg-gray-100">Branch</th>
-                                <td className="px-6 py-3">{client.branch}</td>
+                                <th className="px-6 py-3 font-semibold bg-gray-100">Location</th>
+                                <td className="px-6 py-3">{client.address}</td>
                             </tr>
                             <tr>
                                 <th className="px-6 py-3 font-semibold bg-gray-100">Date Created</th>
@@ -163,7 +163,7 @@ function ClientInfo() {
                         </div>
 
                         {/* Modal Content */}
-                        <div className="flex-1 overflow-auto p-6">
+                        <div className="flex-1 overflow-auto p-6 bg-opacity-50 backdrop-blur-sm">
                             {bookings.length === 0 ? (
                                 <div className="text-center py-12">
                                     <p className="text-gray-500 text-lg">No booking history found for this client.</p>

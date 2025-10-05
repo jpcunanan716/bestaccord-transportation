@@ -45,7 +45,7 @@ router.get("/:id/bookings", async (req, res) => {
     if (!client) return res.status(404).json({ message: "Client not found" });
 
     const bookings = await Booking.find({
-      customerEstablishmentName: client.clientName,
+      companyName: client.clientName,
       isArchived: false
     }).sort({ createdAt: -1 });
 
