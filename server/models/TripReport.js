@@ -13,7 +13,7 @@ const tripReportSchema = new mongoose.Schema({
         enum: ['PDF', 'DOC', 'DOCX', 'JPG', 'JPEG', 'PNG', 'Excel', 'TXT', 'Other'],
         default: 'PDF'
     },
-    gridfsFileId: {                    // ADD THIS
+    gridfsFileId: {
         type: mongoose.Schema.Types.ObjectId,
         required: true
     },

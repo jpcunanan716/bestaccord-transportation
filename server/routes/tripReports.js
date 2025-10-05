@@ -1,6 +1,5 @@
 import express from "express";
 import multer from "multer";
-import mongoose from "mongoose";
 import TripReport from "../models/TripReport.js";
 import { Readable } from "stream";
 import { getGridFSBucket } from "../config/gridfs.js";
