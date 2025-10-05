@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { axiosClient } from '../api/axiosClient';
-import { Archive as ArchiveIcon, Package, Car, Users, Building, FileText, Trash, History } from 'lucide-react';
+import { Archive as ArchiveIcon, Package, Truck, Users, FileText, Trash, History, User } from 'lucide-react';
 
 export default function Archive() {
   const [activeTab, setActiveTab] = useState('bookings');
@@ -82,8 +82,8 @@ export default function Archive() {
   const tabs = [
     { id: 'bookings', label: 'Bookings', icon: Package },
     { id: 'trip-reports', label: 'Trip Reports', icon: FileText },
-    { id: 'clients', label: 'Clients', icon: Building },
-    { id: 'vehicles', label: 'Vehicles', icon: Car },
+    { id: 'clients', label: 'Clients', icon: User },
+    { id: 'vehicles', label: 'Vehicles', icon: Truck },
     { id: 'employees', label: 'Employees', icon: Users },
   ];
 

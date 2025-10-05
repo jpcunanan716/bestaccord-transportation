@@ -206,7 +206,7 @@ export default function Vehicle() {
 
   //Archive handler
   const handleDelete = async (id) => {
-    if (!window.confirm("Are you sure you want to delete this vehicle?")) return;
+    if (!window.confirm("Are you sure you want to archive this vehicle?")) return;
     try {
       await axiosClient.patch(`/api/vehicles/${id}/archive`, {
         isArchived: true

@@ -2,7 +2,6 @@ import { useState } from "react";
 import { Outlet, NavLink } from "react-router-dom";
 import {
   LayoutDashboard,
-  ClipboardList,
   Monitor,
   FileText,
   Truck,
@@ -11,6 +10,7 @@ import {
   Archive,
   LogOut,
   Menu,
+  Package,
 } from "lucide-react";
 import logo from "../assets/bestaccord_logo.png";
 
@@ -21,7 +21,7 @@ export default function DashboardLayout() {
 
   const menuItems = [
     { name: "Dashboard", path: "/dashboard", icon: <LayoutDashboard size={20} /> },
-    { name: "Booking", path: "/dashboard/booking", icon: <ClipboardList size={20} /> },
+    { name: "Booking", path: "/dashboard/booking", icon: <Package size={20} /> },
     { name: "Monitoring", path: "/dashboard/monitoring", icon: <Monitor size={20} /> },
     { name: "Trip Report", path: "/dashboard/trip-report", icon: <FileText size={20} /> },
   ];
