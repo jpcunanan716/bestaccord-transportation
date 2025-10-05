@@ -1,11 +1,15 @@
 import { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
+import { X } from "lucide-react";
 
 function VehicleInfo() {
     const { id } = useParams();
     const [vehicle, setVehicle] = useState(null);
     const [vehicles, setVehicles] = useState([]); // store all vehicles
     const [currentIndex, setCurrentIndex] = useState(-1);
+    const [bookings, setBookings] = useState([]);
+    const [showModal, setShowModal] = useState(false);
+    const [isLoadingBookings, setIsLoadingBookings] = useState(false);
     const navigate = useNavigate();
 
     //VITE API BASE URL
@@ -36,6 +40,23 @@ function VehicleInfo() {
         }
     }, [vehicles, id]);
 
+    //fetch bookings for the vehicle
+    const fetchBookingHistory = async () => {
+        if (!vehicle) return;
+
+        setIsLoadingBookings(true);
+        try {
+            const res = await fetch(`${baseURL}/api/vehicles/${id}/bookings`);
+            const data = await res.json();
+            setBookings(data);
+            setShowModal(true);
+        } catch (err) {
+            console.error("Error fetching bookings:", err);
+        } finally {
+            setIsLoadingBookings(false);
+        }
+    };
+
     if (!vehicle) return <p className="text-center py-6 text-gray-500">Loading...</p>;
 
     // Handlers for pagination
@@ -52,99 +73,182 @@ function VehicleInfo() {
     };
 
     return (
-        <div className="p-6 max-w-3xl mx-auto">
-            {/* Header */}
-            <h2 className="text-2xl font-bold text-center text-gray-800">Vehicle Information</h2>
-            <div className="flex justify-between items-center mb-6">
-                <button
-                    // onClick={() => navigate("/dashboard/client")}
-                    className="px-4 py-2 bg-red-500 text-white rounded-lg shadow hover:bg-red-700 transition"
-                >
-                    View History
-                </button>
-                <button
-                    onClick={() => navigate("/dashboard/vehicle")}
-                    className="px-4 py-2 bg-gray-600 text-white rounded-lg shadow hover:bg-gray-700 transition"
-                >
-                    Back
-                </button>
+        <>
+            <div className="p-6 max-w-3xl mx-auto">
+                <h2 className="text-2xl font-bold text-center text-gray-800">Vehicle Information</h2>
+                <div className="flex justify-between items-center mb-6">
+                    <button
+                        onClick={fetchBookingHistory}
+                        disabled={isLoadingBookings}
+                        className="px-4 py-2 bg-red-500 text-white rounded-lg shadow hover:bg-red-600 transition disabled:bg-red-300"
+                    >
+                        {isLoadingBookings ? "Loading..." : "View History"}
+                    </button>
+                    <button
+                        onClick={() => navigate("/dashboard/vehicle")}
+                        className="px-4 py-2 bg-gray-600 text-white rounded-lg shadow hover:bg-gray-700 transition"
+                    >
+                        Back
+                    </button>
+                </div>
+
+                {/* Vehicle Info Table */}
+                <div className="overflow-x-auto shadow rounded-lg border border-gray-200">
+                    <table className="w-full text-sm text-left text-gray-700">
+                        <tbody>
+                            <tr className="border-b">
+                                <th className="px-6 py-3 font-semibold bg-gray-100">Registration Number</th>
+                                <td className="px-6 py-3">{vehicle.registrationNumber}</td>
+                            </tr>
+                            <tr className="border-b">
+                                <th className="px-6 py-3 font-semibold bg-gray-100">Brand</th>
+                                <td className="px-6 py-3">{vehicle.manufacturedBy}</td>
+                            </tr>
+                            <tr className="border-b">
+                                <th className="px-6 py-3 font-semibold bg-gray-100">Model</th>
+                                <td className="px-6 py-3">{vehicle.model}</td>
+                            </tr>
+                            <tr className="border-b">
+                                <th className="px-6 py-3 font-semibold bg-gray-100">Vehicle Type</th>
+                                <td className="px-6 py-3">{vehicle.vehicleType}</td>
+                            </tr>
+                            <tr className="border-b">
+                                <th className="px-6 py-3 font-semibold bg-gray-100">Vehicle Color</th>
+                                <td className="px-6 py-3">{vehicle.color}</td>
+                            </tr>
+                            <tr className="border-b">
+                                <th className="px-6 py-3 font-semibold bg-gray-100">Plate No.</th>
+                                <td className="px-6 py-3">{vehicle.plateNumber}</td>
+                            </tr>
+                            <tr className="border-b">
+                                <th className="px-6 py-3 font-semibold bg-gray-100">Chassis No.</th>
+                                <td className="px-6 py-3">{vehicle.chassisNumber}</td>
+                            </tr>
+                            <tr className="border-b">
+                                <th className="px-6 py-3 font-semibold bg-gray-100">Engine No.</th>
+                                <td className="px-6 py-3">{vehicle.engineNumber}</td>
+                            </tr>
+                            <tr className="border-b">
+                                <th className="px-6 py-3 font-semibold bg-gray-100">Registration Expiry Date</th>
+                                <td className="px-6 py-3">{vehicle.registrationExpiryDate}</td>
+                            </tr>
+                            <tr>
+                                <th className="px-6 py-3 font-semibold bg-gray-100">Date Added</th>
+                                <td className="px-6 py-3">{vehicle.createdAt}</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                {/* Pagination Controls */}
+                <div className="flex justify-between items-center mt-6">
+                    <button
+                        onClick={handlePrev}
+                        disabled={currentIndex <= 0}
+                        className={`px-4 py-2 rounded-lg shadow ${currentIndex <= 0
+                            ? "bg-gray-300 text-gray-600 cursor-not-allowed"
+                            : "bg-blue-600 text-white hover:bg-blue-700"
+                            }`}
+                    >
+                        Previous
+                    </button>
+                    <p className="text-gray-600 text-sm">
+                        {currentIndex + 1} of {vehicles.length}
+                    </p>
+                    <button
+                        onClick={handleNext}
+                        disabled={currentIndex >= vehicles.length - 1}
+                        className={`px-4 py-2 rounded-lg shadow ${currentIndex >= vehicles.length - 1
+                            ? "bg-gray-300 text-gray-600 cursor-not-allowed"
+                            : "bg-blue-600 text-white hover:bg-blue-700"
+                            }`}
+                    >
+                        Next
+                    </button>
+                </div>
             </div>
 
-            {/* Vehicle Info Table */}
-            <div className="overflow-x-auto shadow rounded-lg border border-gray-200">
-                <table className="w-full text-sm text-left text-gray-700">
-                    <tbody>
-                        <tr className="border-b">
-                            <th className="px-6 py-3 font-semibold bg-gray-100">Registration Number</th>
-                            <td className="px-6 py-3">{vehicle.registrationNumber}</td>
-                        </tr>
-                        <tr className="border-b">
-                            <th className="px-6 py-3 font-semibold bg-gray-100">Brand</th>
-                            <td className="px-6 py-3">{vehicle.manufacturedBy}</td>
-                        </tr>
-                        <tr className="border-b">
-                            <th className="px-6 py-3 font-semibold bg-gray-100">Model</th>
-                            <td className="px-6 py-3">{vehicle.model}</td>
-                        </tr>
-                        <tr className="border-b">
-                            <th className="px-6 py-3 font-semibold bg-gray-100">Vehicle Type</th>
-                            <td className="px-6 py-3">{vehicle.vehicleType}</td>
-                        </tr>
-                        <tr className="border-b">
-                            <th className="px-6 py-3 font-semibold bg-gray-100">Vehicle Color</th>
-                            <td className="px-6 py-3">{vehicle.color}</td>
-                        </tr>
-                        <tr className="border-b">
-                            <th className="px-6 py-3 font-semibold bg-gray-100">Plate No.</th>
-                            <td className="px-6 py-3">{vehicle.plateNumber}</td>
-                        </tr>
-                        <tr className="border-b">
-                            <th className="px-6 py-3 font-semibold bg-gray-100">Chassis No.</th>
-                            <td className="px-6 py-3">{vehicle.chassisNumber}</td>
-                        </tr>
-                        <tr className="border-b">
-                            <th className="px-6 py-3 font-semibold bg-gray-100">Engine No.</th>
-                            <td className="px-6 py-3">{vehicle.engineNumber}</td>
-                        </tr>
-                        <tr className="border-b">
-                            <th className="px-6 py-3 font-semibold bg-gray-100">Registration Expiry Date</th>
-                            <td className="px-6 py-3">{vehicle.registrationExpiryDate}</td>
-                        </tr>
-                        <tr>
-                            <th className="px-6 py-3 font-semibold bg-gray-100">Date Added</th>
-                            <td className="px-6 py-3">{vehicle.createdAt}</td>
-                        </tr>
-                    </tbody>
-                </table>
-            </div>
+            {/* Employee History Modal*/}
+            {showModal && (
+                <div className="fixed inset-0 bg-black bg-opacity-50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+                    <div className="bg-white rounded-lg shadow-2xl w-full max-w-6xl max-h-[90vh] flex flex-col">
+                        {/* Modal Header */}
+                        <div className="flex justify-between items-center p-6 border-b">
+                            <div>
+                                <h3 className="text-2xl font-bold text-gray-800">Vehicle History</h3>
+                                <p className="text-sm text-gray-600 mt-1">
+                                    Vehicle: {vehicle.vehicleType} • Total Bookings: {bookings.length}
+                                </p>
+                            </div>
+                            <button
+                                onClick={() => setShowModal(false)}
+                                className="p-2 hover:bg-gray-100 rounded-full transition"
+                            >
+                                <X className="w-6 h-6 text-gray-600" />
+                            </button>
+                        </div>
 
-            {/* Pagination Controls */}
-            <div className="flex justify-between items-center mt-6">
-                <button
-                    onClick={handlePrev}
-                    disabled={currentIndex <= 0}
-                    className={`px-4 py-2 rounded-lg shadow ${currentIndex <= 0
-                        ? "bg-gray-300 text-gray-600 cursor-not-allowed"
-                        : "bg-blue-600 text-white hover:bg-blue-700"
-                        }`}
-                >
-                    Previous
-                </button>
-                <p className="text-gray-600 text-sm">
-                    {currentIndex + 1} of {vehicles.length}
-                </p>
-                <button
-                    onClick={handleNext}
-                    disabled={currentIndex >= vehicles.length - 1}
-                    className={`px-4 py-2 rounded-lg shadow ${currentIndex >= vehicles.length - 1
-                        ? "bg-gray-300 text-gray-600 cursor-not-allowed"
-                        : "bg-blue-600 text-white hover:bg-blue-700"
-                        }`}
-                >
-                    Next
-                </button>
-            </div>
-        </div>
+                        {/* Modal Content */}
+                        <div className="flex-1 overflow-auto p-6">
+                            {bookings.length === 0 ? (
+                                <div className="text-center py-12">
+                                    <p className="text-gray-500 text-lg">No booking history found for this vehicle.</p>
+                                </div>
+                            ) : (
+                                <div className="overflow-x-auto">
+                                    <table className="w-full text-sm text-left">
+                                        <thead className="bg-gray-100 text-gray-700 uppercase text-xs sticky top-0">
+                                            <tr>
+                                                <th className="px-4 py-3">Trip Number</th>
+                                                <th className="px-4 py-3">Company Name</th>
+                                                <th className="px-4 py-3">Vehicle Used</th>
+                                                <th className="px-4 py-3">Plate Number</th>
+                                                <th className="px-4 py-3">Origin Address</th>
+                                                <th className="px-4 py-3">Destination Address</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody className="divide-y divide-gray-200">
+                                            {bookings.map((booking) => (
+                                                <tr key={booking._id} className="hover:bg-gray-50">
+                                                    <td className="px-4 py-3">
+                                                        {booking.tripNumber || "N/A"}
+                                                    </td>
+                                                    <td className="px-4 py-3">
+                                                        {booking.companyName}
+                                                    </td>
+                                                    <td className="px-4 py-3">
+                                                        {booking.vehicleId?.vehicleType || 'N/A'}
+                                                    </td>
+                                                    <td className="px-4 py-3">
+                                                        {booking.vehicleId?.plateNumber || 'N/A'}
+                                                    </td>
+                                                    <td className="px-4 py-3">
+                                                        {booking.originAddress}
+                                                    </td>
+                                                    <td className="px-4 py-3">
+                                                        {booking.destinationAddress}
+                                                    </td>
+                                                </tr>
+                                            ))}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            )}
+                        </div>
+
+                        {/* Modal Footer */}
+                        <div className="p-6 border-t bg-gray-50">
+                            <button
+                                onClick={() => setShowModal(false)}
+                                className="px-6 py-2 bg-gray-600 text-white rounded-lg shadow hover:bg-gray-700 transition"
+                            >
+                                Close
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+        </>
     );
 }
 

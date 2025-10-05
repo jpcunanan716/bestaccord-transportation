@@ -1,6 +1,8 @@
 import express from "express";
 import Employee from "../models/Employee.js";
 import Counter from "../models/Counter.js";
+import Booking from "../models/Booking.js";
+
 
 const router = express.Router();
 
@@ -46,6 +48,25 @@ router.get("/:id", async (req, res) => {
     res.json(employee);
   } catch (err) {
     console.error("Error fetching employee:", err);
+    res.status(500).json({ message: err.message });
+  }
+});
+
+// GET bookings for a specific employee
+router.get("/:id/bookings", async (req, res) => {
+  try {
+    const employee = await Employee.findById(req.params.id);
+    if (!employee) return res.status(404).json({ message: "Employee not found" });
+
+    const bookings = await Booking.find({
+      employeeAssigned: employee.employeeId,
+      isArchived: false
+    }).populate('vehicleId') //get the vehicle details
+      .sort({ createdAt: -1 });
+
+    res.json(bookings);
+  } catch (err) {
+    console.error("Error fetching employee history:", err);
     res.status(500).json({ message: err.message });
   }
 });

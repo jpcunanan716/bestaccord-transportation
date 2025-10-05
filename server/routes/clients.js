@@ -51,7 +51,7 @@ router.get("/:id/bookings", async (req, res) => {
 
     res.json(bookings);
   } catch (err) {
-    console.error("Error fetching client bookings:", err);
+    console.error("Error fetching client history:", err);
     res.status(500).json({ message: err.message });
   }
 });

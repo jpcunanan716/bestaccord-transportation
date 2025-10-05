@@ -31,7 +31,7 @@ function ClientInfo() {
             .catch((err) => console.error(err));
     }, [id]);
 
-    // Update index
+    // Update index whenever clients list or current id changes
     useEffect(() => {
         if (clients.length > 0) {
             const idx = clients.findIndex((emp) => emp._id === id);
@@ -39,16 +39,13 @@ function ClientInfo() {
         }
     }, [clients, id]);
 
-    // Fetch bookings for this client
+    // Fetch bookings for this employee
     const fetchBookingHistory = async () => {
         if (!client) return;
-
         setIsLoadingBookings(true);
         try {
-            // Use the dedicated endpoint
             const res = await fetch(`${baseURL}/api/clients/${id}/bookings`);
             const data = await res.json();
-
             setBookings(data);
             setShowModal(true);
         } catch (err) {
@@ -92,6 +89,7 @@ function ClientInfo() {
                     </button>
                 </div>
 
+                {/* Client Info Table */}
                 <div className="overflow-x-auto shadow rounded-lg border border-gray-200">
                     <table className="w-full text-sm text-left text-gray-700">
                         <tbody>
@@ -118,6 +116,7 @@ function ClientInfo() {
                     </table>
                 </div>
 
+                {/* Pagination controls */}
                 <div className="flex justify-between items-center mt-6">
                     <button
                         onClick={handlePrev}
@@ -145,9 +144,9 @@ function ClientInfo() {
                 </div>
             </div>
 
-            {/* Full Page Modal */}
+            {/* Client History Modal */}
             {showModal && (
-                <div className="fixed inset-0 bg-opacity-50 z-50 flex items-center justify-center p-4">
+                <div className="fixed inset-0 bg-black bg-opacity-50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
                     <div className="bg-white rounded-lg shadow-2xl w-full max-w-6xl max-h-[90vh] flex flex-col">
                         {/* Modal Header */}
                         <div className="flex justify-between items-center p-6 border-b">
@@ -166,7 +165,7 @@ function ClientInfo() {
                         </div>
 
                         {/* Modal Content */}
-                        <div className="flex-1 overflow-auto p-6 bg-opacity-50 backdrop-blur-sm">
+                        <div className="flex-1 overflow-auto p-6">
                             {bookings.length === 0 ? (
                                 <div className="text-center py-12">
                                     <p className="text-gray-500 text-lg">No booking history found for this client.</p>
@@ -191,7 +190,7 @@ function ClientInfo() {
                                                     <td className="px-4 py-3 font-medium text-blue-600">
                                                         {booking.reservationId || "N/A"}
                                                     </td>
-                                                    <td className="px-4 py-3">
+                                                    <td className="px-4 py-3 font-medium text-purple-600">
                                                         {booking.tripNumber || "N/A"}
                                                     </td>
                                                     <td className="px-4 py-3">
