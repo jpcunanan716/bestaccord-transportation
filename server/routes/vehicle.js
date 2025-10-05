@@ -75,20 +75,38 @@ router.get("/:id/bookings", async (req, res) => {
     const vehicle = await Vehicle.findById(req.params.id);
     if (!vehicle) return res.status(404).json({ message: "Vehicle not found" });
 
-    // Use the vehicle's MongoDB _id to find related bookings
-    const bookings = await Booking.find({
-      vehicleId: vehicle._id,
-      isArchived: false
-    }).populate('vehicleId') // This will now work
-      .sort({ createdAt: -1 });
+    const bookings = await Booking.aggregate([
+      {
+        $match: {
+          vehicleId: vehicle.vehicleId,
+          isArchived: false
+        }
+      },
+      {
+        $lookup: {
+          from: "vehicles",
+          localField: "vehicleId",
+          foreignField: "vehicleId",
+          as: "vehicleInfo"
+        }
+      },
+      {
+        $unwind: {
+          path: "$vehicleInfo",
+          preserveNullAndEmptyArrays: true
+        }
+      },
+      {
+        $sort: { createdAt: -1 }
+      }
+    ]);
 
     res.json(bookings);
   } catch (err) {
-    console.error("Error fetching vehicle history:", err);
+    console.error("Error fetching vehicle bookings:", err);
     res.status(500).json({ message: err.message });
   }
 });
-
 
 // POST create new vehicle
 router.post("/", async (req, res) => {

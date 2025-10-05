@@ -58,15 +58,35 @@ router.get("/:id/bookings", async (req, res) => {
     const employee = await Employee.findById(req.params.id);
     if (!employee) return res.status(404).json({ message: "Employee not found" });
 
-    const bookings = await Booking.find({
-      employeeAssigned: employee.employeeId,
-      isArchived: false
-    }).populate('vehicleId') //get the vehicle details
-      .sort({ createdAt: -1 });
+    const bookings = await Booking.aggregate([
+      {
+        $match: {
+          employeeAssigned: employee.employeeId,
+          isArchived: false
+        }
+      },
+      {
+        $lookup: {
+          from: "vehicles",
+          localField: "vehicleId",
+          foreignField: "vehicleId",
+          as: "vehicleInfo"
+        }
+      },
+      {
+        $unwind: {
+          path: "$vehicleInfo",
+          preserveNullAndEmptyArrays: true
+        }
+      },
+      {
+        $sort: { createdAt: -1 }
+      }
+    ]);
 
     res.json(bookings);
   } catch (err) {
-    console.error("Error fetching employee history:", err);
+    console.error("Error fetching employee bookings:", err);
     res.status(500).json({ message: err.message });
   }
 });

@@ -217,10 +217,10 @@ function VehicleInfo() {
                                                         {booking.companyName}
                                                     </td>
                                                     <td className="px-4 py-3">
-                                                        {booking.vehicleId?.vehicleType || 'N/A'}
+                                                        {booking.vehicleInfo?.vehicleType || 'N/A'}
                                                     </td>
                                                     <td className="px-4 py-3">
-                                                        {booking.vehicleId?.plateNumber || 'N/A'}
+                                                        {booking.vehicleInfo?.plateNumber || 'N/A'}
                                                     </td>
                                                     <td className="px-4 py-3">
                                                         {booking.originAddress}
