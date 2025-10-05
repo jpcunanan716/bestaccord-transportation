@@ -37,6 +37,25 @@ router.get("/:id", async (req, res) => {
   }
 });
 
+// GET bookings for a specific client
+router.get("/:id/bookings", async (req, res) => {
+  try {
+    const client = await Client.findById(req.params.id);
+    if (!client) return res.status(404).json({ message: "Client not found" });
+
+    // Import Booking model at the top: import Booking from "../models/Booking.js";
+    const bookings = await Booking.find({
+      customerEstablishmentName: client.clientName,
+      isArchived: false
+    }).sort({ createdAt: -1 });
+
+    res.json(bookings);
+  } catch (err) {
+    console.error("Error fetching client bookings:", err);
+    res.status(500).json({ message: err.message });
+  }
+});
+
 // POST create client
 router.post("/", async (req, res) => {
   try {

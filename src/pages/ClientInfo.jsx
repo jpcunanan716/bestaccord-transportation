@@ -45,15 +45,11 @@ function ClientInfo() {
 
         setIsLoadingBookings(true);
         try {
-            const res = await fetch(`${baseURL}/api/bookings`);
+            // Use the dedicated endpoint
+            const res = await fetch(`${baseURL}/api/clients/${id}/bookings`);
             const data = await res.json();
 
-            // Filter bookings by client name
-            const clientBookings = data.filter(
-                (booking) => booking.customerEstablishmentName === client.clientName
-            );
-
-            setBookings(clientBookings);
+            setBookings(data);
             setShowModal(true);
         } catch (err) {
             console.error("Error fetching bookings:", err);
@@ -124,8 +120,8 @@ function ClientInfo() {
                         onClick={handlePrev}
                         disabled={currentIndex <= 0}
                         className={`px-4 py-2 rounded-lg shadow ${currentIndex <= 0
-                                ? "bg-gray-300 text-gray-600 cursor-not-allowed"
-                                : "bg-blue-600 text-white hover:bg-blue-700"
+                            ? "bg-gray-300 text-gray-600 cursor-not-allowed"
+                            : "bg-blue-600 text-white hover:bg-blue-700"
                             }`}
                     >
                         Previous
@@ -137,8 +133,8 @@ function ClientInfo() {
                         onClick={handleNext}
                         disabled={currentIndex >= clients.length - 1}
                         className={`px-4 py-2 rounded-lg shadow ${currentIndex >= clients.length - 1
-                                ? "bg-gray-300 text-gray-600 cursor-not-allowed"
-                                : "bg-blue-600 text-white hover:bg-blue-700"
+                            ? "bg-gray-300 text-gray-600 cursor-not-allowed"
+                            : "bg-blue-600 text-white hover:bg-blue-700"
                             }`}
                     >
                         Next
@@ -148,7 +144,7 @@ function ClientInfo() {
 
             {/* Full Page Modal */}
             {showModal && (
-                <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
+                <div className="fixed inset-0 bg-opacity-50 z-50 flex items-center justify-center p-4">
                     <div className="bg-white rounded-lg shadow-2xl w-full max-w-6xl max-h-[90vh] flex flex-col">
                         {/* Modal Header */}
                         <div className="flex justify-between items-center p-6 border-b">
@@ -206,10 +202,10 @@ function ClientInfo() {
                                                     </td>
                                                     <td className="px-4 py-3">
                                                         <span className={`px-2 py-1 rounded-full text-xs font-semibold ${booking.status === "Completed" ? "bg-green-100 text-green-800" :
-                                                                booking.status === "In Transit" ? "bg-blue-100 text-blue-800" :
-                                                                    booking.status === "Delivered" ? "bg-purple-100 text-purple-800" :
-                                                                        booking.status === "Ready to go" ? "bg-yellow-100 text-yellow-800" :
-                                                                            "bg-gray-100 text-gray-800"
+                                                            booking.status === "In Transit" ? "bg-blue-100 text-blue-800" :
+                                                                booking.status === "Delivered" ? "bg-purple-100 text-purple-800" :
+                                                                    booking.status === "Ready to go" ? "bg-yellow-100 text-yellow-800" :
+                                                                        "bg-gray-100 text-gray-800"
                                                             }`}>
                                                             {booking.status}
                                                         </span>
