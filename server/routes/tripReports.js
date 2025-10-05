@@ -7,20 +7,6 @@ import { getGridFSBucket } from "../config/gridfs.js";
 
 const router = express.Router();
 
-let gridfsBucket;
-
-// Initialize GridFS
-export const initGridFS = () => {
-    const conn = mongoose.connection;
-
-    conn.once('open', () => {
-        gridfsBucket = new mongoose.mongo.GridFSBucket(conn.db, {
-            bucketName: 'uploads'
-        });
-        console.log('✅ GridFS initialized for trip reports');
-    });
-};
-
 // Configure multer with memory storage
 const storage = multer.memoryStorage();
 
@@ -175,6 +161,9 @@ router.post("/", upload.single('document'), async (req, res) => {
             });
         }
 
+        // Get GridFS bucket
+        const gridfsBucket = getGridFSBucket();
+
         // Create readable stream from buffer
         const readableStream = new Readable();
         readableStream.push(req.file.buffer);
@@ -239,6 +228,7 @@ router.post("/", upload.single('document'), async (req, res) => {
         // Delete file from GridFS if save failed
         if (uploadStreamId) {
             try {
+                const gridfsBucket = getGridFSBucket();
                 await gridfsBucket.delete(uploadStreamId);
                 console.log('Cleaned up GridFS file due to error');
             } catch (deleteErr) {
@@ -281,6 +271,8 @@ router.get("/view/:id", async (req, res) => {
             });
         }
 
+        const gridfsBucket = getGridFSBucket();
+
         // Check if file exists in GridFS
         const files = await gridfsBucket.find({ _id: tripReport.gridfsFileId }).toArray();
 
@@ -319,6 +311,8 @@ router.get("/download/:id", async (req, res) => {
                 error: 'NOT_FOUND'
             });
         }
+
+        const gridfsBucket = getGridFSBucket();
 
         const files = await gridfsBucket.find({ _id: tripReport.gridfsFileId }).toArray();
 
@@ -384,6 +378,8 @@ router.delete("/:id", async (req, res) => {
                 error: 'NOT_FOUND'
             });
         }
+
+        const gridfsBucket = getGridFSBucket();
 
         // Delete file from GridFS
         try {
