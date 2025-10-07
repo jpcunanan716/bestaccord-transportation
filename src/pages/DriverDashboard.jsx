@@ -5,8 +5,10 @@ import { motion, AnimatePresence } from "framer-motion";
 import { Menu, X, User, LogOut, ArrowLeft, Calendar, ClipboardList, } from "lucide-react";
 import DriverProfile from "./DriverProfile";
 import DriverBookings from "./DriverBookings";
-import DriverSchedule from "./DriverSchedule"; // ADD THIS IMPORT
+import DriverSchedule from "./DriverSchedule";
 import { useDriverBookingCount } from "../hooks/useDriverBookingCount";
+import logo from "../assets/bestaccord_logo.png";
+
 
 export default function DriverDashboard() {
   const [menuOpen, setMenuOpen] = useState(false);
@@ -38,7 +40,7 @@ export default function DriverDashboard() {
           <div className="flex-1 flex justify-center">
             {/* Company Logo */}
             <img
-              src="/src/assets/bestaccord_logo.png"
+              src={logo}
               alt="Company Logo"
               className="h-12 w-auto object-contain mx-auto"
             />
