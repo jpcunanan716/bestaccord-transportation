@@ -1,3 +1,4 @@
+// src/pages/DriverBookings.jsx
 import React, { useState, useEffect, useRef } from "react";
 import {
   Package,
@@ -25,6 +26,7 @@ import {
   Check
 } from "lucide-react";
 import { axiosClient } from "../api/axiosClient";
+import driverloginbg from "../assets/driver_login_bg.png";
 
 export default function DriverBookings() {
   const [bookings, setBookings] = useState([]);
@@ -77,7 +79,30 @@ export default function DriverBookings() {
       });
       setStream(mediaStream);
       if (videoRef.current) {
-        videoRef.current.srcObject = mediaStream;
+        // Attach stream to video
+        try {
+          videoRef.current.srcObject = mediaStream;
+        } catch (err) {
+          // Some browsers require setting srcObject this way as a fallback
+          videoRef.current.src = window.URL.createObjectURL(mediaStream);
+        }
+
+        // make sure video is muted (helps autoplay on some devices)
+        videoRef.current.muted = true;
+        videoRef.current.playsInline = true;
+
+        // Try to play — await ensures the play() promise is handled and gives time to initialize
+        try {
+          await videoRef.current.play();
+        } catch (playErr) {
+          // If play() is blocked, try a small timeout then play
+          console.warn("video.play() blocked, retrying after timeout", playErr);
+          setTimeout(() => {
+            try {
+              videoRef.current.play().catch(() => {});
+            } catch (e) {}
+          }, 200);
+        }
       }
       setShowCamera(true);
     } catch (err) {
@@ -91,6 +116,14 @@ export default function DriverBookings() {
     if (stream) {
       stream.getTracks().forEach(track => track.stop());
       setStream(null);
+    }
+    // Clear video src to release camera resource
+    if (videoRef.current) {
+      try {
+        videoRef.current.pause();
+        videoRef.current.srcObject = null;
+        videoRef.current.src = "";
+      } catch (e) {}
     }
     setShowCamera(false);
   };
@@ -465,7 +498,13 @@ export default function DriverBookings() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-purple-900 via-purple-800 to-indigo-900 flex items-center justify-center p-4">
+      <div className="min-h-screen flex items-center justify-center p-4"
+        style={{
+          backgroundImage: `url(${driverloginbg})`,
+          backgroundSize: 'cover',
+          backgroundPosition: 'center',
+        }}
+      >
         <div className="bg-white/10 backdrop-blur-xl border border-white/20 p-6 rounded-2xl shadow-2xl">
           <div className="animate-pulse flex space-x-4">
             <div className="rounded-full bg-purple-400/50 h-12 w-12"></div>
@@ -482,7 +521,13 @@ export default function DriverBookings() {
 
   if (error) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-purple-900 via-purple-800 to-indigo-900 flex items-center justify-center p-4">
+      <div className="min-h-screen flex items-center justify-center p-4"
+        style={{
+          backgroundImage: `url(${driverloginbg})`,
+          backgroundSize: 'cover',
+          backgroundPosition: 'center',
+        }}
+      >
         <div className="bg-white/10 backdrop-blur-xl border border-white/20 p-6 rounded-2xl shadow-2xl max-w-md w-full text-center">
           <XCircle className="w-12 h-12 text-red-400 mx-auto mb-4" />
           <h2 className="text-xl font-bold text-white mb-2">Error Loading Bookings</h2>
@@ -502,8 +547,20 @@ export default function DriverBookings() {
     <>
       <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
 
-      <div className="min-h-screen bg-gradient-to-br from-purple-900 via-purple-800 to-indigo-900 p-4">
-        <div className="max-w-md mx-auto">
+      <div className="min-h-screen bg-gradient-to-br from-purple-900 via-purple-800 to-indigo-900 p-4"
+        style={{
+          backgroundImage: `url(${driverloginbg})`,
+          backgroundSize: 'cover',
+          backgroundPosition: 'center',
+        }}
+      >
+        {/* Overlay + decorative glows (match DriverDashboard style) */}
+        <div className="absolute inset-0 bg-gradient-to-br from-purple-900/50 via-purple-800/50 to-indigo-900/50"></div>
+        <div className="absolute -top-20 -right-20 w-40 h-40 sm:w-60 sm:h-60 bg-purple-500/10 rounded-full blur-3xl"></div>
+        <div className="absolute -bottom-20 -left-20 w-40 h-40 sm:w-60 sm:h-60 bg-indigo-500/10 rounded-full blur-3xl"></div>
+        <div className="absolute top-1/3 right-1/4 w-32 h-32 sm:w-40 sm:h-40 bg-purple-400/5 rounded-full blur-2xl"></div>
+
+        <div className="max-w-md mx-auto relative z-10">
           {/* Header */}
           <div className="flex justify-between items-center mb-6">
             <div>
@@ -612,10 +669,10 @@ export default function DriverBookings() {
           >
             <div className="absolute inset-0 overflow-y-auto">
               <div className="min-h-screen flex items-end sm:items-center justify-center p-4">
-                <div className="bg-white rounded-t-xl sm:rounded-xl w-full max-w-lg max-h-[90vh] overflow-hidden shadow-2xl">
+                <div className="bg-white/80 backdrop-blur-2xl border border-white/30 rounded-2xl w-full max-w-lg max-h-[90vh] overflow-hidden shadow-2xl">
 
                   {/* Modal Header - Sticky */}
-                  <div className="sticky top-0 bg-white border-b border-gray-200 px-4 py-3 flex items-center justify-between z-10">
+                  <div className="sticky top-0 bg-white/80 border-b border-gray-200/50 px-4 py-3 flex items-center justify-between z-10">
                     <div className="flex-1">
                       <h3 className="font-bold text-gray-900">{selectedBooking.reservationId}</h3>
                       <p className="text-sm text-gray-600">{selectedBooking.tripNumber}</p>
@@ -683,6 +740,7 @@ export default function DriverBookings() {
                             ref={videoRef}
                             autoPlay
                             playsInline
+                            muted
                             className="w-full"
                           />
                           <canvas ref={canvasRef} className="hidden" />
@@ -872,7 +930,7 @@ export default function DriverBookings() {
                   </div>
 
                   {/* Modal Footer - Sticky */}
-                  <div className="sticky bottom-0 bg-white border-t border-gray-200 p-4 z-10">
+                  <div className="sticky bottom-0 bg-white/80 border-t border-gray-200/50 p-4 z-10">
                     {selectedBooking.status === "Ready to go" && (
                       <button
                         onClick={startTrip}
