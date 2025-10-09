@@ -4,6 +4,7 @@ import TripReport from '../models/TripReport.js';
 import Client from '../models/Client.js';
 import Vehicle from '../models/Vehicle.js';
 import Employee from '../models/Employee.js';
+import Staff from '../models/Staff.js';
 
 const router = express.Router();
 
@@ -20,6 +21,8 @@ function getModelByType(type) {
             return Employee;
         case 'trip-reports':
             return TripReport;
+        case 'staffs':
+            return Staff;
         default:
             throw new Error(`Unknown model type: ${type}`);
     }
