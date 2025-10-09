@@ -31,6 +31,7 @@ export default function DashboardLayout() {
       { name: "Vehicle", path: "/dashboard/vehicle", icon: <Truck size={20} /> },
       { name: "Employee", path: "/dashboard/employee", icon: <Users size={20} /> },
       { name: "Client", path: "/dashboard/client", icon: <User size={20} /> },
+      { name: "Staff", path: "/dashboard/staff", icon: <Users size={20} /> },
       { name: "Archive", path: "/dashboard/archive", icon: <Archive size={20} /> },
       { name: "Pending Staff", path: "/dashboard/pending-staff", icon: <Users size={20} /> }
     );
