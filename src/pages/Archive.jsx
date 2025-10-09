@@ -276,6 +276,8 @@ function getTableHeaders(tab) {
       return ['Vehicle ID', 'Type', 'Plate Number', 'Status'];
     case 'employees':
       return ['Employee ID', 'Name', 'Role', 'Status'];
+    case 'staffs':
+      return ['Name', 'Email', 'Role'];
     default:
       return [];
   }
@@ -356,6 +358,14 @@ function getTableCells(tab, item) {
               {item.status || 'N/A'}
             </span>
           </td>
+        </>
+      );
+    case 'staffs':
+      return (
+        <>
+          <td className="px-6 py-4 font-medium text-gray-900">{item.name || 'N/A'}</td>
+          <td className="px-6 py-4 text-gray-600">{item.email || 'N/A'}</td>
+          <td className="px-6 py-4 text-gray-600">{item.role || 'N/A'}</td>
         </>
       );
     default:
