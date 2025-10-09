@@ -19,10 +19,12 @@ import {
   ChevronUp,
   Phone,
   Weight,
-  Award
+  Award,
+  Camera,
+  RotateCcw,
+  Check
 } from "lucide-react";
 import { axiosClient } from "../api/axiosClient";
-
 
 export default function DriverBookings() {
   const [bookings, setBookings] = useState([]);
@@ -39,8 +41,16 @@ export default function DriverBookings() {
     customer: false,
     team: false
   });
+  
+  // Camera states
+  const [showCamera, setShowCamera] = useState(false);
+  const [capturedImage, setCapturedImage] = useState(null);
+  const [stream, setStream] = useState(null);
+  
   const mapRef = useRef(null);
   const mapInstance = useRef(null);
+  const videoRef = useRef(null);
+  const canvasRef = useRef(null);
 
   const statusColors = {
     "Pending": { bg: "bg-yellow-100", text: "text-yellow-800", icon: AlertCircle },
@@ -58,9 +68,55 @@ export default function DriverBookings() {
     }));
   };
 
-  // [All your existing functions remain the same - initializeMap, createMap, startTrip, markAsDelivered, markAsCompleted, fetchBookings, etc.]
+  // Camera functions
+  const startCamera = async () => {
+    try {
+      const mediaStream = await navigator.mediaDevices.getUserMedia({ 
+        video: { facingMode: 'environment' },
+        audio: false 
+      });
+      setStream(mediaStream);
+      if (videoRef.current) {
+        videoRef.current.srcObject = mediaStream;
+      }
+      setShowCamera(true);
+    } catch (err) {
+      console.error("Error accessing camera:", err);
+      setError("Unable to access camera. Please check permissions.");
+      setTimeout(() => setError(""), 5000);
+    }
+  };
 
-  // Initialize map with CORS proxy
+  const stopCamera = () => {
+    if (stream) {
+      stream.getTracks().forEach(track => track.stop());
+      setStream(null);
+    }
+    setShowCamera(false);
+  };
+
+  const capturePhoto = () => {
+    if (videoRef.current && canvasRef.current) {
+      const video = videoRef.current;
+      const canvas = canvasRef.current;
+      
+      canvas.width = video.videoWidth;
+      canvas.height = video.videoHeight;
+      
+      const context = canvas.getContext('2d');
+      context.drawImage(video, 0, 0, canvas.width, canvas.height);
+      
+      const imageData = canvas.toDataURL('image/jpeg', 0.8);
+      setCapturedImage(imageData);
+      stopCamera();
+    }
+  };
+
+  const retakePhoto = () => {
+    setCapturedImage(null);
+    startCamera();
+  };
+
   const initializeMap = async () => {
     if (!selectedBooking || !mapRef.current) return;
 
@@ -277,7 +333,7 @@ export default function DriverBookings() {
   };
 
   const markAsCompleted = async () => {
-    if (!selectedBooking) return;
+    if (!selectedBooking || !capturedImage) return;
 
     setUpdating(true);
     try {
@@ -285,7 +341,10 @@ export default function DriverBookings() {
 
       const response = await axiosClient.put(
         `/api/driver/bookings/${selectedBooking._id}/status`,
-        { status: "Completed" },
+        { 
+          status: "Completed",
+          proofOfDelivery: capturedImage
+        },
         {
           headers: {
             Authorization: `Bearer ${token}`,
@@ -368,6 +427,7 @@ export default function DriverBookings() {
   const openBookingDetails = (booking) => {
     setSelectedBooking(booking);
     setShowModal(true);
+    setCapturedImage(null);
     setExpandedSections({
       route: true,
       cargo: false,
@@ -379,6 +439,8 @@ export default function DriverBookings() {
   const closeModal = () => {
     setShowModal(false);
     setSelectedBooking(null);
+    setCapturedImage(null);
+    stopCamera();
     if (mapInstance.current) {
       mapInstance.current.remove();
       mapInstance.current = null;
@@ -393,6 +455,12 @@ export default function DriverBookings() {
 
   useEffect(() => {
     fetchBookings();
+  }, []);
+
+  useEffect(() => {
+    return () => {
+      stopCamera();
+    };
   }, []);
 
   if (loading) {
@@ -566,6 +634,76 @@ export default function DriverBookings() {
 
                   {/* Modal Body - Scrollable */}
                   <div className="overflow-y-auto" style={{ maxHeight: 'calc(90vh - 140px)' }}>
+
+                    {/* Camera Section - Only show when status is Delivered */}
+                    {selectedBooking.status === "Delivered" && !showCamera && (
+                      <div className="p-4 border-b border-gray-100">
+                        <div className="bg-gradient-to-br from-blue-50 to-purple-50 rounded-lg p-4">
+                          <div className="flex items-center gap-2 mb-3">
+                            <Camera className="w-5 h-5 text-blue-600" />
+                            <h4 className="font-semibold text-gray-900">Proof of Delivery</h4>
+                          </div>
+                          
+                          {capturedImage ? (
+                            <div className="space-y-3">
+                              <img 
+                                src={capturedImage} 
+                                alt="Proof of Delivery" 
+                                className="w-full rounded-lg border-2 border-green-500"
+                              />
+                              <button
+                                onClick={retakePhoto}
+                                className="w-full py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors flex items-center justify-center gap-2"
+                              >
+                                <RotateCcw className="w-4 h-4" />
+                                Retake Photo
+                              </button>
+                            </div>
+                          ) : (
+                            <button
+                              onClick={startCamera}
+                              className="w-full py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors flex items-center justify-center gap-2 font-medium"
+                            >
+                              <Camera className="w-5 h-5" />
+                              Take Photo
+                            </button>
+                          )}
+                          <p className="text-xs text-gray-600 text-center mt-2">
+                            📸 Photo required before completing delivery
+                          </p>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Camera View */}
+                    {showCamera && (
+                      <div className="p-4 border-b border-gray-100">
+                        <div className="bg-black rounded-lg overflow-hidden">
+                          <video
+                            ref={videoRef}
+                            autoPlay
+                            playsInline
+                            className="w-full"
+                          />
+                          <canvas ref={canvasRef} className="hidden" />
+                        </div>
+                        <div className="flex gap-2 mt-3">
+                          <button
+                            onClick={capturePhoto}
+                            className="flex-1 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors flex items-center justify-center gap-2"
+                          >
+                            <Camera className="w-4 h-4" />
+                            Capture
+                          </button>
+                          <button
+                            onClick={stopCamera}
+                            className="px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors"
+                          >
+                            Cancel
+                          </button>
+                        </div>
+                      </div>
+                    )}
 
                     {/* Map Section */}
                     <div className="p-4 border-b border-gray-100">
@@ -760,11 +898,20 @@ export default function DriverBookings() {
                     {selectedBooking.status === "Delivered" && (
                       <button
                         onClick={markAsCompleted}
-                        disabled={updating}
+                        disabled={updating || !capturedImage}
                         className="w-full py-3 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 font-medium"
                       >
-                        <Award className="w-4 h-4" />
-                        {updating ? "Marking as Completed..." : "Mark as Completed"}
+                        {capturedImage ? (
+                          <>
+                            <Check className="w-4 h-4" />
+                            {updating ? "Completing Trip..." : "Complete Trip"}
+                          </>
+                        ) : (
+                          <>
+                            <Camera className="w-4 h-4" />
+                            Take Photo First
+                          </>
+                        )}
                       </button>
                     )}
 
