@@ -1,7 +1,6 @@
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 import Staff from "../models/Staff.js";
-import User from "../models/User.js"; // If you have an admin User model
 
 // Login function (for both Admin and Staff)
 export const login = async (req, res) => {
