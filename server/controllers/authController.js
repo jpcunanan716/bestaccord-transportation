@@ -3,7 +3,7 @@ import jwt from "jsonwebtoken";
 import Staff from "../models/Staff.js";
 
 // Login function (for both Admin and Staff)
-export const register = async (req, res) => {
+export const login = async (req, res) => {
   try {
     const { email, password } = req.body;
 
