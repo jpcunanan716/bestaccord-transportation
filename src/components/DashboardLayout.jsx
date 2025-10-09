@@ -34,7 +34,7 @@ export default function DashboardLayout() {
       { name: "Client", path: "/dashboard/client", icon: <User size={20} /> },
       { name: "Staff", path: "/dashboard/staff", icon: <UserRoundCheck size={20} /> },
       { name: "Archive", path: "/dashboard/archive", icon: <Archive size={20} /> },
-      { name: "Pending Staff", path: "/dashboard/pending-staff", icon: <Users size={20} /> }
+      // { name: "Pending Staff", path: "/dashboard/pending-staff", icon: <Users size={20} /> }
     );
   }
 
