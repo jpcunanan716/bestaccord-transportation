@@ -70,41 +70,29 @@ export default function DriverBookings() {
     }));
   };
 
-  // Camera functions
+   // Camera functions
   const startCamera = async () => {
     try {
       const mediaStream = await navigator.mediaDevices.getUserMedia({ 
-        video: { facingMode: 'environment' },
+        video: { 
+          facingMode: 'environment',
+          width: { ideal: 1280 },
+          height: { ideal: 720 }
+        },
         audio: false 
       });
       setStream(mediaStream);
-      if (videoRef.current) {
-        // Attach stream to video
-        try {
-          videoRef.current.srcObject = mediaStream;
-        } catch (err) {
-          // Some browsers require setting srcObject this way as a fallback
-          videoRef.current.src = window.URL.createObjectURL(mediaStream);
-        }
-
-        // make sure video is muted (helps autoplay on some devices)
-        videoRef.current.muted = true;
-        videoRef.current.playsInline = true;
-
-        // Try to play — await ensures the play() promise is handled and gives time to initialize
-        try {
-          await videoRef.current.play();
-        } catch (playErr) {
-          // If play() is blocked, try a small timeout then play
-          console.warn("video.play() blocked, retrying after timeout", playErr);
-          setTimeout(() => {
-            try {
-              videoRef.current.play().catch(() => {});
-            } catch (e) {}
-          }, 200);
-        }
-      }
       setShowCamera(true);
+      
+      // Wait for the video element to be ready
+      setTimeout(() => {
+        if (videoRef.current) {
+          videoRef.current.srcObject = mediaStream;
+          videoRef.current.play().catch(err => {
+            console.error("Error playing video:", err);
+          });
+        }
+      }, 100);
     } catch (err) {
       console.error("Error accessing camera:", err);
       setError("Unable to access camera. Please check permissions.");
@@ -116,14 +104,6 @@ export default function DriverBookings() {
     if (stream) {
       stream.getTracks().forEach(track => track.stop());
       setStream(null);
-    }
-    // Clear video src to release camera resource
-    if (videoRef.current) {
-      try {
-        videoRef.current.pause();
-        videoRef.current.srcObject = null;
-        videoRef.current.src = "";
-      } catch (e) {}
     }
     setShowCamera(false);
   };
