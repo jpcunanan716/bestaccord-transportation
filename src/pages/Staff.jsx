@@ -21,8 +21,9 @@ export default function Staff() {
     const fetchStaff = async () => {
         try {
             const res = await axiosClient.get("/api/staff");
-            setStaff(res.data);
-            setFilteredStaff(res.data);
+            const activeStaff = res.data.filter(s => !s.isArchived);
+            setStaff(activeStaff);
+            setFilteredStaff(activeStaff);
         } catch (err) {
             console.error("Error fetching staff:", err);
         }
@@ -141,15 +142,17 @@ export default function Staff() {
     };
 
     const handleDelete = async (id) => {
-        if (!window.confirm("Are you sure you want to delete this staff member? This action cannot be undone.")) return;
+        if (!window.confirm("Are you sure you want to archive this staff member?")) return;
 
         try {
-            await axiosClient.delete(`/api/staff/${id}`);
-            alert("Staff deleted successfully!");
+            await axiosClient.patch(`/api/staff/${id}/archive`, {
+                isArchived: true
+            });
+            alert("Staff archived successfully!");
             fetchStaff();
         } catch (err) {
-            console.error("Error deleting staff:", err);
-            alert("Error deleting staff. Please try again.");
+            console.error("Error archiving staff:", err);
+            alert("Error archiving staff. Please try again.");
         }
     };
 

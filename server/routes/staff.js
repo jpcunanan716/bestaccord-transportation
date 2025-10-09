@@ -7,21 +7,10 @@ const router = express.Router();
 // Get all staff
 router.get("/", async (req, res) => {
   try {
-    const staff = await Staff.find().select("-password").sort({ createdAt: -1 });
-    res.json(staff);
-  } catch (err) {
-    console.error("Error fetching staff:", err);
-    res.status(500).json({ msg: "Server error" });
-  }
-});
-
-// Get single staff
-router.get("/:id", async (req, res) => {
-  try {
-    const staff = await Staff.findById(req.params.id).select("-password");
-    if (!staff) {
-      return res.status(404).json({ msg: "Staff not found" });
-    }
+    // Only return non-archived staff
+    const staff = await Staff.find({ isArchived: { $ne: true } })
+      .select("-password")
+      .sort({ createdAt: -1 });
     res.json(staff);
   } catch (err) {
     console.error("Error fetching staff:", err);
@@ -33,11 +22,6 @@ router.get("/:id", async (req, res) => {
 router.post("/", async (req, res) => {
   try {
     const { name, email, password, role } = req.body;
-
-    // Validate required fields
-    if (!name || !email || !password) {
-      return res.status(400).json({ msg: "Please provide all required fields" });
-    }
 
     // Check if email already exists
     const existingStaff = await Staff.findOne({ email });
@@ -55,12 +39,11 @@ router.post("/", async (req, res) => {
       email,
       password: hashedPassword,
       role: role || "staff",
-      isEnabled: true // Enabled by default
+      isEnabled: true
     });
 
     await newStaff.save();
 
-    // Return staff without password
     const staffResponse = newStaff.toObject();
     delete staffResponse.password;
 
@@ -79,7 +62,7 @@ router.put("/:id", async (req, res) => {
     const updateData = { name, email };
 
     // Only update password if provided
-    if (password && password.trim() !== "") {
+    if (password) {
       const salt = await bcrypt.genSalt(10);
       updateData.password = await bcrypt.hash(password, salt);
     }
@@ -87,7 +70,7 @@ router.put("/:id", async (req, res) => {
     const staff = await Staff.findByIdAndUpdate(
       req.params.id,
       updateData,
-      { new: true, runValidators: true }
+      { new: true }
     ).select("-password");
 
     if (!staff) {
@@ -97,12 +80,6 @@ router.put("/:id", async (req, res) => {
     res.json(staff);
   } catch (err) {
     console.error("Error updating staff:", err);
-
-    // Handle duplicate email error
-    if (err.code === 11000) {
-      return res.status(400).json({ msg: "Email already exists" });
-    }
-
     res.status(500).json({ msg: "Server error" });
   }
 });
@@ -126,6 +103,72 @@ router.patch("/:id/toggle-status", async (req, res) => {
   } catch (err) {
     console.error("Error toggling staff status:", err);
     res.status(500).json({ msg: "Server error" });
+  }
+});
+
+// Archive staff (soft delete)
+router.patch("/:id/archive", async (req, res) => {
+  try {
+    const staff = await Staff.findByIdAndUpdate(
+      req.params.id,
+      {
+        isArchived: true,
+        updatedAt: new Date()
+      },
+      { new: true }
+    ).select("-password");
+
+    if (!staff) {
+      return res.status(404).json({
+        success: false,
+        msg: "Staff not found"
+      });
+    }
+
+    res.json({
+      success: true,
+      msg: "Staff archived successfully",
+      staff
+    });
+  } catch (err) {
+    console.error("Error archiving staff:", err);
+    res.status(500).json({
+      success: false,
+      msg: "Server error"
+    });
+  }
+});
+
+// Restore archived staff
+router.patch("/:id/restore", async (req, res) => {
+  try {
+    const staff = await Staff.findByIdAndUpdate(
+      req.params.id,
+      {
+        isArchived: false,
+        updatedAt: new Date()
+      },
+      { new: true }
+    ).select("-password");
+
+    if (!staff) {
+      return res.status(404).json({
+        success: false,
+        msg: "Staff not found"
+      });
+    }
+
+    res.json({
+      success: true,
+      msg: "Staff restored successfully",
+      staff
+    });
+  } catch (err) {
+    console.error("Error restoring staff:", err);
+    res.status(500).json({
+      success: false,
+      msg: "Server error"
+    });
   }
 });
 

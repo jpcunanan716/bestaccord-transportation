@@ -5,7 +5,8 @@ const staffSchema = new mongoose.Schema({
   email: { type: String, required: true, unique: true },
   password: { type: String, required: true },
   role: { type: String, default: "staff", enum: ["staff", "admin"] },
-  isEnabled: { type: Boolean, default: true }
-});
+  isEnabled: { type: Boolean, default: true },
+  isArchived: { type: Boolean, default: false },
+}, { timestamps: true });
 
 export default mongoose.model("Staff", staffSchema);
