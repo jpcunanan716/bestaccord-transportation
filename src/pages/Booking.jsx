@@ -610,7 +610,7 @@ function Booking() {
 
   return (
     <div className="space-y-8">
-      {/* Enhanced Header with Purple Theme */}
+      {/* Header with Purple Theme */}
       <motion.div
         initial={{ opacity: 0, y: -20 }}
         animate={{ opacity: 1, y: 0 }}
@@ -636,7 +636,7 @@ function Booking() {
         </div>
       </motion.div>
 
-      {/* Enhanced Filters Section - Always Visible */}
+      {/* Filters Section - Always Visible */}
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
@@ -710,7 +710,7 @@ function Booking() {
         </div>
       </motion.div>
 
-      {/* Enhanced Table */}
+      {/* Table */}
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
@@ -827,7 +827,7 @@ function Booking() {
           </table>
         </div>
 
-        {/* Enhanced Pagination */}
+        {/* Pagination */}
         <div className="flex justify-between items-center px-6 py-4 bg-gradient-to-r from-purple-50/50 to-indigo-50/50 border-t border-purple-100">
           <motion.button
             whileHover={{ scale: 1.05 }}
@@ -861,7 +861,7 @@ function Booking() {
         </div>
       </motion.div>
 
-      {/* Enhanced Modal */}
+      {/* Modal */}
       <AnimatePresence>
         {showModal && (
           <motion.div
@@ -1040,7 +1040,7 @@ function Booking() {
                       </div>
                     </div>
 
-                     {/* Type of Order */}
+                    {/* Type of Order */}
                     <div className="bg-gradient-to-r from-purple-50 to-indigo-50 p-6 rounded-2xl border border-purple-100">
                       <h3 className="text-lg font-semibold text-gray-900 mb-4">Type of Order</h3>
                       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">

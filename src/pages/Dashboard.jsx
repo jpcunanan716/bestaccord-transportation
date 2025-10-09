@@ -271,6 +271,67 @@ export default function Dashboard() {
         </div>
       </motion.div>
 
+      {/* Enhanced Quick Actions with Purple Theme */}
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.4 }}
+        className="grid grid-cols-1 md:grid-cols-3 gap-6"
+      >
+        {[
+          {
+            title: 'New Booking',
+            description: 'Create a new booking request',
+            icon: <Package className="w-5 h-5" />,
+            gradient: 'from-purple-500 to-purple-600',
+            bgGradient: 'from-purple-50 to-purple-100',
+            action: () => window.location.href = '/dashboard/booking'
+          },
+          {
+            title: 'Track Vehicles',
+            description: 'Monitor fleet and deliveries',
+            icon: <MapPin className="w-5 h-5" />,
+            gradient: 'from-indigo-500 to-indigo-600',
+            bgGradient: 'from-indigo-50 to-indigo-100',
+            action: () => window.location.href = '/dashboard/monitoring'
+          },
+          {
+            title: 'Trip Reports',
+            description: 'View analytics and reports',
+            icon: <FileText className="w-5 h-5" />,
+            gradient: 'from-violet-500 to-violet-600',
+            bgGradient: 'from-violet-50 to-violet-100',
+            action: () => window.location.href = '/dashboard/trip-report'
+          }
+        ].map((action, index) => (
+          <motion.div
+            key={action.title}
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.5 + index * 0.1 }}
+            className={`bg-gradient-to-br ${action.bgGradient} rounded-xl shadow-sm border border-purple-100 p-6 hover:shadow-xl hover:border-purple-200 transition-all duration-300 group cursor-pointer`}
+            onClick={action.action}
+          >
+            <div className="flex items-start space-x-4">
+              <div className={`bg-gradient-to-br ${action.gradient} p-3 rounded-lg group-hover:scale-110 transition-transform duration-200 shadow-md`}>
+                <div className="text-white">
+                  {action.icon}
+                </div>
+              </div>
+              <div className="flex-1">
+                <h3 className="font-semibold text-gray-900 mb-1 group-hover:text-purple-700 transition-colors">
+                  {action.title}
+                </h3>
+                <p className="text-sm text-gray-600 mb-4">{action.description}</p>
+                <button className={`w-full bg-gradient-to-r ${action.gradient} text-white py-2.5 px-4 rounded-lg transition-all duration-300 text-sm font-medium hover:shadow-lg transform hover:-translate-y-0.5`}>
+                  {action.title.includes('New') ? 'Create' : action.title.includes('Track') ? 'Monitor' : 'View'} Now
+                </button>
+              </div>
+            </div>
+          </motion.div>
+        ))}
+      </motion.div>
+
       {/* Enhanced Stats Cards with Purple Theme */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-6">
         {cards.map((card, index) => (
@@ -478,66 +539,7 @@ export default function Dashboard() {
         </div>
       </motion.div>
 
-      {/* Enhanced Quick Actions with Purple Theme */}
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.4 }}
-        className="grid grid-cols-1 md:grid-cols-3 gap-6"
-      >
-        {[
-          {
-            title: 'New Booking',
-            description: 'Create a new booking request',
-            icon: <Package className="w-5 h-5" />,
-            gradient: 'from-purple-500 to-purple-600',
-            bgGradient: 'from-purple-50 to-purple-100',
-            action: () => window.location.href = '/dashboard/booking'
-          },
-          {
-            title: 'Track Vehicles',
-            description: 'Monitor fleet and deliveries',
-            icon: <MapPin className="w-5 h-5" />,
-            gradient: 'from-indigo-500 to-indigo-600',
-            bgGradient: 'from-indigo-50 to-indigo-100',
-            action: () => window.location.href = '/dashboard/monitoring'
-          },
-          {
-            title: 'Trip Reports',
-            description: 'View analytics and reports',
-            icon: <FileText className="w-5 h-5" />,
-            gradient: 'from-violet-500 to-violet-600',
-            bgGradient: 'from-violet-50 to-violet-100',
-            action: () => window.location.href = '/dashboard/trip-report'
-          }
-        ].map((action, index) => (
-          <motion.div
-            key={action.title}
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.5 + index * 0.1 }}
-            className={`bg-gradient-to-br ${action.bgGradient} rounded-xl shadow-sm border border-purple-100 p-6 hover:shadow-xl hover:border-purple-200 transition-all duration-300 group cursor-pointer`}
-            onClick={action.action}
-          >
-            <div className="flex items-start space-x-4">
-              <div className={`bg-gradient-to-br ${action.gradient} p-3 rounded-lg group-hover:scale-110 transition-transform duration-200 shadow-md`}>
-                <div className="text-white">
-                  {action.icon}
-                </div>
-              </div>
-              <div className="flex-1">
-                <h3 className="font-semibold text-gray-900 mb-1 group-hover:text-purple-700 transition-colors">
-                  {action.title}
-                </h3>
-                <p className="text-sm text-gray-600 mb-4">{action.description}</p>
-                <button className={`w-full bg-gradient-to-r ${action.gradient} text-white py-2.5 px-4 rounded-lg transition-all duration-300 text-sm font-medium hover:shadow-lg transform hover:-translate-y-0.5`}>
-                  {action.title.includes('New') ? 'Create' : action.title.includes('Track') ? 'Monitor' : 'View'} Now
-                </button>
-              </div>
-            </div>
-          </motion.div>
-        ))}
-      </motion.div>
+
     </div>
   );
 }
