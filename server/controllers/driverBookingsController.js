@@ -281,7 +281,8 @@ export const updateBookingStatus = async (req, res) => {
       bookingId,
       driverId: driver.employeeId,
       newStatus: status,
-      hasProofOfDelivery: !!proofOfDelivery
+      hasProofOfDelivery: !!proofOfDelivery,
+      proofSize: proofOfDelivery ? `${(proofOfDelivery.length / 1024).toFixed(2)} KB` : 'N/A'
     });
 
     // Validate status
@@ -291,6 +292,33 @@ export const updateBookingStatus = async (req, res) => {
         success: false,
         msg: "Invalid status. Allowed: " + allowedStatuses.join(", ")
       });
+    }
+
+    // Validate proof of delivery for completed status
+    if (status === "Completed" && !proofOfDelivery) {
+      return res.status(400).json({
+        success: false,
+        msg: "Proof of delivery is required to complete a booking"
+      });
+    }
+
+    // Validate proof of delivery format
+    if (proofOfDelivery) {
+      if (!proofOfDelivery.startsWith('data:image/')) {
+        return res.status(400).json({
+          success: false,
+          msg: "Invalid proof of delivery format. Must be a base64 image."
+        });
+      }
+
+      // Check image size (limit to 5MB base64)
+      const sizeInMB = (proofOfDelivery.length * 0.75) / (1024 * 1024);
+      if (sizeInMB > 5) {
+        return res.status(413).json({
+          success: false,
+          msg: "Proof of delivery image is too large. Maximum 5MB allowed."
+        });
+      }
     }
 
     // Find the booking first
@@ -313,7 +341,7 @@ export const updateBookingStatus = async (req, res) => {
     // If proof of delivery is provided, save it
     if (proofOfDelivery) {
       booking.proofOfDelivery = proofOfDelivery;
-      console.log("📸 Proof of delivery image saved");
+      console.log("📸 Proof of delivery image saved successfully");
     }
 
     await booking.save();
@@ -328,7 +356,7 @@ export const updateBookingStatus = async (req, res) => {
       }
     }
 
-    console.log(`📝 Driver ${driver.employeeId} updated booking ${booking.reservationId} status to: ${status}`);
+    console.log(`✅ Driver ${driver.employeeId} updated booking ${booking.reservationId} status to: ${status}`);
 
     res.json({
       success: true,
@@ -338,16 +366,33 @@ export const updateBookingStatus = async (req, res) => {
         reservationId: booking.reservationId,
         tripNumber: booking.tripNumber,
         status: booking.status,
-        proofOfDelivery: booking.proofOfDelivery,
+        proofOfDelivery: booking.proofOfDelivery ? "Stored" : null,
         updatedAt: booking.updatedAt
       }
     });
 
   } catch (err) {
     console.error("❌ Error updating booking status:", err);
+    
+    // Handle specific MongoDB errors
+    if (err.name === 'DocumentNotFoundError') {
+      return res.status(404).json({
+        success: false,
+        msg: "Booking not found"
+      });
+    }
+    
+    if (err.name === 'ValidationError') {
+      return res.status(400).json({
+        success: false,
+        msg: "Invalid data: " + err.message
+      });
+    }
+
     res.status(500).json({
       success: false,
-      msg: "Server error while updating status"
+      msg: "Server error while updating status",
+      error: err.message
     });
   }
 };
