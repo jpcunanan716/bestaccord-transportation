@@ -198,6 +198,76 @@ export const getDriverBookings = async (req, res) => {
 };
 
 /**
+ * GET /api/driver/bookings/:id
+ * Get specific booking details for the logged-in driver
+ */
+export const getDriverBookingById = async (req, res) => {
+  try {
+    const driver = req.driver;
+    const bookingId = req.params.id;
+
+    console.log("🔍 DEBUG: Getting booking details for:", bookingId, "by driver:", driver.employeeId);
+
+    // Find the booking and verify the driver is assigned to it
+    const booking = await Booking.findOne({
+      _id: bookingId,
+      employeeAssigned: { $in: [driver.employeeId] }
+    });
+
+    if (!booking) {
+      console.log("❌ DEBUG: Booking not found or driver not assigned");
+      return res.status(404).json({
+        success: false,
+        msg: "Booking not found or you are not assigned to this booking"
+      });
+    }
+
+    console.log("✅ DEBUG: Booking found:", booking.reservationId);
+
+    // Get employee details
+    const employeeDetails = await Employee.find({
+      employeeId: { $in: booking.employeeAssigned }
+    }).select('employeeId fullName role');
+
+    // Get vehicle details
+    let vehicleDetails = null;
+    try {
+      vehicleDetails = await Vehicle.findOne({ vehicleType: booking.vehicleType });
+    } catch (err) {
+      console.log("⚠️ Vehicle model not found");
+    }
+
+    const enhancedBooking = {
+      ...booking.toObject(),
+      employeeDetails: employeeDetails.map(emp => ({
+        employeeId: emp.employeeId,
+        fullName: emp.fullName,
+        role: emp.role
+      })),
+      vehicleDetails: vehicleDetails ? {
+        color: vehicleDetails.color,
+        manufacturedBy: vehicleDetails.manufacturedBy,
+        model: vehicleDetails.model,
+        plateNumber: vehicleDetails.plateNumber,
+        vehicleType: vehicleDetails.vehicleType
+      } : null
+    };
+
+    res.json({
+      success: true,
+      booking: enhancedBooking
+    });
+
+  } catch (err) {
+    console.error("❌ Error fetching booking details:", err);
+    res.status(500).json({
+      success: false,
+      msg: "Server error while fetching booking details"
+    });
+  }
+};
+
+/**
  * PUT /api/driver/bookings/:id/status
  * Update booking status (drivers can update status of their assigned bookings)
  */
@@ -205,7 +275,7 @@ export const updateBookingStatus = async (req, res) => {
   try {
     const driver = req.driver;
     const bookingId = req.params.id;
-    const { status, proofOfDelivery } = req.body; // Added proofOfDelivery
+    const { status, proofOfDelivery } = req.body;
 
     console.log("🔄 Updating booking status:", {
       bookingId,
