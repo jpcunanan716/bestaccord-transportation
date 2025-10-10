@@ -33,6 +33,7 @@ const bookingSchema = new mongoose.Schema({
         default: "Pending"
     },
     isArchived: { type: Boolean, default: false },
+    proofOfDelivery: { type: String, default: null }, // Stores base64 image string
 }, { timestamps: true });
 
 export default mongoose.model("Booking", bookingSchema);
