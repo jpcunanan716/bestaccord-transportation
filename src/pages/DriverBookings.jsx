@@ -1,3 +1,4 @@
+// src/pages/DriverBookings.jsx
 import React, { useState, useEffect, useRef } from "react";
 import {
   Package,
@@ -19,10 +20,13 @@ import {
   ChevronUp,
   Phone,
   Weight,
-  Award
+  Award,
+  Camera,
+  RotateCcw,
+  Check
 } from "lucide-react";
 import { axiosClient } from "../api/axiosClient";
-
+import driverloginbg from "../assets/driver_login_bg.png";
 
 export default function DriverBookings() {
   const [bookings, setBookings] = useState([]);
@@ -39,8 +43,16 @@ export default function DriverBookings() {
     customer: false,
     team: false
   });
+  
+  // Camera states
+  const [showCamera, setShowCamera] = useState(false);
+  const [capturedImage, setCapturedImage] = useState(null);
+  const [stream, setStream] = useState(null);
+  
   const mapRef = useRef(null);
   const mapInstance = useRef(null);
+  const videoRef = useRef(null);
+  const canvasRef = useRef(null);
 
   const statusColors = {
     "Pending": { bg: "bg-yellow-100", text: "text-yellow-800", icon: AlertCircle },
@@ -58,9 +70,66 @@ export default function DriverBookings() {
     }));
   };
 
-  // [All your existing functions remain the same - initializeMap, createMap, startTrip, markAsDelivered, markAsCompleted, fetchBookings, etc.]
+   // Camera functions
+  const startCamera = async () => {
+    try {
+      const mediaStream = await navigator.mediaDevices.getUserMedia({ 
+        video: { 
+          facingMode: 'environment',
+          width: { ideal: 1280 },
+          height: { ideal: 720 }
+        },
+        audio: false 
+      });
+      setStream(mediaStream);
+      setShowCamera(true);
+      
+      // Wait for the video element to be ready
+      setTimeout(() => {
+        if (videoRef.current) {
+          videoRef.current.srcObject = mediaStream;
+          videoRef.current.play().catch(err => {
+            console.error("Error playing video:", err);
+          });
+        }
+      }, 100);
+    } catch (err) {
+      console.error("Error accessing camera:", err);
+      setError("Unable to access camera. Please check permissions.");
+      setTimeout(() => setError(""), 5000);
+    }
+  };
 
-  // Initialize map with CORS proxy
+  const stopCamera = () => {
+    if (stream) {
+      stream.getTracks().forEach(track => track.stop());
+      setStream(null);
+    }
+    setShowCamera(false);
+  };
+
+  const capturePhoto = () => {
+    if (videoRef.current && canvasRef.current) {
+      const video = videoRef.current;
+      const canvas = canvasRef.current;
+      
+      canvas.width = video.videoWidth;
+      canvas.height = video.videoHeight;
+      
+      const context = canvas.getContext('2d');
+      context.drawImage(video, 0, 0, canvas.width, canvas.height);
+      
+      const imageData = canvas.toDataURL('image/jpeg', 0.8);
+      setCapturedImage(imageData);
+      stopCamera();
+    }
+  };
+
+  const retakePhoto = () => {
+    setCapturedImage(null);
+    startCamera();
+  };
+
   const initializeMap = async () => {
     if (!selectedBooking || !mapRef.current) return;
 
@@ -277,7 +346,7 @@ export default function DriverBookings() {
   };
 
   const markAsCompleted = async () => {
-    if (!selectedBooking) return;
+    if (!selectedBooking || !capturedImage) return;
 
     setUpdating(true);
     try {
@@ -285,7 +354,10 @@ export default function DriverBookings() {
 
       const response = await axiosClient.put(
         `/api/driver/bookings/${selectedBooking._id}/status`,
-        { status: "Completed" },
+        { 
+          status: "Completed",
+          proofOfDelivery: capturedImage
+        },
         {
           headers: {
             Authorization: `Bearer ${token}`,
@@ -368,6 +440,7 @@ export default function DriverBookings() {
   const openBookingDetails = (booking) => {
     setSelectedBooking(booking);
     setShowModal(true);
+    setCapturedImage(null);
     setExpandedSections({
       route: true,
       cargo: false,
@@ -379,6 +452,8 @@ export default function DriverBookings() {
   const closeModal = () => {
     setShowModal(false);
     setSelectedBooking(null);
+    setCapturedImage(null);
+    stopCamera();
     if (mapInstance.current) {
       mapInstance.current.remove();
       mapInstance.current = null;
@@ -395,9 +470,21 @@ export default function DriverBookings() {
     fetchBookings();
   }, []);
 
+  useEffect(() => {
+    return () => {
+      stopCamera();
+    };
+  }, []);
+
   if (loading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-purple-900 via-purple-800 to-indigo-900 flex items-center justify-center p-4">
+      <div className="min-h-screen flex items-center justify-center p-4"
+        style={{
+          backgroundImage: `url(${driverloginbg})`,
+          backgroundSize: 'cover',
+          backgroundPosition: 'center',
+        }}
+      >
         <div className="bg-white/10 backdrop-blur-xl border border-white/20 p-6 rounded-2xl shadow-2xl">
           <div className="animate-pulse flex space-x-4">
             <div className="rounded-full bg-purple-400/50 h-12 w-12"></div>
@@ -414,7 +501,13 @@ export default function DriverBookings() {
 
   if (error) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-purple-900 via-purple-800 to-indigo-900 flex items-center justify-center p-4">
+      <div className="min-h-screen flex items-center justify-center p-4"
+        style={{
+          backgroundImage: `url(${driverloginbg})`,
+          backgroundSize: 'cover',
+          backgroundPosition: 'center',
+        }}
+      >
         <div className="bg-white/10 backdrop-blur-xl border border-white/20 p-6 rounded-2xl shadow-2xl max-w-md w-full text-center">
           <XCircle className="w-12 h-12 text-red-400 mx-auto mb-4" />
           <h2 className="text-xl font-bold text-white mb-2">Error Loading Bookings</h2>
@@ -434,8 +527,20 @@ export default function DriverBookings() {
     <>
       <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
 
-      <div className="min-h-screen bg-gradient-to-br from-purple-900 via-purple-800 to-indigo-900 p-4">
-        <div className="max-w-md mx-auto">
+      <div className="min-h-screen bg-gradient-to-br from-purple-900 via-purple-800 to-indigo-900 p-4"
+        style={{
+          backgroundImage: `url(${driverloginbg})`,
+          backgroundSize: 'cover',
+          backgroundPosition: 'center',
+        }}
+      >
+        {/* Overlay + decorative glows (match DriverDashboard style) */}
+        <div className="absolute inset-0 bg-gradient-to-br from-purple-900/50 via-purple-800/50 to-indigo-900/50"></div>
+        <div className="absolute -top-20 -right-20 w-40 h-40 sm:w-60 sm:h-60 bg-purple-500/10 rounded-full blur-3xl"></div>
+        <div className="absolute -bottom-20 -left-20 w-40 h-40 sm:w-60 sm:h-60 bg-indigo-500/10 rounded-full blur-3xl"></div>
+        <div className="absolute top-1/3 right-1/4 w-32 h-32 sm:w-40 sm:h-40 bg-purple-400/5 rounded-full blur-2xl"></div>
+
+        <div className="max-w-md mx-auto relative z-10">
           {/* Header */}
           <div className="flex justify-between items-center mb-6">
             <div>
@@ -544,10 +649,10 @@ export default function DriverBookings() {
           >
             <div className="absolute inset-0 overflow-y-auto">
               <div className="min-h-screen flex items-end sm:items-center justify-center p-4">
-                <div className="bg-white rounded-t-xl sm:rounded-xl w-full max-w-lg max-h-[90vh] overflow-hidden shadow-2xl">
+                <div className="bg-white/80 backdrop-blur-2xl border border-white/30 rounded-2xl w-full max-w-lg max-h-[90vh] overflow-hidden shadow-2xl">
 
                   {/* Modal Header - Sticky */}
-                  <div className="sticky top-0 bg-white border-b border-gray-200 px-4 py-3 flex items-center justify-between z-10">
+                  <div className="sticky top-0 bg-white/80 border-b border-gray-200/50 px-4 py-3 flex items-center justify-between z-10">
                     <div className="flex-1">
                       <h3 className="font-bold text-gray-900">{selectedBooking.reservationId}</h3>
                       <p className="text-sm text-gray-600">{selectedBooking.tripNumber}</p>
@@ -566,6 +671,77 @@ export default function DriverBookings() {
 
                   {/* Modal Body - Scrollable */}
                   <div className="overflow-y-auto" style={{ maxHeight: 'calc(90vh - 140px)' }}>
+
+                    {/* Camera Section - Only show when status is Delivered */}
+                    {selectedBooking.status === "Delivered" && !showCamera && (
+                      <div className="p-4 border-b border-gray-100">
+                        <div className="bg-gradient-to-br from-blue-50 to-purple-50 rounded-lg p-4">
+                          <div className="flex items-center gap-2 mb-3">
+                            <Camera className="w-5 h-5 text-blue-600" />
+                            <h4 className="font-semibold text-gray-900">Proof of Delivery</h4>
+                          </div>
+                          
+                          {capturedImage ? (
+                            <div className="space-y-3">
+                              <img 
+                                src={capturedImage} 
+                                alt="Proof of Delivery" 
+                                className="w-full rounded-lg border-2 border-green-500"
+                              />
+                              <button
+                                onClick={retakePhoto}
+                                className="w-full py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors flex items-center justify-center gap-2"
+                              >
+                                <RotateCcw className="w-4 h-4" />
+                                Retake Photo
+                              </button>
+                            </div>
+                          ) : (
+                            <button
+                              onClick={startCamera}
+                              className="w-full py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors flex items-center justify-center gap-2 font-medium"
+                            >
+                              <Camera className="w-5 h-5" />
+                              Take Photo
+                            </button>
+                          )}
+                          <p className="text-xs text-gray-600 text-center mt-2">
+                            📸 Photo required before completing delivery
+                          </p>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Camera View */}
+                    {showCamera && (
+                      <div className="p-4 border-b border-gray-100">
+                        <div className="bg-black rounded-lg overflow-hidden">
+                          <video
+                            ref={videoRef}
+                            autoPlay
+                            playsInline
+                            muted
+                            className="w-full"
+                          />
+                          <canvas ref={canvasRef} className="hidden" />
+                        </div>
+                        <div className="flex gap-2 mt-3">
+                          <button
+                            onClick={capturePhoto}
+                            className="flex-1 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors flex items-center justify-center gap-2"
+                          >
+                            <Camera className="w-4 h-4" />
+                            Capture
+                          </button>
+                          <button
+                            onClick={stopCamera}
+                            className="px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors"
+                          >
+                            Cancel
+                          </button>
+                        </div>
+                      </div>
+                    )}
 
                     {/* Map Section */}
                     <div className="p-4 border-b border-gray-100">
@@ -734,7 +910,7 @@ export default function DriverBookings() {
                   </div>
 
                   {/* Modal Footer - Sticky */}
-                  <div className="sticky bottom-0 bg-white border-t border-gray-200 p-4 z-10">
+                  <div className="sticky bottom-0 bg-white/80 border-t border-gray-200/50 p-4 z-10">
                     {selectedBooking.status === "Ready to go" && (
                       <button
                         onClick={startTrip}
@@ -760,11 +936,20 @@ export default function DriverBookings() {
                     {selectedBooking.status === "Delivered" && (
                       <button
                         onClick={markAsCompleted}
-                        disabled={updating}
+                        disabled={updating || !capturedImage}
                         className="w-full py-3 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 font-medium"
                       >
-                        <Award className="w-4 h-4" />
-                        {updating ? "Marking as Completed..." : "Mark as Completed"}
+                        {capturedImage ? (
+                          <>
+                            <Check className="w-4 h-4" />
+                            {updating ? "Completing Trip..." : "Complete Trip"}
+                          </>
+                        ) : (
+                          <>
+                            <Camera className="w-4 h-4" />
+                            Take Photo First
+                          </>
+                        )}
                       </button>
                     )}
 

@@ -8,6 +8,7 @@ import DriverBookings from "./DriverBookings";
 import DriverSchedule from "./DriverSchedule";
 import { useDriverBookingCount } from "../hooks/useDriverBookingCount";
 import logo from "../assets/bestaccord_logo.png";
+import driverloginbg from "../assets/driver_login_bg.png";
 
 
 export default function DriverDashboard() {
@@ -26,20 +27,42 @@ export default function DriverDashboard() {
   const goBack = () => setActivePage("home");
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-purple-900 via-purple-800 to-indigo-900 flex flex-col">
+    <div 
+      className="min-h-screen flex flex-col relative overflow-hidden"
+      style={{
+        backgroundImage: `url(${driverloginbg})`,
+        backgroundSize: 'cover',
+        backgroundPosition: 'center',
+        backgroundRepeat: 'no-repeat'
+      }}
+    >
+      {/* Subtle overlay */}
+      <div className="absolute inset-0 bg-gradient-to-br from-purple-900/50 via-purple-800/50 to-indigo-900/50"></div>
+      
+      {/* Decorative background elements - subtle */}
+      <div className="absolute inset-0 overflow-hidden pointer-events-none">
+        <div className="absolute -top-20 -right-20 w-40 h-40 sm:w-60 sm:h-60 bg-purple-500/10 rounded-full blur-3xl"></div>
+        <div className="absolute -bottom-20 -left-20 w-40 h-40 sm:w-60 sm:h-60 bg-indigo-500/10 rounded-full blur-3xl"></div>
+        <div className="absolute top-1/3 right-1/4 w-32 h-32 sm:w-40 sm:h-40 bg-purple-400/5 rounded-full blur-2xl"></div>
+      </div>
+
       {/* Header */}
-      <div className="flex items-center justify-between p-4 bg-white/10 backdrop-blur-xl border-b border-white/20 shadow-lg">
+      <div className="relative z-10 flex items-center justify-between p-4 bg-white/10 backdrop-blur-2xl border-b border-white/20 shadow-lg">
         {activePage !== "home" ? (
-          <button
+          <motion.button
+            initial={{ opacity: 0, x: -20 }}
+            animate={{ opacity: 1, x: 0 }}
             onClick={goBack}
             className="flex items-center text-white font-medium hover:text-purple-200 transition-colors"
           >
             <ArrowLeft className="w-5 h-5 mr-1" /> Back
-          </button>
+          </motion.button>
         ) : (
           <div className="flex-1 flex justify-center">
             {/* Company Logo */}
-            <img
+            <motion.img
+              initial={{ opacity: 0, scale: 0.9 }}
+              animate={{ opacity: 1, scale: 1 }}
               src={logo}
               alt="Company Logo"
               className="h-12 w-auto object-contain mx-auto"
@@ -56,7 +79,7 @@ export default function DriverDashboard() {
       </div>
 
       {/* Main Content */}
-      <div className="flex-1">
+      <div className="flex-1 relative z-10">
         <AnimatePresence mode="wait">
           {activePage === "home" && (
             <motion.div
@@ -69,11 +92,14 @@ export default function DriverDashboard() {
             >
               <div className="grid gap-6 w-full max-w-sm">
                 <motion.button
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.2 }}
                   whileTap={{ scale: 0.95 }}
                   onClick={() => setActivePage("bookings")}
-                  className="relative w-full py-6 bg-white/10 backdrop-blur-xl border border-white/20 rounded-2xl shadow-2xl text-xl font-semibold flex items-center justify-center space-x-2 text-white hover:bg-white/20 transition-all"
+                  className="relative w-full py-8 bg-white/10 backdrop-blur-2xl border border-white/20 rounded-3xl shadow-2xl text-xl font-semibold flex items-center justify-center space-x-3 text-white hover:bg-white/15 transition-all group"
                 >
-                  <ClipboardList className="w-6 h-6" />
+                  <ClipboardList className="w-7 h-7 group-hover:scale-110 transition-transform" />
                   <span>Bookings</span>
 
                   {/* Notification Badge */}
@@ -82,7 +108,7 @@ export default function DriverDashboard() {
                       initial={{ scale: 0 }}
                       animate={{ scale: 1 }}
                       transition={{ type: "spring", stiffness: 500, damping: 30 }}
-                      className="absolute -top-2 -right-2 bg-red-500 text-white text-sm font-bold rounded-full h-7 w-7 flex items-center justify-center shadow-lg border-2 border-purple-800"
+                      className="absolute -top-2 -right-2 bg-gradient-to-br from-red-500 to-red-600 text-white text-sm font-bold rounded-full h-8 w-8 flex items-center justify-center shadow-lg border-2 border-white/30"
                     >
                       {bookingCount > 99 ? '99+' : bookingCount}
                     </motion.div>
@@ -97,13 +123,28 @@ export default function DriverDashboard() {
                 </motion.button>
 
                 <motion.button
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.3 }}
                   whileTap={{ scale: 0.95 }}
                   onClick={() => setActivePage("schedule")}
-                  className="w-full py-6 bg-white/10 backdrop-blur-xl border border-white/20 rounded-2xl shadow-2xl text-xl font-semibold flex items-center justify-center space-x-2 text-white hover:bg-white/20 transition-all"
+                  className="w-full py-8 bg-white/10 backdrop-blur-2xl border border-white/20 rounded-3xl shadow-2xl text-xl font-semibold flex items-center justify-center space-x-3 text-white hover:bg-white/15 transition-all group"
                 >
-                  <Calendar className="w-6 h-6" />
+                  <Calendar className="w-7 h-7 group-hover:scale-110 transition-transform" />
                   <span>Schedule</span>
                 </motion.button>
+
+                {/* Welcome Message */}
+                <motion.div
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  transition={{ delay: 0.5 }}
+                  className="mt-4 p-4 bg-purple-600/10 backdrop-blur-sm rounded-2xl border border-purple-400/20 text-center"
+                >
+                  <p className="text-purple-200 text-sm">
+                    Welcome back! Ready for your deliveries today?
+                  </p>
+                </motion.div>
               </div>
             </motion.div>
           )}
@@ -167,11 +208,11 @@ export default function DriverDashboard() {
               animate={{ x: 0 }}
               exit={{ x: "100%" }}
               transition={{ type: "tween", duration: 0.3 }}
-              className="fixed top-0 right-0 w-64 h-full bg-white/95 backdrop-blur-xl shadow-2xl z-50 flex flex-col"
+              className="fixed top-0 right-0 w-64 h-full bg-white/95 backdrop-blur-2xl shadow-2xl z-50 flex flex-col"
             >
               {/* Header */}
               <div className="flex items-center justify-between p-4 border-b border-purple-100">
-                <h2 className="text-lg font-bold text-purple-900">Menu</h2>
+                <h2 className="text-lg font-bold bg-gradient-to-r from-purple-900 to-indigo-900 bg-clip-text text-transparent">Menu</h2>
                 <button
                   onClick={() => setMenuOpen(false)}
                   className="p-2 rounded-lg hover:bg-purple-100 transition-colors"
@@ -187,9 +228,11 @@ export default function DriverDashboard() {
                     setMenuOpen(false);
                     setActivePage("profile");
                   }}
-                  className="flex items-center w-full p-3 rounded-lg text-purple-900 hover:bg-purple-100 transition-colors"
+                  className="flex items-center w-full p-3 rounded-2xl text-purple-900 hover:bg-purple-50 transition-all group"
                 >
-                  <User className="w-5 h-5 mr-3" />
+                  <div className="p-2 bg-purple-100 rounded-lg mr-3 group-hover:bg-purple-200 transition-colors">
+                    <User className="w-5 h-5 text-purple-700" />
+                  </div>
                   <span className="font-medium">Profile</span>
                 </button>
               </div>
@@ -198,9 +241,11 @@ export default function DriverDashboard() {
               <div className="p-4 border-t border-purple-100">
                 <button
                   onClick={handleLogout}
-                  className="flex items-center w-full p-3 rounded-lg text-red-600 hover:bg-red-50 transition-colors"
+                  className="flex items-center w-full p-3 rounded-2xl text-red-600 hover:bg-red-50 transition-all group"
                 >
-                  <LogOut className="w-5 h-5 mr-3" />
+                  <div className="p-2 bg-red-100 rounded-lg mr-3 group-hover:bg-red-200 transition-colors">
+                    <LogOut className="w-5 h-5 text-red-600" />
+                  </div>
                   <span className="font-medium">Logout</span>
                 </button>
               </div>
