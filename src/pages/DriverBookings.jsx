@@ -75,20 +75,21 @@ export default function DriverBookings() {
     try {
       // Check if mediaDevices is supported
       if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-        setError("Camera not supported on this device/browser.");
+        setError("Camera not supported on this device/browser. Try using HTTPS.");
         setTimeout(() => setError(""), 5000);
         return;
       }
 
-      // Try to get camera with fallback constraints for mobile
+      // Mobile-optimized constraints - lower resolution for smaller file size
       let mediaStream;
       try {
-        // First try with rear camera (ideal for mobile)
+        // First try with rear camera (ideal for mobile) with optimized resolution
         mediaStream = await navigator.mediaDevices.getUserMedia({ 
           video: { 
             facingMode: { exact: 'environment' },
-            width: { ideal: 1920, max: 1920 },
-            height: { ideal: 1080, max: 1080 }
+            width: { ideal: 1280, max: 1920 },
+            height: { ideal: 720, max: 1080 },
+            aspectRatio: { ideal: 16/9 }
           },
           audio: false 
         });
@@ -98,8 +99,9 @@ export default function DriverBookings() {
         mediaStream = await navigator.mediaDevices.getUserMedia({ 
           video: { 
             facingMode: 'environment',
-            width: { ideal: 1280 },
-            height: { ideal: 720 }
+            width: { ideal: 1280, max: 1920 },
+            height: { ideal: 720, max: 1080 },
+            aspectRatio: { ideal: 16/9 }
           },
           audio: false 
         });
@@ -115,6 +117,7 @@ export default function DriverBookings() {
           // Add event listeners for mobile
           videoRef.current.setAttribute('playsinline', 'true');
           videoRef.current.setAttribute('autoplay', 'true');
+          videoRef.current.setAttribute('muted', 'true');
           videoRef.current.play().catch(err => {
             console.error("Error playing video:", err);
             setError("Could not start camera preview.");
@@ -129,6 +132,8 @@ export default function DriverBookings() {
         errorMsg += "Please allow camera permissions.";
       } else if (err.name === 'NotFoundError') {
         errorMsg += "No camera found on device.";
+      } else if (err.name === 'NotReadableError') {
+        errorMsg += "Camera is already in use by another app.";
       } else {
         errorMsg += "Please check permissions and try again.";
       }

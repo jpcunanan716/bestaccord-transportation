@@ -18,6 +18,8 @@ import tripReportsRoutes from './routes/tripReports.js';
 dotenv.config();
 
 const app = express();
+app.use(express.json({ limit: '15mb' })); // Increased from default 100kb
+app.use(express.urlencoded({ limit: '15mb', extended: true }));
 app.use(express.json());
 app.use(cors({
   origin: [
