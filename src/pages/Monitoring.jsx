@@ -16,9 +16,10 @@ import {
   PlayCircle,
   Clock4,
   User,
-  FileText  // Added this import for receipt icon
+  FileText,
+  Camera
 } from "lucide-react";
-import ReceiptGenerator from "../components/InvoiceGenerator"; // Add this import
+import ReceiptGenerator from "../components/InvoiceGenerator"; 
 
 export default function Monitoring() {
   const [bookings, setBookings] = useState([]);
@@ -26,7 +27,8 @@ export default function Monitoring() {
   const [loading, setLoading] = useState(false);
   const [selectedBooking, setSelectedBooking] = useState(null);
   const [showModal, setShowModal] = useState(false);
-  const [showReceiptGenerator, setShowReceiptGenerator] = useState(false); // Add this state
+  const [showReceiptGenerator, setShowReceiptGenerator] = useState(false);
+  const [showProofModal, setShowProofModal] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("All");
   const [error, setError] = useState("");
@@ -404,6 +406,14 @@ export default function Monitoring() {
       mapInstance.current = null;
     }
   };
+
+  const openProofModal = () => {
+  setShowProofModal(true);
+};
+
+const closeProofModal = () => {
+  setShowProofModal(false);
+};
 
   // Initialize map when modal opens
   useEffect(() => {
@@ -1212,17 +1222,32 @@ export default function Monitoring() {
                           </div>
                         )}
 
-                        {/* NEW: Generate Invoice Button for Completed Status */}
+                  {/* NEW: Buttons for Completed Status */}
                         {selectedBooking.status === "Completed" && (
-                          <motion.button
-                            onClick={handleGenerateReceipt}
-                            className="flex-1 px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors flex items-center justify-center space-x-2"
-                            whileHover={{ scale: 1.02 }}
-                            whileTap={{ scale: 0.98 }}
-                          >
-                            <FileText className="w-4 h-4" />
-                            <span>Generate Invoice</span>
-                          </motion.button>
+                          <>
+                            <motion.button
+                              onClick={handleGenerateReceipt}
+                              className="flex-1 px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors flex items-center justify-center space-x-2"
+                              whileHover={{ scale: 1.02 }}
+                              whileTap={{ scale: 0.98 }}
+                            >
+                              <FileText className="w-4 h-4" />
+                              <span>Generate Invoice</span>
+                            </motion.button>
+
+                            {/* Show Proof button only if proof exists */}
+                            {selectedBooking.proofOfDelivery && (
+                              <motion.button
+                                onClick={openProofModal}
+                                className="flex-1 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors flex items-center justify-center space-x-2"
+                                whileHover={{ scale: 1.02 }}
+                                whileTap={{ scale: 0.98 }}
+                              >
+                                <Camera className="w-4 h-4" />
+                                <span>View Proof</span>
+                              </motion.button>
+                            )}
+                          </>
                         )}
                       </motion.div>
 
@@ -1243,6 +1268,85 @@ export default function Monitoring() {
           onReceiptGenerated={handleReceiptGenerated}
         />
       )}
+
+    {/* Proof of Delivery Modal */}
+      <AnimatePresence>
+        {showProofModal && selectedBooking?.proofOfDelivery && (
+          <motion.div
+            className="fixed inset-0 z-[60] flex items-center justify-center p-4"
+            style={{ backgroundColor: 'rgba(0, 0, 0, 0.7)', backdropFilter: 'blur(8px)' }}
+            variants={backdropVariants}
+            initial="hidden"
+            animate="visible"
+            exit="exit"
+            onClick={closeProofModal}
+          >
+            <motion.div
+              className="bg-white rounded-lg shadow-2xl max-w-4xl w-full max-h-[90vh] overflow-hidden"
+              variants={modalVariants}
+              initial="hidden"
+              animate="visible"
+              exit="exit"
+              onClick={(e) => e.stopPropagation()}
+            >
+              {/* Proof Modal Header */}
+              <div className="flex items-center justify-between px-6 py-4 bg-gradient-to-r from-purple-600 to-indigo-600 text-white">
+                <div className="flex items-center gap-3">
+                  <Camera className="w-6 h-6" />
+                  <div>
+                    <h3 className="text-lg font-bold">Proof of Delivery</h3>
+                    <p className="text-sm text-purple-100">Trip: {selectedBooking.tripNumber}</p>
+                  </div>
+                </div>
+                <button
+                  onClick={closeProofModal}
+                  className="p-2 text-white hover:bg-white/20 transition-colors rounded-lg"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+
+              {/* Proof Image */}
+              <div className="p-6 bg-gray-50">
+                <div className="bg-white rounded-lg overflow-hidden shadow-lg">
+                  <img
+                    src={selectedBooking.proofOfDelivery}
+                    alt="Proof of Delivery"
+                    className="w-full h-auto max-h-[70vh] object-contain"
+                  />
+                </div>
+
+                {/* Delivery Info */}
+                <div className="mt-4 grid grid-cols-2 gap-4">
+                  <div className="bg-white p-3 rounded-lg border border-gray-200">
+                    <p className="text-xs text-gray-600 mb-1">Delivered To</p>
+                    <p className="text-sm font-medium">{selectedBooking.destinationAddress}</p>
+                  </div>
+                  <div className="bg-white p-3 rounded-lg border border-gray-200">
+                    <p className="text-xs text-gray-600 mb-1">Completed At</p>
+                    <p className="text-sm font-medium">
+                      {new Date(selectedBooking.updatedAt).toLocaleString()}
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Footer */}
+              <div className="px-6 py-4 bg-gray-50 border-t flex justify-between items-center">
+                <p className="text-sm text-gray-600">
+                  Photo taken by driver upon delivery completion
+                </p>
+                <button
+                  onClick={closeProofModal}
+                  className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors"
+                >
+                  Close
+                </button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </>
   );
 }

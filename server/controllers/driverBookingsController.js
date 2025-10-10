@@ -275,12 +275,13 @@ export const updateBookingStatus = async (req, res) => {
   try {
     const driver = req.driver;
     const bookingId = req.params.id;
-    const { status } = req.body;
+    const { status, proofOfDelivery } = req.body;
 
     console.log("🔄 Updating booking status:", {
       bookingId,
       driverId: driver.employeeId,
-      newStatus: status
+      newStatus: status,
+      hasProofOfDelivery: !!proofOfDelivery
     });
 
     // Validate status
@@ -305,6 +306,18 @@ export const updateBookingStatus = async (req, res) => {
       });
     }
 
+    // Update booking status
+    booking.status = status;
+    booking.updatedAt = new Date();
+    
+    // If proof of delivery is provided, save it
+    if (proofOfDelivery) {
+      booking.proofOfDelivery = proofOfDelivery;
+      console.log("📸 Proof of delivery image saved");
+    }
+
+    await booking.save();
+
     // If status is being set to "Completed", update vehicle and employee status
     if (status === "Completed") {
       try {
@@ -314,11 +327,6 @@ export const updateBookingStatus = async (req, res) => {
         // Continue with booking update even if vehicle/employee updates fail
       }
     }
-
-    // Update booking status
-    booking.status = status;
-    booking.updatedAt = new Date();
-    await booking.save();
 
     console.log(`📝 Driver ${driver.employeeId} updated booking ${booking.reservationId} status to: ${status}`);
 
@@ -330,6 +338,7 @@ export const updateBookingStatus = async (req, res) => {
         reservationId: booking.reservationId,
         tripNumber: booking.tripNumber,
         status: booking.status,
+        proofOfDelivery: booking.proofOfDelivery,
         updatedAt: booking.updatedAt
       }
     });
