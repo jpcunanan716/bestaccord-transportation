@@ -207,7 +207,7 @@ function EmployeeInfo() {
 
             {/* Employee History Modal*/}
             {showModal && (
-                <div className="fixed inset-0 bg-black bg-opacity-50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+                <div className="fixed inset-0 bg-opacity-50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
                     <div className="bg-white rounded-lg shadow-2xl w-full max-w-6xl max-h-[90vh] flex flex-col">
                         {/* Modal Header */}
                         <div className="flex justify-between items-center p-6 border-b">
@@ -218,37 +218,30 @@ function EmployeeInfo() {
                                     {selectedMonth && ` • Filtered: ${filteredBookings.length}`}
                                 </p>
                             </div>
-                            <button
-                                onClick={() => setShowModal(false)}
-                                className="p-2 hover:bg-gray-100 rounded-full transition"
-                            >
-                                <X className="w-6 h-6 text-gray-600" />
-                            </button>
-                        </div>
-
-                        {/* Filter Section */}
-                        <div className="p-6 border-b bg-gray-50">
-                            <div className="flex items-center gap-4">
+                            <div className="flex items-center gap-3">
                                 <div className="flex items-center gap-2">
                                     <Calendar className="w-5 h-5 text-gray-600" />
-                                    <label className="text-sm font-medium text-gray-700">
-                                        Filter by Month:
-                                    </label>
+                                    <input
+                                        type="month"
+                                        value={selectedMonth}
+                                        onChange={(e) => setSelectedMonth(e.target.value)}
+                                        className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
+                                    />
+                                    {selectedMonth && (
+                                        <button
+                                            onClick={clearFilter}
+                                            className="px-3 py-1.5 text-sm bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition"
+                                        >
+                                            Clear
+                                        </button>
+                                    )}
                                 </div>
-                                <input
-                                    type="month"
-                                    value={selectedMonth}
-                                    onChange={(e) => setSelectedMonth(e.target.value)}
-                                    className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                                />
-                                {selectedMonth && (
-                                    <button
-                                        onClick={clearFilter}
-                                        className="px-4 py-2 text-sm bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition"
-                                    >
-                                        Clear Filter
-                                    </button>
-                                )}
+                                <button
+                                    onClick={() => setShowModal(false)}
+                                    className="p-2 hover:bg-gray-100 rounded-full transition"
+                                >
+                                    <X className="w-6 h-6 text-gray-600" />
+                                </button>
                             </div>
                         </div>
 
