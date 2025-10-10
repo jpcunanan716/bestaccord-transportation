@@ -17,7 +17,7 @@ import {
   Clock4,
   User,
   FileText,
-  Image as ImageIcon
+  Camera
 } from "lucide-react";
 import ReceiptGenerator from "../components/InvoiceGenerator"; 
 
@@ -406,6 +406,14 @@ export default function Monitoring() {
       mapInstance.current = null;
     }
   };
+
+  const openProofModal = () => {
+  setShowProofModal(true);
+};
+
+const closeProofModal = () => {
+  setShowProofModal(false);
+};
 
   // Initialize map when modal opens
   useEffect(() => {
@@ -1214,28 +1222,32 @@ export default function Monitoring() {
                           </div>
                         )}
 
-                        {/* Show "View Proof of Delivery" button only if status is Completed and proof exists */}
-                    {selectedBooking.status === "Completed" && selectedBooking.proofOfDelivery && (
-                      <button
-                        onClick={openProofModal}
-                        className="flex-1 px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors flex items-center justify-center gap-2"
-                      >
-                        <ImageIcon className="w-4 h-4" />
-                        View Proof of Delivery
-                      </button>
-                    )}
-
-                        {/* NEW: Generate Invoice Button for Completed Status */}
+                  {/* NEW: Buttons for Completed Status */}
                         {selectedBooking.status === "Completed" && (
-                          <motion.button
-                            onClick={handleGenerateReceipt}
-                            className="flex-1 px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors flex items-center justify-center space-x-2"
-                            whileHover={{ scale: 1.02 }}
-                            whileTap={{ scale: 0.98 }}
-                          >
-                            <FileText className="w-4 h-4" />
-                            <span>Generate Invoice</span>
-                          </motion.button>
+                          <>
+                            <motion.button
+                              onClick={handleGenerateReceipt}
+                              className="flex-1 px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors flex items-center justify-center space-x-2"
+                              whileHover={{ scale: 1.02 }}
+                              whileTap={{ scale: 0.98 }}
+                            >
+                              <FileText className="w-4 h-4" />
+                              <span>Generate Invoice</span>
+                            </motion.button>
+
+                            {/* Show Proof button only if proof exists */}
+                            {selectedBooking.proofOfDelivery && (
+                              <motion.button
+                                onClick={openProofModal}
+                                className="flex-1 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors flex items-center justify-center space-x-2"
+                                whileHover={{ scale: 1.02 }}
+                                whileTap={{ scale: 0.98 }}
+                              >
+                                <Camera className="w-4 h-4" />
+                                <span>View Proof</span>
+                              </motion.button>
+                            )}
+                          </>
                         )}
                       </motion.div>
 
@@ -1280,7 +1292,7 @@ export default function Monitoring() {
               {/* Proof Modal Header */}
               <div className="flex items-center justify-between px-6 py-4 bg-gradient-to-r from-purple-600 to-indigo-600 text-white">
                 <div className="flex items-center gap-3">
-                  <ImageIcon className="w-6 h-6" />
+                  <Camera className="w-6 h-6" />
                   <div>
                     <h3 className="text-lg font-bold">Proof of Delivery</h3>
                     <p className="text-sm text-purple-100">Trip: {selectedBooking.tripNumber}</p>
