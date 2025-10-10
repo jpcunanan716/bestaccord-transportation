@@ -70,69 +70,32 @@ export default function DriverBookings() {
     }));
   };
 
-// Camera functions
+   // Camera functions
   const startCamera = async () => {
     try {
-      // Check if mediaDevices is supported
-      if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-        setError("Camera not supported on this device/browser.");
-        setTimeout(() => setError(""), 5000);
-        return;
-      }
-
-      // Try to get camera with fallback constraints for mobile
-      let mediaStream;
-      try {
-        // First try with rear camera (ideal for mobile)
-        mediaStream = await navigator.mediaDevices.getUserMedia({ 
-          video: { 
-            facingMode: { exact: 'environment' },
-            width: { ideal: 1920, max: 1920 },
-            height: { ideal: 1080, max: 1080 }
-          },
-          audio: false 
-        });
-      } catch (err) {
-        console.log("Rear camera not available, trying any camera...");
-        // Fallback: try any available camera
-        mediaStream = await navigator.mediaDevices.getUserMedia({ 
-          video: { 
-            facingMode: 'environment',
-            width: { ideal: 1280 },
-            height: { ideal: 720 }
-          },
-          audio: false 
-        });
-      }
-      
+      const mediaStream = await navigator.mediaDevices.getUserMedia({ 
+        video: { 
+          facingMode: 'environment',
+          width: { ideal: 1280 },
+          height: { ideal: 720 }
+        },
+        audio: false 
+      });
       setStream(mediaStream);
       setShowCamera(true);
       
       // Wait for the video element to be ready
       setTimeout(() => {
-        if (videoRef.current && mediaStream) {
+        if (videoRef.current) {
           videoRef.current.srcObject = mediaStream;
-          // Add event listeners for mobile
-          videoRef.current.setAttribute('playsinline', 'true');
-          videoRef.current.setAttribute('autoplay', 'true');
           videoRef.current.play().catch(err => {
             console.error("Error playing video:", err);
-            setError("Could not start camera preview.");
-            setTimeout(() => setError(""), 3000);
           });
         }
-      }, 200);
+      }, 100);
     } catch (err) {
       console.error("Error accessing camera:", err);
-      let errorMsg = "Unable to access camera. ";
-      if (err.name === 'NotAllowedError' || err.name === 'PermissionDeniedError') {
-        errorMsg += "Please allow camera permissions.";
-      } else if (err.name === 'NotFoundError') {
-        errorMsg += "No camera found on device.";
-      } else {
-        errorMsg += "Please check permissions and try again.";
-      }
-      setError(errorMsg);
+      setError("Unable to access camera. Please check permissions.");
       setTimeout(() => setError(""), 5000);
     }
   };
