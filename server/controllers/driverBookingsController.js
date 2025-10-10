@@ -313,10 +313,10 @@ export const updateBookingStatus = async (req, res) => {
 
       // Check image size (limit to 5MB base64)
       const sizeInMB = (proofOfDelivery.length * 0.75) / (1024 * 1024);
-      if (sizeInMB > 5) {
+      if (sizeInMB > 20) {
         return res.status(413).json({
           success: false,
-          msg: "Proof of delivery image is too large. Maximum 5MB allowed."
+          msg: "Proof of delivery image is too large. Maximum 20MB allowed."
         });
       }
     }
