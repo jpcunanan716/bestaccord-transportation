@@ -19,7 +19,7 @@ function Client() {
 
   // Search states
   const [searchName, setSearchName] = useState("");
-  const [searchLocation, setSearchLocation] = useState("");
+  const [searchCity, setSearchCity] = useState("");
   const [searchBranch, setSearchBranch] = useState("");
   const [searchDate, setSearchDate] = useState("");
   const [generalSearch, setGeneralSearch] = useState("");
@@ -27,7 +27,7 @@ function Client() {
   // Unique filter values
   const [uniqueNames, setUniqueNames] = useState([]);
   const [uniqueBranches, setUniqueBranches] = useState([]);
-  const [uniqueLocations, setUniqueLocations] = useState([]);
+  const [uniqueCities, setUniqueCities] = useState([]);
   const [uniqueDates, setUniqueDates] = useState([]);
 
   const [formData, setFormData] = useState({
@@ -199,7 +199,12 @@ function Client() {
 
       setUniqueNames([...new Set(activeClients.map((c) => c.clientName))]);
       setUniqueBranches([...new Set(activeClients.map((c) => c.clientBranch))]);
-      setUniqueLocations([...new Set(activeClients.map((c) => c.location))]);
+
+      const cities = activeClients
+        .map((c) => c.address?.city)
+        .filter(Boolean);
+      setUniqueCities([...new Set(cities)].sort());
+
       setUniqueDates([
         ...new Set(
           activeClients.map((c) =>
@@ -223,8 +228,8 @@ function Client() {
     if (searchName) {
       results = results.filter((client) => client.clientName === searchName);
     }
-    if (searchLocation) {
-      results = results.filter((client) => client.location === searchLocation);
+    if (searchCity) {
+      results = results.filter((client) => client.address?.city === searchCity);
     }
     if (searchBranch) {
       results = results.filter((client) => client.clientBranch === searchBranch);
@@ -241,7 +246,7 @@ function Client() {
           client.clientName
             ?.toLowerCase()
             .includes(generalSearch.toLowerCase()) ||
-          client.location
+          client.address?.city
             ?.toLowerCase()
             .includes(generalSearch.toLowerCase()) ||
           client.clientBranch?.toLowerCase().includes(generalSearch.toLowerCase()) ||
@@ -253,7 +258,7 @@ function Client() {
 
     setFilteredClients(results);
     setCurrentPage(1);
-  }, [searchName, searchBranch, searchLocation, searchDate, generalSearch, clients]);
+  }, [searchName, searchBranch, searchCity, searchDate, generalSearch, clients]);
 
   // Pagination logic
   const totalPages = Math.ceil(filteredClients.length / itemsPerPage);
@@ -422,14 +427,14 @@ function Client() {
           </select>
 
           <select
-            value={searchLocation}
-            onChange={(e) => setSearchLocation(e.target.value)}
+            value={searchCity}
+            onChange={(e) => setSearchCity(e.target.value)}
             className="px-4 py-2.5 border border-purple-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-400 focus:border-transparent bg-white/50 text-sm"
           >
             <option value="">All Locations</option>
-            {uniqueLocations.map((location, i) => (
-              <option key={i} value={location}>
-                {location}
+            {uniqueCities.map((city, i) => (
+              <option key={i} value={city}>
+                {city}
               </option>
             ))}
           </select>
