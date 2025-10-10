@@ -693,20 +693,20 @@ export default function DriverBookings() {
                                 className="w-full py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors flex items-center justify-center gap-2"
                               >
                                 <RotateCcw className="w-4 h-4" />
-                                Retake Photo
+                                Blurry? Retake Photo
                               </button>
                             </div>
                           ) : (
                             <button
                               onClick={startCamera}
-                              className="w-full py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors flex items-center justify-center gap-2 font-medium"
+                              className="w-full py-3 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors flex items-center justify-center gap-2 font-medium"
                             >
                               <Camera className="w-5 h-5" />
                               Take Photo
                             </button>
                           )}
                           <p className="text-xs text-gray-600 text-center mt-2">
-                            📸 Photo required before completing delivery
+                             Please take a proof of delivery to complete this booking
                           </p>
                         </div>
                       </div>
