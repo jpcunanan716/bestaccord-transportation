@@ -218,7 +218,7 @@ function Booking() {
         destinationAddress: booking.destinationAddress,
         vehicleId: booking.vehicleId || "",
         vehicleType: booking.vehicleType,
-        plateNumber: booking.plateNumber || "",
+        plateNumber: booking.plateNumber,
         areaLocationCode: booking.areaLocationCode,
         rateCost: booking.rateCost,
         dateNeeded: new Date(booking.dateNeeded).toISOString().split('T')[0],
@@ -437,6 +437,13 @@ function Booking() {
         form.reportValidity();
         return;
       }
+
+      // verify vehicle is selected
+      console.log("=== Moving to Step 2 ===");
+      console.log("Current formData:", formData);
+      console.log("plateNumber:", formData.plateNumber);
+      console.log("=======================");
+
     }
     setCurrentStep(currentStep + 1);
   };
@@ -454,10 +461,31 @@ function Booking() {
       return;
     }
 
+    // ADD THIS DEBUG BLOCK RIGHT AT THE START
+    console.log("=== HANDLE SUBMIT DEBUG ===");
+    console.log("formData object:", formData);
+    console.log("formData.plateNumber:", formData.plateNumber);
+    console.log("formData.vehicleId:", formData.vehicleId);
+    console.log("formData keys:", Object.keys(formData));
+    console.log("========================");
+
     if (!formData.vehicleId || formData.vehicleId.trim() === '') {
       alert('Please select a vehicle.');
       return;
     }
+
+    // ADD THIS CHECK
+    if (!formData.plateNumber || formData.plateNumber.trim() === '') {
+      alert('⚠️ Plate number is missing! Please go back to Step 1 and reselect the vehicle.');
+      console.error("Missing plateNumber in formData:", formData);
+      return;
+    }
+
+    if (!formData.plateNumber || formData.plateNumber.trim() === '') {
+      alert('Plate number is missing. Please go back to Step 1 and reselect the vehicle.');
+      return;
+    }
+
 
     const requiredFields = {
       productName: 'Product Name',
@@ -543,6 +571,13 @@ function Booking() {
           ? formData.roleOfEmployee.filter(role => role !== "")
           : [formData.roleOfEmployee].filter(role => role !== ""),
       };
+
+      // ADD THIS DEBUG
+      console.log("=== SUBMIT DATA DEBUG ===");
+      console.log("submitData.plateNumber:", submitData.plateNumber);
+      console.log("Full submitData:", submitData);
+      console.log("========================");
+
 
       if (editBooking) {
         await axiosClient.put(
