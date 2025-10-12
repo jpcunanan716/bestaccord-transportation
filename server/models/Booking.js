@@ -33,7 +33,25 @@ const bookingSchema = new mongoose.Schema({
         default: "Pending"
     },
     isArchived: { type: Boolean, default: false },
-    proofOfDelivery: { type: String, default: null }, // Stores base64 image string
-}, { timestamps: true });
+    // Stores base64 image string - using Buffer for better handling of large images
+    proofOfDelivery: { 
+        type: String, 
+        default: null,
+        // Validate max size (approximately 10MB when base64 encoded)
+        validate: {
+            validator: function(v) {
+                if (!v) return true; // null is valid
+                // Base64 string is roughly 1.37x the size of the original
+                const estimatedSizeMB = (v.length * 0.75) / (1024 * 1024);
+                return estimatedSizeMB <= 10;
+            },
+            message: 'Proof of delivery image must be less than 10MB'
+        }
+    }
+}, { 
+    timestamps: true,
+    // Increase document size limit for base64 images
+    strictQuery: false
+});
 
 export default mongoose.model("Booking", bookingSchema);

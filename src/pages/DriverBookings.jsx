@@ -70,32 +70,74 @@ export default function DriverBookings() {
     }));
   };
 
-   // Camera functions
+// Camera functions
   const startCamera = async () => {
     try {
-      const mediaStream = await navigator.mediaDevices.getUserMedia({ 
-        video: { 
-          facingMode: 'environment',
-          width: { ideal: 1280 },
-          height: { ideal: 720 }
-        },
-        audio: false 
-      });
+      // Check if mediaDevices is supported
+      if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+        setError("Camera not supported on this device/browser. Try using HTTPS.");
+        setTimeout(() => setError(""), 5000);
+        return;
+      }
+
+      // Mobile-optimized constraints - lower resolution for smaller file size
+      let mediaStream;
+      try {
+        // First try with rear camera (ideal for mobile) with optimized resolution
+        mediaStream = await navigator.mediaDevices.getUserMedia({ 
+          video: { 
+            facingMode: { exact: 'environment' },
+            width: { ideal: 1280, max: 1920 },
+            height: { ideal: 720, max: 1080 },
+            aspectRatio: { ideal: 16/9 }
+          },
+          audio: false 
+        });
+      } catch (err) {
+        console.log("Rear camera not available, trying any camera...");
+        // Fallback: try any available camera
+        mediaStream = await navigator.mediaDevices.getUserMedia({ 
+          video: { 
+            facingMode: 'environment',
+            width: { ideal: 1280, max: 1920 },
+            height: { ideal: 720, max: 1080 },
+            aspectRatio: { ideal: 16/9 }
+          },
+          audio: false 
+        });
+      }
+      
       setStream(mediaStream);
       setShowCamera(true);
       
       // Wait for the video element to be ready
       setTimeout(() => {
-        if (videoRef.current) {
+        if (videoRef.current && mediaStream) {
           videoRef.current.srcObject = mediaStream;
+          // Add event listeners for mobile
+          videoRef.current.setAttribute('playsinline', 'true');
+          videoRef.current.setAttribute('autoplay', 'true');
+          videoRef.current.setAttribute('muted', 'true');
           videoRef.current.play().catch(err => {
             console.error("Error playing video:", err);
+            setError("Could not start camera preview.");
+            setTimeout(() => setError(""), 3000);
           });
         }
-      }, 100);
+      }, 200);
     } catch (err) {
       console.error("Error accessing camera:", err);
-      setError("Unable to access camera. Please check permissions.");
+      let errorMsg = "Unable to access camera. ";
+      if (err.name === 'NotAllowedError' || err.name === 'PermissionDeniedError') {
+        errorMsg += "Please allow camera permissions.";
+      } else if (err.name === 'NotFoundError') {
+        errorMsg += "No camera found on device.";
+      } else if (err.name === 'NotReadableError') {
+        errorMsg += "Camera is already in use by another app.";
+      } else {
+        errorMsg += "Please check permissions and try again.";
+      }
+      setError(errorMsg);
       setTimeout(() => setError(""), 5000);
     }
   };
@@ -728,7 +770,7 @@ export default function DriverBookings() {
                         <div className="flex gap-2 mt-3">
                           <button
                             onClick={capturePhoto}
-                            className="flex-1 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors flex items-center justify-center gap-2"
+                            className="flex-1 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors flex items-center justify-center gap-2"
                           >
                             <Camera className="w-4 h-4" />
                             Capture
