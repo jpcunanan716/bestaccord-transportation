@@ -1,21 +1,22 @@
 import { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { X } from "lucide-react";
+import { X, Calendar } from "lucide-react";
 
 function VehicleInfo() {
     const { id } = useParams();
     const [vehicle, setVehicle] = useState(null);
-    const [vehicles, setVehicles] = useState([]); // store all vehicles
+    const [vehicles, setVehicles] = useState([]);
     const [currentIndex, setCurrentIndex] = useState(-1);
     const [bookings, setBookings] = useState([]);
+    const [filteredBookings, setFilteredBookings] = useState([]);
     const [showModal, setShowModal] = useState(false);
     const [isLoadingBookings, setIsLoadingBookings] = useState(false);
+    const [selectedMonth, setSelectedMonth] = useState("");
     const navigate = useNavigate();
 
-    //VITE API BASE URL
     const baseURL = import.meta.env.VITE_API_BASE_URL;
 
-    // Fetch all vehicles (to know the sequence)
+    // Fetch all vehicles
     useEffect(() => {
         fetch(`${baseURL}/api/vehicles`)
             .then((res) => res.json())
@@ -40,7 +41,29 @@ function VehicleInfo() {
         }
     }, [vehicles, id]);
 
-    //fetch bookings for the vehicle
+    // Filter bookings based on selected month
+    useEffect(() => {
+        if (!selectedMonth) {
+            setFilteredBookings(bookings);
+            return;
+        }
+
+        const [year, month] = selectedMonth.split("-");
+        const filtered = bookings.filter((booking) => {
+            const bookingDate = booking.tripDate || booking.dateNeeded || booking.dateBooked || booking.createdAt;
+            if (!bookingDate) return false;
+
+            const date = new Date(bookingDate);
+            const bookingYear = date.getFullYear();
+            const bookingMonth = String(date.getMonth() + 1).padStart(2, "0");
+
+            return bookingYear === parseInt(year) && bookingMonth === month;
+        });
+
+        setFilteredBookings(filtered);
+    }, [bookings, selectedMonth]);
+
+    // Fetch bookings for the vehicle
     const fetchBookingHistory = async () => {
         if (!vehicle) return;
 
@@ -49,12 +72,17 @@ function VehicleInfo() {
             const res = await fetch(`${baseURL}/api/vehicles/${id}/bookings`);
             const data = await res.json();
             setBookings(data);
+            setFilteredBookings(data);
             setShowModal(true);
         } catch (err) {
             console.error("Error fetching bookings:", err);
         } finally {
             setIsLoadingBookings(false);
         }
+    };
+
+    const clearFilter = () => {
+        setSelectedMonth("");
     };
 
     if (!vehicle) return <p className="text-center py-6 text-gray-500">Loading...</p>;
@@ -168,9 +196,9 @@ function VehicleInfo() {
                 </div>
             </div>
 
-            {/* Employee History Modal*/}
+            {/* Vehicle History Modal*/}
             {showModal && (
-                <div className="fixed inset-0 bg-opacity-50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+                <div className="fixed inset-0 bg-black bg-opacity-50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
                     <div className="bg-white rounded-lg shadow-2xl w-full max-w-6xl max-h-[90vh] flex flex-col">
                         {/* Modal Header */}
                         <div className="flex justify-between items-center p-6 border-b">
@@ -178,21 +206,45 @@ function VehicleInfo() {
                                 <h3 className="text-2xl font-bold text-gray-800">Vehicle History</h3>
                                 <p className="text-sm text-gray-600 mt-1">
                                     Vehicle: {vehicle.vehicleType} • Total Bookings: {bookings.length}
+                                    {selectedMonth && ` • Filtered: ${filteredBookings.length}`}
                                 </p>
                             </div>
-                            <button
-                                onClick={() => setShowModal(false)}
-                                className="p-2 hover:bg-gray-100 rounded-full transition"
-                            >
-                                <X className="w-6 h-6 text-gray-600" />
-                            </button>
+                            <div className="flex items-center gap-3">
+                                <div className="flex items-center gap-2">
+                                    <Calendar className="w-5 h-5 text-gray-600" />
+                                    <input
+                                        type="month"
+                                        value={selectedMonth}
+                                        onChange={(e) => setSelectedMonth(e.target.value)}
+                                        className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
+                                    />
+                                    {selectedMonth && (
+                                        <button
+                                            onClick={clearFilter}
+                                            className="px-3 py-1.5 text-sm bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition"
+                                        >
+                                            Clear
+                                        </button>
+                                    )}
+                                </div>
+                                <button
+                                    onClick={() => setShowModal(false)}
+                                    className="p-2 hover:bg-gray-100 rounded-full transition"
+                                >
+                                    <X className="w-6 h-6 text-gray-600" />
+                                </button>
+                            </div>
                         </div>
 
                         {/* Modal Content */}
                         <div className="flex-1 overflow-auto p-6">
-                            {bookings.length === 0 ? (
+                            {filteredBookings.length === 0 ? (
                                 <div className="text-center py-12">
-                                    <p className="text-gray-500 text-lg">No booking history found for this vehicle.</p>
+                                    <p className="text-gray-500 text-lg">
+                                        {selectedMonth
+                                            ? "No bookings found for the selected month."
+                                            : "No booking history found for this vehicle."}
+                                    </p>
                                 </div>
                             ) : (
                                 <div className="overflow-x-auto">
@@ -208,7 +260,7 @@ function VehicleInfo() {
                                             </tr>
                                         </thead>
                                         <tbody className="divide-y divide-gray-200">
-                                            {bookings.map((booking) => (
+                                            {filteredBookings.map((booking) => (
                                                 <tr key={booking._id} className="hover:bg-gray-50">
                                                     <td className="px-4 py-3 font-medium text-purple-600">
                                                         {booking.tripNumber || "N/A"}
