@@ -84,7 +84,7 @@ export default function Archive() {
     { id: 'trip-reports', label: 'Trip Reports', icon: FileText },
     { id: 'clients', label: 'Clients', icon: User },
     { id: 'vehicles', label: 'Vehicles', icon: Truck },
-    { id: 'employees', label: 'Employees(Drivers/Helpers)', icon: Users },
+    { id: 'employees', label: 'Employees (Drivers/Helpers)', icon: Users },
     { id: 'staffs', label: 'Staffs', icon: UserRoundCheck },
   ];
 
