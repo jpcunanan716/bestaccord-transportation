@@ -6,20 +6,16 @@ import {
   MapPin,
   Clock,
   Package,
-  Truck,
-  Users,
   Calendar,
-  Building,
   X,
   CheckCircle,
   AlertCircle,
   PlayCircle,
-  Clock4,
   User,
   FileText,
   Camera
 } from "lucide-react";
-import ReceiptGenerator from "../components/InvoiceGenerator"; 
+import ReceiptGenerator from "../components/InvoiceGenerator";
 
 export default function Monitoring() {
   const [bookings, setBookings] = useState([]);
@@ -408,12 +404,12 @@ export default function Monitoring() {
   };
 
   const openProofModal = () => {
-  setShowProofModal(true);
-};
+    setShowProofModal(true);
+  };
 
-const closeProofModal = () => {
-  setShowProofModal(false);
-};
+  const closeProofModal = () => {
+    setShowProofModal(false);
+  };
 
   // Initialize map when modal opens
   useEffect(() => {
@@ -1222,7 +1218,7 @@ const closeProofModal = () => {
                           </div>
                         )}
 
-                  {/* NEW: Buttons for Completed Status */}
+                        {/* NEW: Buttons for Completed Status */}
                         {selectedBooking.status === "Completed" && (
                           <>
                             <motion.button
@@ -1269,7 +1265,7 @@ const closeProofModal = () => {
         />
       )}
 
-    {/* Proof of Delivery Modal */}
+      {/* Proof of Delivery Modal */}
       <AnimatePresence>
         {showProofModal && selectedBooking?.proofOfDelivery && (
           <motion.div

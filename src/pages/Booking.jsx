@@ -53,6 +53,7 @@ function Booking() {
     destinationAddress: "",
     vehicleId: "",
     vehicleType: "",
+    plateNumber: "",
     areaLocationCode: "",
     rateCost: "",
     dateNeeded: "",
@@ -217,6 +218,7 @@ function Booking() {
         destinationAddress: booking.destinationAddress,
         vehicleId: booking.vehicleId || "",
         vehicleType: booking.vehicleType,
+        plateNumber: booking.plateNumber || "",
         areaLocationCode: booking.areaLocationCode,
         rateCost: booking.rateCost,
         dateNeeded: new Date(booking.dateNeeded).toISOString().split('T')[0],
@@ -246,6 +248,7 @@ function Booking() {
         destinationAddress: "",
         vehicleId: "",
         vehicleType: "",
+        plateNumber: "",
         areaLocationCode: "",
         rateCost: "",
         dateNeeded: "",
@@ -405,13 +408,15 @@ function Booking() {
       setFormData(prev => ({
         ...prev,
         vehicleId: selectedVehicle.vehicleId,
-        vehicleType: selectedVehicle.vehicleType
+        vehicleType: selectedVehicle.vehicleType,
+        plateNumber: selectedVehicle.plateNumber
       }));
     } else {
       setFormData(prev => ({
         ...prev,
         vehicleId: "",
-        vehicleType: ""
+        vehicleType: "",
+        plateNumber: ""
       }));
     }
   };
