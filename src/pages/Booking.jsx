@@ -71,7 +71,7 @@ function Booking() {
   // }, [formData.region]);
 
   const [errors, setErrors] = useState({});
-  const containerRef = useRef(null); f
+  const containerRef = useRef(null);
 
   // Helper function to clean city names
   const cleanCityName = (cityName) => {
