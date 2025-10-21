@@ -41,6 +41,12 @@ function Booking() {
   const [uniqueVehicleTypes, setUniqueVehicleTypes] = useState([]);
   const [uniqueDates, setUniqueDates] = useState([]);
 
+  // Trip type state
+  const [tripType, setTripType] = useState('single'); // 'single' or 'multiple'
+  const [destinationAddresses, setDestinationAddresses] = useState([
+    { address: '', key: Date.now() }
+  ]);
+
   const [formData, setFormData] = useState({
     productName: "",
     quantity: "",
@@ -86,6 +92,31 @@ function Booking() {
   // Get branches for selected client
   const getClientBranches = (clientName) => {
     return clients.filter(client => client.clientName === clientName);
+  };
+
+  //helper functions for multiple destination addresses
+  // Add destination address
+  const addDestination = () => {
+    setDestinationAddresses(prev => [
+      ...prev,
+      { address: '', key: Date.now() + prev.length }
+    ]);
+  };
+
+  // Remove destination address
+  const removeDestination = (index) => {
+    if (destinationAddresses.length > 1) {
+      setDestinationAddresses(prev => prev.filter((_, i) => i !== index));
+    }
+  };
+
+  // Update destination address
+  const updateDestinationAddress = (index, newAddress) => {
+    setDestinationAddresses(prev =>
+      prev.map((dest, i) =>
+        i === index ? { ...dest, address: newAddress } : dest
+      )
+    );
   };
 
   // Fetch all required data
@@ -221,7 +252,7 @@ function Booking() {
         shipperConsignorName: booking.shipperConsignorName,
         customerEstablishmentName: booking.customerEstablishmentName,
         originAddress: booking.originAddress,
-        destinationAddress: booking.destinationAddress,
+        destinationAddress: booking.destinationAddress || "",
         vehicleId: booking.vehicleId || "",
         vehicleType: booking.vehicleType,
         plateNumber: booking.plateNumber,
@@ -231,6 +262,23 @@ function Booking() {
         roleOfEmployee: Array.isArray(booking.roleOfEmployee) ? booking.roleOfEmployee : [booking.roleOfEmployee],
       });
 
+      const hasMultipleDestinations = Array.isArray(booking.destinationAddresses) && booking.destinationAddresses.length > 1;
+
+      setTripType(hasMultipleDestinations ? 'multiple' : 'single');
+
+      if (hasMultipleDestinations) {
+        setDestinationAddresses(
+          booking.destinationAddresses.map((addr, index) => ({
+            address: addr,
+            key: Date.now() + index
+          }))
+        );
+      } else {
+        setDestinationAddresses([
+          { address: booking.destinationAddress || '', key: Date.now() }
+        ]);
+      }
+
       const client = clients.find(c => c.clientName === booking.companyName);
       if (client) {
         setSelectedClient(client);
@@ -238,6 +286,8 @@ function Booking() {
     } else {
       setEditBooking(null);
       setSelectedClient(null);
+      setTripType('single');
+      setDestinationAddresses([{ address: '', key: Date.now() }]);
       setFormData({
         productName: "",
         quantity: "",
@@ -467,6 +517,20 @@ function Booking() {
       return;
     }
 
+    // Validation for multiple destinations
+    if (tripType === 'multiple') {
+      const emptyDestinations = destinationAddresses.filter(dest => !dest.address.trim());
+      if (emptyDestinations.length > 0) {
+        alert('Please fill in all destination addresses.');
+        return;
+      }
+
+      if (destinationAddresses.length === 0) {
+        alert('Please add at least one destination address.');
+        return;
+      }
+    }
+
     if (!formData.vehicleId || formData.vehicleId.trim() === '') {
       alert('Please select a vehicle.');
       return;
@@ -548,8 +612,21 @@ function Booking() {
     }
 
     try {
+      const destinationData = tripType === 'multiple'
+        ? {
+          destinationAddress: destinationAddresses[0].address, // Keep first for compatibility
+          destinationAddresses: destinationAddresses.map(dest => dest.address),
+          tripType: 'multiple'
+        }
+        : {
+          destinationAddress: formData.destinationAddress,
+          destinationAddresses: [formData.destinationAddress], // Array with single item
+          tripType: 'single'
+        };
+
       const submitData = {
         ...formData,
+        ...destinationData,
         quantity: parseInt(formData.quantity) || 0,
         grossWeight: parseFloat(formData.grossWeight) || 0,
         unitPerPackage: parseInt(formData.unitPerPackage) || 0,
@@ -1271,6 +1348,58 @@ function Booking() {
                         </select>
                       </div>
 
+                      {/* Trip Type Toggle */}
+                      <div className="bg-gradient-to-r from-blue-50 to-cyan-50 p-4 rounded-xl border border-blue-100 mb-4">
+                        <h3 className="text-sm font-medium text-gray-700 mb-3">Trip Type</h3>
+                        <div className="flex gap-4">
+                          <label className="flex items-center cursor-pointer">
+                            <input
+                              type="radio"
+                              name="tripType"
+                              value="single"
+                              checked={tripType === 'single'}
+                              onChange={(e) => {
+                                setTripType(e.target.value);
+                                // If switching to single, keep only the first destination
+                                if (e.target.value === 'single' && destinationAddresses.length > 1) {
+                                  setDestinationAddresses([destinationAddresses[0]]);
+                                  setFormData(prev => ({
+                                    ...prev,
+                                    destinationAddress: destinationAddresses[0].address
+                                  }));
+                                }
+                              }}
+                              className="sr-only"
+                            />
+                            <div className={`w-6 h-6 rounded-full border-2 mr-2 flex items-center justify-center ${tripType === 'single'
+                              ? 'border-blue-600 bg-blue-600'
+                              : 'border-gray-300'
+                              }`}>
+                              {tripType === 'single' && <div className="w-2 h-2 rounded-full bg-white"></div>}
+                            </div>
+                            <span className="text-sm font-medium">Single Drop Trip</span>
+                          </label>
+
+                          <label className="flex items-center cursor-pointer">
+                            <input
+                              type="radio"
+                              name="tripType"
+                              value="multiple"
+                              checked={tripType === 'multiple'}
+                              onChange={(e) => setTripType(e.target.value)}
+                              className="sr-only"
+                            />
+                            <div className={`w-6 h-6 rounded-full border-2 mr-2 flex items-center justify-center ${tripType === 'multiple'
+                              ? 'border-blue-600 bg-blue-600'
+                              : 'border-gray-300'
+                              }`}>
+                              {tripType === 'multiple' && <div className="w-2 h-2 rounded-full bg-white"></div>}
+                            </div>
+                            <span className="text-sm font-medium">Multiple Drop Trip</span>
+                          </label>
+                        </div>
+                      </div>
+
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div>
                           <label className="block text-sm font-medium text-gray-700 mb-2">Shipper/Consignor *</label>
@@ -1334,15 +1463,62 @@ function Booking() {
                           </select>
                         </div>
                         <div>
-                          <label className="block text-sm font-medium text-gray-700 mb-2">Destination/To *</label>
-                          <input
-                            type="text"
-                            name="destinationAddress"
-                            value={formData.destinationAddress}
-                            readOnly
-                            placeholder="Select branch first"
-                            className="w-full px-4 py-2.5 border border-indigo-200 rounded-xl bg-indigo-50/50"
-                          />
+                          <label className="block text-sm font-medium text-gray-700 mb-2">
+                            {tripType === 'single' ? 'Destination/To *' : 'Destinations *'}
+                          </label>
+
+                          {tripType === 'single' ? (
+                            // Single destination (original behavior)
+                            <input
+                              type="text"
+                              name="destinationAddress"
+                              value={formData.destinationAddress}
+                              readOnly
+                              placeholder="Select branch first"
+                              className="w-full px-4 py-2.5 border border-indigo-200 rounded-xl bg-indigo-50/50"
+                            />
+                          ) : (
+                            // Multiple destinations
+                            <div className="space-y-3">
+                              {destinationAddresses.map((dest, index) => (
+                                <div key={dest.key} className="flex gap-2 items-start">
+                                  <div className="flex-1">
+                                    <div className="flex items-center gap-2 mb-1">
+                                      <span className="text-xs font-medium text-gray-500 bg-gray-100 px-2 py-1 rounded">
+                                        Stop {index + 1}
+                                      </span>
+                                      {destinationAddresses.length > 1 && (
+                                        <button
+                                          type="button"
+                                          onClick={() => removeDestination(index)}
+                                          className="text-red-500 hover:text-red-700 text-xs font-medium"
+                                        >
+                                          Remove
+                                        </button>
+                                      )}
+                                    </div>
+                                    <input
+                                      type="text"
+                                      value={dest.address}
+                                      onChange={(e) => updateDestinationAddress(index, e.target.value)}
+                                      placeholder={`Destination address ${index + 1}`}
+                                      className="w-full px-4 py-2.5 border border-indigo-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-400 focus:border-transparent"
+                                    />
+                                  </div>
+                                </div>
+                              ))}
+
+                              <motion.button
+                                whileHover={{ scale: 1.02 }}
+                                whileTap={{ scale: 0.98 }}
+                                type="button"
+                                onClick={addDestination}
+                                className="w-full px-4 py-3 bg-gradient-to-r from-green-100 to-emerald-100 text-green-700 rounded-xl hover:from-green-200 hover:to-emerald-200 transition-all duration-300 font-medium border border-green-200"
+                              >
+                                + Add Another Destination
+                              </motion.button>
+                            </div>
+                          )}
                         </div>
                       </div>
                     </div>
