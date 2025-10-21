@@ -64,11 +64,11 @@ function Booking() {
     roleOfEmployee: [],
   });
 
-  // useEffect(() => {
-  //   if (formData.region === "130000000") {
-  //     setFormData((prev) => ({ ...prev, province: "Metro Manila" }));
-  //   }
-  // }, [formData.region]);
+  useEffect(() => {
+    if (formData.region === "130000000") {
+      setFormData((prev) => ({ ...prev, province: "Metro Manila" }));
+    }
+  }, [formData.region]);
 
   const [errors, setErrors] = useState({});
   const containerRef = useRef(null);
@@ -478,12 +478,18 @@ function Booking() {
       return;
     }
 
-    // Extra check for plateNumber
+    // Extra check for plateNumber //
     if (!formData.plateNumber || formData.plateNumber.trim() === '') {
       alert('⚠️ Plate number is missing! Please go back to Step 1 and reselect the vehicle.');
       console.error("Missing plateNumber in formData:", formData);
       return;
     }
+
+    if (!formData.plateNumber || formData.plateNumber.trim() === '') {
+      alert('Plate number is missing. Please go back to Step 1 and reselect the vehicle.');
+      return;
+    }
+
 
     const requiredFields = {
       productName: 'Product Name',
@@ -554,55 +560,6 @@ function Booking() {
     }
 
     try {
-      // Comprehensive NCR and address handling
-      const getName = (list, code) => {
-        if (!code) return '';
-        const found = list.find((item) => item.code === code);
-        return found ? found.name : code;
-      };
-
-      // Reconstruct full address with proper NCR handling
-      const reconstructFullAddress = () => {
-        if (originAddressDetails.fullAddress) {
-          return originAddressDetails.fullAddress;
-        }
-
-        const { street, barangay, city, province, region } = originAddressDetails;
-
-        // Get display names
-        const barangayName = getName(barangays, barangay);
-        const cityName = getName(cities, city);
-
-        let provinceName = '';
-        if (region === "130000000") {
-          provinceName = "Metro Manila";
-        } else {
-          provinceName = getName(provinces, province);
-        }
-
-        const regionName = getName(regions, region);
-
-        const addressParts = [
-          street,
-          barangayName,
-          cityName,
-          provinceName,
-          regionName
-        ].filter(Boolean);
-
-        return addressParts.join(', ');
-      };
-
-      // Handle NCR province display name
-      let provinceDisplayName = '';
-      if (originAddressDetails.region === "130000000") {
-        // For NCR, use "Metro Manila" as display name but keep the actual province code
-        provinceDisplayName = "Metro Manila";
-      } else {
-        // For non-NCR regions, get the actual province name
-        provinceDisplayName = getName(provinces, originAddressDetails.province);
-      }
-
       const submitData = {
         ...formData,
         quantity: parseInt(formData.quantity) || 0,
@@ -617,42 +574,8 @@ function Booking() {
         roleOfEmployee: Array.isArray(formData.roleOfEmployee)
           ? formData.roleOfEmployee.filter(role => role !== "")
           : [formData.roleOfEmployee].filter(role => role !== ""),
-
-        // Ensure originAddress is always populated
-        originAddress: formData.originAddress || reconstructFullAddress(),
-
-        // Enhanced address details with NCR support
-        originAddressDetails: {
-          ...originAddressDetails,
-          fullAddress: formData.originAddress || reconstructFullAddress(),
-          provinceDisplay: provinceDisplayName,
-          isNCR: originAddressDetails.region === "130000000",
-          regionCode: originAddressDetails.region,
-          provinceCode: originAddressDetails.province,
-          cityCode: originAddressDetails.city,
-          barangayCode: originAddressDetails.barangay,
-          // Store the actual province name for non-NCR regions
-          provinceName: originAddressDetails.region === "130000000"
-            ? "Metro Manila"
-            : getName(provinces, originAddressDetails.province),
-          cityName: getName(cities, originAddressDetails.city),
-          barangayName: getName(barangays, originAddressDetails.barangay),
-          regionName: getName(regions, originAddressDetails.region)
-        },
-
-        // Optional: Add timestamp for tracking
-        submittedAt: new Date().toISOString()
+        originAddressDetails: originAddressDetails,
       };
-
-      // Debug log to verify NCR handling
-      console.log('Address details for submission:', {
-        region: originAddressDetails.region,
-        province: originAddressDetails.province,
-        provinceDisplay: provinceDisplayName,
-        isNCR: originAddressDetails.region === "130000000",
-        fullAddress: submitData.originAddressDetails.fullAddress,
-        originAddressDetails: submitData.originAddressDetails
-      });
 
       if (editBooking) {
         await axiosClient.put(
@@ -664,32 +587,23 @@ function Booking() {
         await axiosClient.post("/api/bookings", submitData);
         alert('Booking created successfully!');
       }
-
       closeModal();
       fetchBookings();
-
     } catch (err) {
       console.error("Full error object:", err);
       console.error("Error response:", err.response?.data);
 
-      // Enhanced error handling
       if (err.response?.data?.message) {
         alert(`Error: ${err.response.data.message}`);
       } else if (err.response?.status === 400) {
         alert("Bad request. Please check your input data.");
-      } else if (err.response?.status === 409) {
-        alert("Conflict: This booking may already exist or have scheduling conflicts.");
       } else if (err.response?.status === 500) {
         alert("Server error. Please try again later.");
-      } else if (err.code === 'NETWORK_ERROR') {
-        alert("Network error. Please check your connection.");
       } else {
         alert("Error adding/updating booking. Please try again.");
       }
     }
   };
-
-
 
   const handleDelete = async (id) => {
     if (!window.confirm("Are you sure you want to archive this booking?")) return;
@@ -1836,40 +1750,34 @@ function Booking() {
                 </div>
 
                 {/* Province */}
-                {formData.region && formData.region !== "130000000" ? (
+                {formData.region !== "130000000" ? (
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">Province *</label>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Province *
+                    </label>
                     <select
                       name="province"
                       value={formData.province}
-                      onChange={handleChange}
-                      required={!!formData.region}
-                      className="w-full px-4 py-2.5 border border-indigo-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-400 focus:border-transparent"
+                      onChange={handleAddressChange}
                       disabled={!formData.region}
+                      className="w-full px-4 py-2.5 border border-indigo-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-400 focus:border-transparent disabled:bg-gray-100"
                     >
                       <option value="">Select Province</option>
-                      {provinces.map((p) => (
-                        <option key={p.code} value={p.code}>{p.name}</option>
+                      {provinces.map((province) => (
+                        <option key={province.code} value={province.code}>
+                          {province.name}
+                        </option>
                       ))}
                     </select>
                   </div>
-                ) : formData.region === "130000000" ? (
+                ) : (
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">Province *</label>
-                    <select
-                      name="province"
-                      value={formData.province}
-                      onChange={handleChange}
-                      required={!!formData.region}
-                      className="w-full px-4 py-2.5 border border-indigo-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-400 focus:border-transparent"
-                    >
-                      <option value="">Select Province (NCR)</option>
-                      {provinces.map((p) => (
-                        <option key={p.code} value={p.code}>{p.name}</option>
-                      ))}
-                    </select>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Province</label>
+                    <div className="w-full px-4 py-2.5 border border-indigo-200 rounded-xl bg-gray-50 text-gray-700">
+                      Metro Manila (National Capital Region)
+                    </div>
                   </div>
-                ) : null}
+                )}
 
 
                 {/* City/Municipality */}
