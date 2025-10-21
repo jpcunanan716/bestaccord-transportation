@@ -630,22 +630,32 @@ function Booking() {
     // Update addressFormData for UI
     setAddressFormData(prev => {
       if (name === "region") {
+        // If NCR is selected, automatically set province to "Metro Manila"
+        if (value === "130000000") {
+          return { ...prev, region: value, province: "Metro Manila", city: "", barangay: "" };
+        }
         return { ...prev, region: value, province: "", city: "", barangay: "" };
       } else if (name === "province") {
         return { ...prev, province: value, city: "", barangay: "" };
       } else if (name === "city") {
         return { ...prev, city: value, barangay: "" };
+      } else if (name === "barangay") {
+        return { ...prev, barangay: value };
       } else {
         return { ...prev, [name]: value };
       }
     });
 
     // Update formData to trigger useEffect for data fetching
-    if (name === "region" || name === "province" || name === "city") {
+    if (name === "region" || name === "province" || name === "city" || name === "barangay") {
       setFormData(prev => ({
         ...prev,
         [name]: value,
-        ...(name === "region" && { province: "", city: "", barangay: "" }),
+        ...(name === "region" && {
+          province: value === "130000000" ? "Metro Manila" : "",
+          city: "",
+          barangay: ""
+        }),
         ...(name === "province" && { city: "", barangay: "" }),
         ...(name === "city" && { barangay: "" })
       }));
