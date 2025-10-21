@@ -312,19 +312,29 @@ function Booking() {
     setSelectedClient(null);
   };
 
-  const handleBranchChange = (e) => {
-    const selectedBranch = e.target.value;
-    const client = clients.find(c => c.clientBranch === selectedBranch && c.clientName === formData.companyName);
+const handleBranchChange = (e) => {
+  const selectedBranch = e.target.value;
+  const client = clients.find(c => c.clientBranch === selectedBranch && c.clientName === formData.companyName);
 
-    if (client) {
-      setSelectedClient(client);
-      setFormData(prev => ({
-        ...prev,
-        shipperConsignorName: selectedBranch,
-        originAddress: cleanCityName(client.address?.city || "")
-      }));
-    }
-  };
+  if (client) {
+    setSelectedClient(client);
+    
+    const fullAddress = [
+      client.address?.houseNumber,
+      client.address?.street,
+      client.address?.barangay,
+      client.address?.city,
+      client.address?.province,
+      client.address?.region
+    ].filter(Boolean).join(', ');
+    
+    setFormData(prev => ({
+      ...prev,
+      shipperConsignorName: selectedBranch,
+      originAddress: fullAddress || cleanCityName(client.address?.city || "")
+    }));
+  }
+};
 
   const handleEmployeeChange = (index, employeeId) => {
     const newEmployeeAssigned = [...formData.employeeAssigned];
