@@ -1518,7 +1518,7 @@ function Booking() {
                               ))}
                             </select>
                           ) : (
-                            // Multiple destinations
+                            // Multiple destinations - Single column layout
                             <div className="space-y-3">
                               {selectedBranches.map((branchData, index) => (
                                 <div key={branchData.key} className="border border-indigo-200 rounded-xl p-4 bg-white">
@@ -1598,9 +1598,11 @@ function Booking() {
                             </div>
                           )}
                         </div>
+
+                        {/* Remove the duplicate right column - it's not needed anymore */}
                         <div>
                           <label className="block text-sm font-medium text-gray-700 mb-2">
-                            {tripType === 'single' ? 'Destination/To *' : 'Destinations *'}
+                            {tripType === 'single' ? 'Destination/To *' : 'Destinations Preview'}
                           </label>
 
                           {tripType === 'single' ? (
@@ -1614,45 +1616,16 @@ function Booking() {
                               className="w-full px-4 py-2.5 border border-indigo-200 rounded-xl bg-indigo-50/50"
                             />
                           ) : (
-                            // Multiple destinations
-                            <div className="space-y-3">
-                              {destinationAddresses.map((dest, index) => (
-                                <div key={dest.key} className="flex gap-2 items-start">
-                                  <div className="flex-1">
-                                    <div className="flex items-center gap-2 mb-1">
-                                      <span className="text-xs font-medium text-gray-500 bg-gray-100 px-2 py-1 rounded">
-                                        Stop {index + 1}
-                                      </span>
-                                      {destinationAddresses.length > 1 && (
-                                        <button
-                                          type="button"
-                                          onClick={() => removeDestination(index)}
-                                          className="text-red-500 hover:text-red-700 text-xs font-medium"
-                                        >
-                                          Remove
-                                        </button>
-                                      )}
-                                    </div>
-                                    <input
-                                      type="text"
-                                      value={dest.address}
-                                      onChange={(e) => updateDestinationAddress(index, e.target.value)}
-                                      placeholder={`Destination address ${index + 1}`}
-                                      className="w-full px-4 py-2.5 border border-indigo-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-400 focus:border-transparent"
-                                    />
-                                  </div>
+                            // Multiple destinations preview
+                            <div className="space-y-2 max-h-60 overflow-y-auto p-3 bg-gray-50 rounded-xl border border-indigo-200">
+                              {selectedBranches.map((branchData, index) => (
+                                <div key={branchData.key} className="text-sm">
+                                  <div className="font-medium text-gray-700">Stop {index + 1}: {branchData.branch || 'Not selected'}</div>
+                                  {branchData.address && (
+                                    <div className="text-xs text-gray-500 truncate">{branchData.address}</div>
+                                  )}
                                 </div>
                               ))}
-
-                              <motion.button
-                                whileHover={{ scale: 1.02 }}
-                                whileTap={{ scale: 0.98 }}
-                                type="button"
-                                onClick={addDestination}
-                                className="w-full px-4 py-3 bg-gradient-to-r from-green-100 to-emerald-100 text-green-700 rounded-xl hover:from-green-200 hover:to-emerald-200 transition-all duration-300 font-medium border border-green-200"
-                              >
-                                + Add Another Destination
-                              </motion.button>
                             </div>
                           )}
                         </div>
