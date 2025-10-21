@@ -312,29 +312,29 @@ function Booking() {
     setSelectedClient(null);
   };
 
-const handleBranchChange = (e) => {
-  const selectedBranch = e.target.value;
-  const client = clients.find(c => c.clientBranch === selectedBranch && c.clientName === formData.companyName);
+  const handleBranchChange = (e) => {
+    const selectedBranch = e.target.value;
+    const client = clients.find(c => c.clientBranch === selectedBranch && c.clientName === formData.companyName);
 
-  if (client) {
-    setSelectedClient(client);
-    
-    const fullAddress = [
-      client.address?.houseNumber,
-      client.address?.street,
-      client.address?.barangay,
-      client.address?.city,
-      client.address?.province,
-      client.address?.region
-    ].filter(Boolean).join(', ');
-    
-    setFormData(prev => ({
-      ...prev,
-      shipperConsignorName: selectedBranch,
-      originAddress: fullAddress || cleanCityName(client.address?.city || "")
-    }));
-  }
-};
+    if (client) {
+      setSelectedClient(client);
+
+      const fullAddress = [
+        client.address?.houseNumber,
+        client.address?.street,
+        client.address?.barangay,
+        client.address?.city,
+        client.address?.province,
+        client.address?.region
+      ].filter(Boolean).join(', ');
+
+      setFormData(prev => ({
+        ...prev,
+        shipperConsignorName: selectedBranch,
+        originAddress: fullAddress || cleanCityName(client.address?.city || "")
+      }));
+    }
+  };
 
   const handleEmployeeChange = (index, employeeId) => {
     const newEmployeeAssigned = [...formData.employeeAssigned];
@@ -997,7 +997,34 @@ const handleBranchChange = (e) => {
 
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div>
-                          <label className="block text-sm font-medium text-gray-700 mb-2">Shipper/Consignor (Branch) *</label>
+                          <label className="block text-sm font-medium text-gray-700 mb-2">Shipper/Consignor *</label>
+                          <input
+                            type="text"
+                            name="customerEstablishmentName"
+                            value={formData.customerEstablishmentName}
+                            onChange={handleChange}
+                            required
+                            placeholder="Enter customer name"
+                            className="w-full px-4 py-2.5 border border-indigo-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-400 focus:border-transparent"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-2">Origin/From (Auto-populated) *</label>
+                          <input
+                            type="text"
+                            name="originAddress"
+                            value={formData.originAddress}
+                            readOnly
+                            placeholder="Select branch first"
+                            className="w-full px-4 py-2.5 border border-indigo-200 rounded-xl bg-indigo-50/50"
+                          />
+                        </div>
+
+                      </div>
+
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-2">Customer/Establishment (Branch) *</label>
                           <select
                             name="shipperConsignorName"
                             value={formData.shipperConsignorName}
@@ -1013,32 +1040,6 @@ const handleBranchChange = (e) => {
                               </option>
                             ))}
                           </select>
-                        </div>
-                        <div>
-                          <label className="block text-sm font-medium text-gray-700 mb-2">Customer/Establishment *</label>
-                          <input
-                            type="text"
-                            name="customerEstablishmentName"
-                            value={formData.customerEstablishmentName}
-                            onChange={handleChange}
-                            required
-                            placeholder="Enter customer name"
-                            className="w-full px-4 py-2.5 border border-indigo-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-400 focus:border-transparent"
-                          />
-                        </div>
-                      </div>
-
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
-                        <div>
-                          <label className="block text-sm font-medium text-gray-700 mb-2">Origin/From (Auto-populated) *</label>
-                          <input
-                            type="text"
-                            name="originAddress"
-                            value={formData.originAddress}
-                            readOnly
-                            placeholder="Select branch first"
-                            className="w-full px-4 py-2.5 border border-indigo-200 rounded-xl bg-indigo-50/50"
-                          />
                         </div>
                         <div>
                           <label className="block text-sm font-medium text-gray-700 mb-2">Destination/To *</label>
