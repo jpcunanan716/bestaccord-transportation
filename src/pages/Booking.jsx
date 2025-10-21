@@ -1010,14 +1010,7 @@ function Booking() {
                         </div>
                         <div>
                           <label className="block text-sm font-medium text-gray-700 mb-2">Origin/From (Auto-populated) *</label>
-                          <input
-                            type="text"
-                            name="originAddress"
-                            value={formData.originAddress}
-                            readOnly
-                            placeholder="Select branch first"
-                            className="w-full px-4 py-2.5 border border-indigo-200 rounded-xl bg-indigo-50/50"
-                          />
+
                         </div>
 
                       </div>
@@ -1043,29 +1036,14 @@ function Booking() {
                         </div>
                         <div>
                           <label className="block text-sm font-medium text-gray-700 mb-2">Destination/To *</label>
-                          <select
+                          <input
+                            type="text"
                             name="destinationAddress"
                             value={formData.destinationAddress}
-                            onChange={handleChange}
-                            required
-                            className="w-full px-4 py-2.5 border border-indigo-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-400 focus:border-transparent"
-                          >
-                            <option value="">Select Destination</option>
-                            {(() => {
-                              const possibleDestinations = Object.keys(addressDefaults)
-                                .filter(pair => {
-                                  const [origin, destination] = pair.toLowerCase().split(' - ');
-                                  return !formData.originAddress || origin === formData.originAddress.toLowerCase();
-                                })
-                                .map(pair => pair.split(' - ')[1]);
-                              const uniqueDestinations = [...new Set(possibleDestinations)];
-                              return uniqueDestinations.map(destination => (
-                                <option key={destination} value={destination}>
-                                  {destination.charAt(0).toUpperCase() + destination.slice(1)}
-                                </option>
-                              ));
-                            })()}
-                          </select>
+                            readOnly
+                            placeholder="Select branch first"
+                            className="w-full px-4 py-2.5 border border-indigo-200 rounded-xl bg-indigo-50/50"
+                          />
                         </div>
                       </div>
                     </div>
