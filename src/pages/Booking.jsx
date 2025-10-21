@@ -626,14 +626,29 @@ function Booking() {
 
   const handleAddressChange = (e) => {
     const { name, value } = e.target;
-    if (name === "region") {
-      setFormData({ ...formData, region: value, province: "", city: "", barangay: "" });
-    } else if (name === "province") {
-      setFormData({ ...formData, province: value, city: "", barangay: "" });
-    } else if (name === "city") {
-      setFormData({ ...formData, city: value, barangay: "" });
-    } else {
-      setFormData({ ...formData, [name]: value });
+
+    // Update addressFormData for UI
+    setAddressFormData(prev => {
+      if (name === "region") {
+        return { ...prev, region: value, province: "", city: "", barangay: "" };
+      } else if (name === "province") {
+        return { ...prev, province: value, city: "", barangay: "" };
+      } else if (name === "city") {
+        return { ...prev, city: value, barangay: "" };
+      } else {
+        return { ...prev, [name]: value };
+      }
+    });
+
+    // Update formData to trigger useEffect for data fetching
+    if (name === "region" || name === "province" || name === "city") {
+      setFormData(prev => ({
+        ...prev,
+        [name]: value,
+        ...(name === "region" && { province: "", city: "", barangay: "" }),
+        ...(name === "province" && { city: "", barangay: "" }),
+        ...(name === "city" && { barangay: "" })
+      }));
     }
   };
 
@@ -682,40 +697,30 @@ function Booking() {
   const formatAddressPreview = () => {
     const { street, barangay, city, province, region } = addressFormData;
 
-    // Get the actual names from the PSGC data
-    const barangayObj = barangays.find(b => b.code === barangay);
-    const cityObj = cities.find(c => c.code === city);
-    const provinceObj = provinces.find(p => p.code === province);
-    const regionObj = regions.find(r => r.code === region);
+    if (!street && !barangay && !city && !province && !region) {
+      return "No address selected";
+    }
+
+    const barangayName = barangays.find(b => b.code === barangay)?.name || '';
+    const cityName = cities.find(c => c.code === city)?.name || '';
+    const provinceName = provinces.find(p => p.code === province)?.name || '';
+    const regionName = regions.find(r => r.code === region)?.name || '';
 
     const parts = [
       street,
-      barangayObj?.name,
-      cityObj?.name,
-      provinceObj?.name,
-      regionObj?.name
+      barangayName,
+      cityName,
+      provinceName,
+      regionName
     ].filter(Boolean);
 
-    const preview = parts.join(', ');
-
-    // Show validation state
-    if (preview) {
-      return preview;
-    } else if (street || region) {
-      return "Please complete all address fields (*)";
-    } else {
-      return "No address selected";
-    }
+    return parts.join(', ') || "Please complete all address fields";
   };
 
   // Check if address form is valid
   const isAddressFormValid = () => {
     const { street, region, province, city, barangay } = addressFormData;
-    return street && street.trim() !== '' &&
-      region && region.trim() !== '' &&
-      province && province.trim() !== '' &&
-      city && city.trim() !== '' &&
-      barangay && barangay.trim() !== '';
+    return street && region && province && city && barangay;
   };
 
   // Clear address form
@@ -732,31 +737,30 @@ function Booking() {
   // Save origin address
   const saveOriginAddress = () => {
     if (!isAddressFormValid()) {
-      alert('Please complete all required address fields (*)');
+      alert('Please complete all address fields');
       return;
     }
 
-    // Get the actual names from PSGC data
-    const barangayObj = barangays.find(b => b.code === addressFormData.barangay);
-    const cityObj = cities.find(c => c.code === addressFormData.city);
-    const provinceObj = provinces.find(p => p.code === addressFormData.province);
-    const regionObj = regions.find(r => r.code === addressFormData.region);
+    const barangayName = barangays.find(b => b.code === addressFormData.barangay)?.name || '';
+    const cityName = cities.find(c => c.code === addressFormData.city)?.name || '';
+    const provinceName = provinces.find(p => p.code === addressFormData.province)?.name || '';
+    const regionName = regions.find(r => r.code === addressFormData.region)?.name || '';
 
     const fullAddress = [
       addressFormData.street,
-      barangayObj?.name,
-      cityObj?.name,
-      provinceObj?.name,
-      regionObj?.name
+      barangayName,
+      cityName,
+      provinceName,
+      regionName
     ].filter(Boolean).join(', ');
 
     // Update the origin address details
     setOriginAddressDetails({
       street: addressFormData.street,
-      barangay: barangayObj?.name || '',
-      city: cityObj?.name || '',
-      province: provinceObj?.name || '',
-      region: regionObj?.name || '',
+      barangay: barangayName,
+      city: cityName,
+      province: provinceName,
+      region: regionName,
       fullAddress: fullAddress
     });
 
@@ -766,14 +770,26 @@ function Booking() {
       originAddress: fullAddress
     }));
 
-    console.log('Address saved:', fullAddress);
-
     // Close the modal
     setShowOriginAddressModal(false);
   };
 
   // Initialize address form when opening modal
   const openAddressModal = () => {
+    // If we already have origin address details, pre-fill the form
+    if (originAddressDetails.fullAddress) {
+      // This is a simplified version - you might want to implement reverse geocoding
+      // or store the codes along with the address details for better pre-filling
+      setAddressFormData({
+        street: originAddressDetails.street || '',
+        region: '',
+        province: '',
+        city: '',
+        barangay: ''
+      });
+    } else {
+      clearAddressForm();
+    }
     setShowOriginAddressModal(true);
   };
 
@@ -1655,7 +1671,6 @@ function Booking() {
       </AnimatePresence>
 
       {/* Origin Address Selection Modal */}
-      {/* Origin Address Selection Modal */}
       <AnimatePresence>
         {showOriginAddressModal && (
           <motion.div
@@ -1721,18 +1736,8 @@ function Booking() {
                   </label>
                   <select
                     name="region"
-                    value={addressFormData.region}
-                    onChange={(e) => {
-                      const newRegion = e.target.value;
-                      setAddressFormData(prev => ({
-                        ...prev,
-                        region: newRegion,
-                        province: '',
-                        city: '',
-                        barangay: ''
-                      }));
-                    }}
-                    required
+                    value={formData.region}
+                    onChange={handleAddressChange}
                     className="w-full px-4 py-2.5 border border-indigo-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-400 focus:border-transparent"
                   >
                     <option value="">Select Region</option>
@@ -1751,18 +1756,9 @@ function Booking() {
                   </label>
                   <select
                     name="province"
-                    value={addressFormData.province}
-                    onChange={(e) => {
-                      const newProvince = e.target.value;
-                      setAddressFormData(prev => ({
-                        ...prev,
-                        province: newProvince,
-                        city: '',
-                        barangay: ''
-                      }));
-                    }}
-                    required
-                    disabled={!addressFormData.region}
+                    value={formData.province}
+                    onChange={handleAddressChange}
+                    disabled={!formData.region}
                     className="w-full px-4 py-2.5 border border-indigo-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-400 focus:border-transparent disabled:bg-gray-100"
                   >
                     <option value="">Select Province</option>
@@ -1781,17 +1777,9 @@ function Booking() {
                   </label>
                   <select
                     name="city"
-                    value={addressFormData.city}
-                    onChange={(e) => {
-                      const newCity = e.target.value;
-                      setAddressFormData(prev => ({
-                        ...prev,
-                        city: newCity,
-                        barangay: ''
-                      }));
-                    }}
-                    required
-                    disabled={!addressFormData.province}
+                    value={formData.city}
+                    onChange={handleAddressChange}
+                    disabled={!formData.province}
                     className="w-full px-4 py-2.5 border border-indigo-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-400 focus:border-transparent disabled:bg-gray-100"
                   >
                     <option value="">Select City/Municipality</option>
@@ -1810,13 +1798,9 @@ function Booking() {
                   </label>
                   <select
                     name="barangay"
-                    value={addressFormData.barangay}
-                    onChange={(e) => setAddressFormData(prev => ({
-                      ...prev,
-                      barangay: e.target.value
-                    }))}
-                    required
-                    disabled={!addressFormData.city}
+                    value={formData.barangay}
+                    onChange={handleAddressChange}
+                    disabled={!formData.city}
                     className="w-full px-4 py-2.5 border border-indigo-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-400 focus:border-transparent disabled:bg-gray-100"
                   >
                     <option value="">Select Barangay</option>
