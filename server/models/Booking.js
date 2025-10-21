@@ -20,8 +20,6 @@ const bookingSchema = new mongoose.Schema({
     },
     vehicleType: { type: String, required: true },
     plateNumber: { type: String, required: true },
-    areaLocationCode: { type: String, required: true },
-    rateCost: { type: Number, required: true },
     dateNeeded: { type: Date, required: true },
     timeNeeded: { type: String, required: true },
     employeeAssigned: [{ type: String }],
