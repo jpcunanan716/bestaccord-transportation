@@ -1750,25 +1750,35 @@ function Booking() {
                 </div>
 
                 {/* Province */}
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Province *
-                  </label>
-                  <select
-                    name="province"
-                    value={formData.province}
-                    onChange={handleAddressChange}
-                    disabled={!formData.region}
-                    className="w-full px-4 py-2.5 border border-indigo-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-400 focus:border-transparent disabled:bg-gray-100"
-                  >
-                    <option value="">Select Province</option>
-                    {provinces.map((province) => (
-                      <option key={province.code} value={province.code}>
-                        {province.name}
-                      </option>
-                    ))}
-                  </select>
-                </div>
+                {formdata.region !== "130000000" ? (
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Province *
+                    </label>
+                    <select
+                      name="province"
+                      value={formData.province}
+                      onChange={handleAddressChange}
+                      disabled={!formData.region}
+                      className="w-full px-4 py-2.5 border border-indigo-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-400 focus:border-transparent disabled:bg-gray-100"
+                    >
+                      <option value="">Select Province</option>
+                      {provinces.map((province) => (
+                        <option key={province.code} value={province.code}>
+                          {province.name}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                ) : (
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Province</label>
+                    <div className="w-full px-4 py-2.5 border border-indigo-200 rounded-xl bg-gray-50 text-gray-700">
+                      Metro Manila (National Capital Region)
+                    </div>
+                  </div>
+                )}
+
 
                 {/* City/Municipality */}
                 <div>
