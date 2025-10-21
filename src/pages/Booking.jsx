@@ -43,8 +43,8 @@ function Booking() {
 
   // Trip type state
   const [tripType, setTripType] = useState('single'); // 'single' or 'multiple'
-  const [destinationAddresses, setDestinationAddresses] = useState([
-    { address: '', key: Date.now() }
+  const [selectedBranches, setSelectedBranches] = useState([
+    { branch: '', address: '', key: Date.now() }
   ]);
 
   const [formData, setFormData] = useState({
@@ -94,27 +94,61 @@ function Booking() {
     return clients.filter(client => client.clientName === clientName);
   };
 
-  //helper functions for multiple destination addresses
-  // Add destination address
-  const addDestination = () => {
-    setDestinationAddresses(prev => [
-      ...prev,
-      { address: '', key: Date.now() + prev.length }
-    ]);
+  //helper functions for multiple branch selections
+  // Get available branches that haven't been selected yet
+  const getAvailableBranches = () => {
+    if (!formData.companyName) return [];
+
+    const allBranches = getClientBranches(formData.companyName);
+    const selectedBranchNames = selectedBranches.map(b => b.branch).filter(Boolean);
+
+    return allBranches.filter(client => !selectedBranchNames.includes(client.clientBranch));
   };
 
-  // Remove destination address
-  const removeDestination = (index) => {
-    if (destinationAddresses.length > 1) {
-      setDestinationAddresses(prev => prev.filter((_, i) => i !== index));
+  // Check if there are available branches to add
+  const hasAvailableBranches = () => {
+    return getAvailableBranches().length > 0;
+  };
+
+  // Add a new branch destination
+  const addBranch = () => {
+    if (hasAvailableBranches()) {
+      setSelectedBranches(prev => [
+        ...prev,
+        { branch: '', address: '', key: Date.now() + prev.length }
+      ]);
     }
   };
 
-  // Update destination address
-  const updateDestinationAddress = (index, newAddress) => {
-    setDestinationAddresses(prev =>
-      prev.map((dest, i) =>
-        i === index ? { ...dest, address: newAddress } : dest
+  // Remove a branch destination
+  const removeBranch = (index) => {
+    if (selectedBranches.length > 1) {
+      setSelectedBranches(prev => prev.filter((_, i) => i !== index));
+    }
+  };
+
+  // Handle branch selection for multiple destinations
+  const handleMultipleBranchChange = (index, branchName) => {
+    const client = clients.find(c =>
+      c.clientName === formData.companyName &&
+      c.clientBranch === branchName
+    );
+
+    let fullAddress = '';
+    if (client) {
+      fullAddress = [
+        client.address?.houseNumber,
+        client.address?.street,
+        client.address?.barangay,
+        client.address?.city,
+        client.address?.province,
+        client.address?.region
+      ].filter(Boolean).join(', ');
+    }
+
+    setSelectedBranches(prev =>
+      prev.map((branchData, i) =>
+        i === index ? { ...branchData, branch: branchName, address: fullAddress } : branchData
       )
     );
   };
@@ -250,7 +284,7 @@ function Booking() {
         deliveryFee: booking.deliveryFee,
         companyName: booking.companyName,
         shipperConsignorName: booking.shipperConsignorName,
-        customerEstablishmentName: booking.customerEstablishmentName,
+        customerEstablishmentName: booking.customerEstablishmentName || "",
         originAddress: booking.originAddress,
         destinationAddress: booking.destinationAddress || "",
         vehicleId: booking.vehicleId || "",
@@ -267,15 +301,20 @@ function Booking() {
       setTripType(hasMultipleDestinations ? 'multiple' : 'single');
 
       if (hasMultipleDestinations) {
-        setDestinationAddresses(
-          booking.destinationAddresses.map((addr, index) => ({
-            address: addr,
+        setSelectedBranches(
+          booking.destinationAddresses.map((dest, index) => ({
+            branch: dest.branch || `Stop ${index + 1}`,
+            address: dest.address || '',
             key: Date.now() + index
           }))
         );
       } else {
-        setDestinationAddresses([
-          { address: booking.destinationAddress || '', key: Date.now() }
+        setSelectedBranches([
+          {
+            branch: booking.customerEstablishmentName || '',
+            address: booking.destinationAddress || '',
+            key: Date.now()
+          }
         ]);
       }
 
@@ -519,14 +558,15 @@ function Booking() {
 
     // Validation for multiple destinations
     if (tripType === 'multiple') {
-      const emptyDestinations = destinationAddresses.filter(dest => !dest.address.trim());
-      if (emptyDestinations.length > 0) {
-        alert('Please fill in all destination addresses.');
+      const emptyBranches = selectedBranches.filter(branch => !branch.branch.trim());
+      if (emptyBranches.length > 0) {
+        alert('Please select a branch for all destinations.');
         return;
       }
 
-      if (destinationAddresses.length === 0) {
-        alert('Please add at least one destination address.');
+      const emptyAddresses = selectedBranches.filter(branch => !branch.address.trim());
+      if (emptyAddresses.length > 0) {
+        alert('Some selected branches have missing address information.');
         return;
       }
     }
@@ -614,15 +654,26 @@ function Booking() {
     try {
       const destinationData = tripType === 'multiple'
         ? {
-          destinationAddress: destinationAddresses[0].address, // Keep first for compatibility
-          destinationAddresses: destinationAddresses.map(dest => dest.address),
-          tripType: 'multiple'
+          customerEstablishmentName: selectedBranches.map(b => b.branch).join(' | '),
+          destinationAddress: selectedBranches[0].address, // First address for compatibility
+          destinationAddresses: selectedBranches.map(branch => ({
+            branch: branch.branch,
+            address: branch.address
+          })),
+          tripType: 'multiple',
+          numberOfStops: selectedBranches.length
         }
         : {
+          customerEstablishmentName: formData.customerEstablishmentName,
           destinationAddress: formData.destinationAddress,
-          destinationAddresses: [formData.destinationAddress], // Array with single item
-          tripType: 'single'
+          destinationAddresses: [{
+            branch: formData.customerEstablishmentName,
+            address: formData.destinationAddress
+          }],
+          tripType: 'single',
+          numberOfStops: 1
         };
+
 
       const submitData = {
         ...formData,
@@ -1360,12 +1411,13 @@ function Booking() {
                               checked={tripType === 'single'}
                               onChange={(e) => {
                                 setTripType(e.target.value);
-                                // If switching to single, keep only the first destination
-                                if (e.target.value === 'single' && destinationAddresses.length > 1) {
-                                  setDestinationAddresses([destinationAddresses[0]]);
+                                // If switching to single, keep only the first branch
+                                if (e.target.value === 'single' && selectedBranches.length > 1) {
+                                  setSelectedBranches([selectedBranches[0]]);
                                   setFormData(prev => ({
                                     ...prev,
-                                    destinationAddress: destinationAddresses[0].address
+                                    customerEstablishmentName: selectedBranches[0].branch,
+                                    destinationAddress: selectedBranches[0].address
                                   }));
                                 }
                               }}
@@ -1445,22 +1497,107 @@ function Booking() {
 
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
                         <div>
-                          <label className="block text-sm font-medium text-gray-700 mb-2">Customer/Establishment (Auto-populated) *</label>
-                          <select
-                            name="customerEstablishmentName"
-                            value={formData.customerEstablishmentName}
-                            onChange={handleBranchChange}
-                            required
-                            disabled={!formData.companyName}
-                            className="w-full px-4 py-2.5 border border-indigo-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-400 focus:border-transparent disabled:bg-gray-100"
-                          >
-                            <option value="">Select branch</option>
-                            {formData.companyName && getClientBranches(formData.companyName).map((client, index) => (
-                              <option key={index} value={client.clientBranch}>
-                                {client.clientBranch}
-                              </option>
-                            ))}
-                          </select>
+                          <label className="block text-sm font-medium text-gray-700 mb-2">
+                            {tripType === 'single' ? 'Customer/Establishment *' : 'Destinations *'}
+                          </label>
+
+                          {tripType === 'single' ? (
+                            // Single destination (original behavior)
+                            <select
+                              name="customerEstablishmentName"
+                              value={formData.customerEstablishmentName}
+                              onChange={handleBranchChange}
+                              required
+                              disabled={!formData.companyName}
+                              className="w-full px-4 py-2.5 border border-indigo-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-400 focus:border-transparent disabled:bg-gray-100"
+                            >
+                              <option value="">Select branch</option>
+                              {formData.companyName && getClientBranches(formData.companyName).map((client, index) => (
+                                <option key={index} value={client.clientBranch}>
+                                  {client.clientBranch}
+                                </option>
+                              ))}
+                            </select>
+                          ) : (
+                            // Multiple destinations
+                            <div className="space-y-3">
+                              {selectedBranches.map((branchData, index) => (
+                                <div key={branchData.key} className="border border-indigo-200 rounded-xl p-4 bg-white">
+                                  <div className="flex items-center justify-between mb-3">
+                                    <span className="text-sm font-medium text-gray-700 bg-indigo-100 px-3 py-1 rounded-full">
+                                      Stop {index + 1}
+                                    </span>
+                                    {selectedBranches.length > 1 && (
+                                      <button
+                                        type="button"
+                                        onClick={() => removeBranch(index)}
+                                        className="text-red-500 hover:text-red-700 text-sm font-medium flex items-center gap-1"
+                                      >
+                                        Remove Stop
+                                      </button>
+                                    )}
+                                  </div>
+
+                                  <div className="space-y-3">
+                                    <div>
+                                      <label className="block text-xs font-medium text-gray-600 mb-1">
+                                        Select Branch *
+                                      </label>
+                                      <select
+                                        value={branchData.branch}
+                                        onChange={(e) => handleMultipleBranchChange(index, e.target.value)}
+                                        required
+                                        disabled={!formData.companyName}
+                                        className="w-full px-4 py-2.5 border border-indigo-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-400 focus:border-transparent disabled:bg-gray-100"
+                                      >
+                                        <option value="">Select branch</option>
+                                        {formData.companyName && getClientBranches(formData.companyName).map((client) => (
+                                          <option
+                                            key={client.clientBranch}
+                                            value={client.clientBranch}
+                                            disabled={selectedBranches.some((b, i) => i !== index && b.branch === client.clientBranch)}
+                                          >
+                                            {client.clientBranch}
+                                            {selectedBranches.some((b, i) => i !== index && b.branch === client.clientBranch) ? ' (Already selected)' : ''}
+                                          </option>
+                                        ))}
+                                      </select>
+                                    </div>
+
+                                    <div>
+                                      <label className="block text-xs font-medium text-gray-600 mb-1">
+                                        Destination Address
+                                      </label>
+                                      <input
+                                        type="text"
+                                        value={branchData.address}
+                                        readOnly
+                                        placeholder="Address will auto-populate when branch is selected"
+                                        className="w-full px-4 py-2.5 border border-indigo-200 rounded-xl bg-indigo-50/50 text-gray-700"
+                                      />
+                                    </div>
+                                  </div>
+                                </div>
+                              ))}
+
+                              <motion.button
+                                whileHover={{ scale: 1.02 }}
+                                whileTap={{ scale: 0.98 }}
+                                type="button"
+                                onClick={addBranch}
+                                disabled={!formData.companyName || !hasAvailableBranches()}
+                                className="w-full px-4 py-3 bg-gradient-to-r from-green-100 to-emerald-100 text-green-700 rounded-xl hover:from-green-200 hover:to-emerald-200 transition-all duration-300 font-medium border border-green-200 disabled:opacity-50 disabled:cursor-not-allowed"
+                              >
+                                + Add Another Destination
+                              </motion.button>
+
+                              {!hasAvailableBranches() && selectedBranches.length > 0 && (
+                                <p className="text-xs text-amber-600 text-center">
+                                  All available branches have been selected
+                                </p>
+                              )}
+                            </div>
+                          )}
                         </div>
                         <div>
                           <label className="block text-sm font-medium text-gray-700 mb-2">
