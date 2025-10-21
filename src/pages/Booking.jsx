@@ -662,25 +662,18 @@ function Booking() {
       const destinationData = tripType === 'multiple'
         ? {
           customerEstablishmentName: selectedBranches.map(b => b.branch).join(' | '),
-          destinationAddress: selectedBranches[0].address,
-          destinationAddresses: selectedBranches.map(branch => ({
-            branch: branch.branch,
-            address: branch.address
-          })),
+          destinationAddress: selectedBranches[0]?.address || '', // First address for compatibility
+          destinationAddresses: selectedBranches.map(branch => branch.address), // Array of address strings
           tripType: 'multiple',
           numberOfStops: selectedBranches.length
         }
         : {
           customerEstablishmentName: formData.customerEstablishmentName,
-          destinationAddress: selectedBranches[0]?.address || '',
-          destinationAddresses: [{
-            branch: formData.customerEstablishmentName,
-            address: selectedBranches[0]?.address || ''
-          }],
+          destinationAddress: selectedBranches[0]?.address || formData.destinationAddress || '',
+          destinationAddresses: [selectedBranches[0]?.address || formData.destinationAddress || ''], // Array with single address string
           tripType: 'single',
           numberOfStops: 1
         };
-
 
       const submitData = {
         ...formData,
@@ -698,6 +691,13 @@ function Booking() {
           : [formData.roleOfEmployee].filter(role => role !== ""),
         originAddressDetails: originAddressDetails,
       };
+
+      // Debug log to verify the data structure
+      console.log('Submitting data:', {
+        destinationAddresses: submitData.destinationAddresses,
+        tripType: submitData.tripType,
+        numberOfStops: submitData.numberOfStops
+      });
 
       if (editBooking) {
         await axiosClient.put(
