@@ -618,6 +618,19 @@ function Booking() {
     navigate(`/dashboard/booking/${booking._id}`);
   };
 
+  const handleAddressChange = (e) => {
+    const { name, value } = e.target;
+    if (name === "region") {
+      setFormData({ ...formData, region: value, province: "", city: "", barangay: "" });
+    } else if (name === "province") {
+      setFormData({ ...formData, province: value, city: "", barangay: "" });
+    } else if (name === "city") {
+      setFormData({ ...formData, city: value, barangay: "" });
+    } else {
+      setFormData({ ...formData, [name]: value });
+    }
+  };
+
   useEffect(() => {
     const key = `${formData.originAddress?.toLowerCase()} - ${formData.destinationAddress?.toLowerCase()}`;
     const defaultsArr = addressDefaults[key];
@@ -1639,6 +1652,7 @@ function Booking() {
           </motion.div>
         )}
       </AnimatePresence>
+
       {/* Origin Address Selection Modal */}
       <AnimatePresence>
         {showOriginAddressModal && (
@@ -1704,18 +1718,9 @@ function Booking() {
                     Region *
                   </label>
                   <select
-                    value={addressFormData.region}
-                    onChange={(e) => {
-                      const newRegion = e.target.value;
-                      setAddressFormData(prev => ({
-                        ...prev,
-                        region: newRegion,
-                        province: '',
-                        city: '',
-                        barangay: ''
-                      }));
-                    }}
-                    required
+                    name="region"
+                    value={formData.region}
+                    onChange={handleAddressChange}
                     className="w-full px-4 py-2.5 border border-indigo-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-400 focus:border-transparent"
                   >
                     <option value="">Select Region</option>
@@ -1733,18 +1738,10 @@ function Booking() {
                     Province *
                   </label>
                   <select
-                    value={addressFormData.province}
-                    onChange={(e) => {
-                      const newProvince = e.target.value;
-                      setAddressFormData(prev => ({
-                        ...prev,
-                        province: newProvince,
-                        city: '',
-                        barangay: ''
-                      }));
-                    }}
-                    required
-                    disabled={!addressFormData.region}
+                    name="province"
+                    value={formData.province}
+                    onChange={handleAddressChange}
+                    disabled={!formData.region}
                     className="w-full px-4 py-2.5 border border-indigo-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-400 focus:border-transparent disabled:bg-gray-100"
                   >
                     <option value="">Select Province</option>
@@ -1762,17 +1759,10 @@ function Booking() {
                     City/Municipality *
                   </label>
                   <select
-                    value={addressFormData.city}
-                    onChange={(e) => {
-                      const newCity = e.target.value;
-                      setAddressFormData(prev => ({
-                        ...prev,
-                        city: newCity,
-                        barangay: ''
-                      }));
-                    }}
-                    required
-                    disabled={!addressFormData.province}
+                    name="city"
+                    value={formData.city}
+                    onChange={handleAddressChange}
+                    disabled={!formData.province}
                     className="w-full px-4 py-2.5 border border-indigo-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-400 focus:border-transparent disabled:bg-gray-100"
                   >
                     <option value="">Select City/Municipality</option>
@@ -1790,13 +1780,10 @@ function Booking() {
                     Barangay *
                   </label>
                   <select
-                    value={addressFormData.barangay}
-                    onChange={(e) => setAddressFormData(prev => ({
-                      ...prev,
-                      barangay: e.target.value
-                    }))}
-                    required
-                    disabled={!addressFormData.city}
+                    name="barangay"
+                    value={formData.barangay}
+                    onChange={handleAddressChange}
+                    disabled={!formData.city}
                     className="w-full px-4 py-2.5 border border-indigo-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-400 focus:border-transparent disabled:bg-gray-100"
                   >
                     <option value="">Select Barangay</option>
