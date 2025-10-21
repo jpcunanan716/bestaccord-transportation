@@ -33,6 +33,8 @@ function Client() {
   const [formData, setFormData] = useState({
     clientName: "",
     clientBranch: "",
+    houseNumber: "",
+    street: "",
     location: "",
     region: "",
     province: "",
@@ -275,6 +277,8 @@ function Client() {
       setFormData({
         clientName: client.clientName || "",
         clientBranch: client.clientBranch || "",
+        houseNumber: client.address?.houseNumber || "",
+        street: client.address?.street || "",
         location: client.location || "",
         region: client.region || "",
         province: client.province || "",
@@ -286,6 +290,8 @@ function Client() {
       setFormData({
         clientName: "",
         clientBranch: "",
+        houseNumber: "",
+        street: "",
         location: "",
         region: "",
         province: "",
@@ -319,6 +325,8 @@ function Client() {
         return found ? found.name : code;
       };
       const address = {
+        houseNumber: formData.houseNumber,
+        street: formData.street,
         region: getName(regions, formData.region),
         province: formData.region === "130000000" ? "Metro Manila" : getName(provinces, formData.province),
         city: getName(cities, formData.city),
@@ -493,7 +501,7 @@ function Client() {
                   <td className="px-6 py-4 text-sm font-semibold text-gray-900">{client.clientName}</td>
                   <td className="px-6 py-4 text-sm text-gray-900">{client.clientBranch}</td>
                   <td className="px-6 py-4 text-sm text-gray-600">
-                    {[client.address?.barangay, client.address?.city, client.address?.province, client.address?.region]
+                    {[client.address?.houseNumber, client.address?.street, client.address?.barangay, client.address?.city, client.address?.province, client.address?.region]
                       .filter(Boolean)
                       .join(', ')}
                   </td>
@@ -636,6 +644,29 @@ function Client() {
                 <div className="bg-gradient-to-r from-indigo-50 to-violet-50 p-6 rounded-2xl border border-indigo-100">
                   <h3 className="text-lg font-semibold text-gray-900 mb-4">Address Information</h3>
                   <div className="space-y-4">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">House/Building Number</label>
+                        <input
+                          type="text"
+                          name="houseNumber"
+                          value={formData.houseNumber}
+                          onChange={handleChange}
+                          className="w-full px-4 py-2.5 border border-indigo-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-400 focus:border-transparent"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">Street</label>
+                        <input
+                          type="text"
+                          name="street"
+                          value={formData.street}
+                          onChange={handleChange}
+                          className="w-full px-4 py-2.5 border border-indigo-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-400 focus:border-transparent"
+                        />
+                      </div>
+                    </div>
+
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-2">Region *</label>
                       <select
