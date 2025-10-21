@@ -537,10 +537,6 @@ function Booking() {
       alert('Please enter a valid delivery fee.');
       return;
     }
-    if (isNaN(formData.rateCost) || parseFloat(formData.rateCost) <= 0) {
-      alert('Please enter a valid rate cost.');
-      return;
-    }
 
     const selectedDate = new Date(formData.dateNeeded);
     const today = new Date();
@@ -559,7 +555,6 @@ function Booking() {
         unitPerPackage: parseInt(formData.unitPerPackage) || 0,
         numberOfPackages: parseInt(formData.numberOfPackages) || 0,
         deliveryFee: parseFloat(formData.deliveryFee) || 0,
-        rateCost: parseFloat(formData.rateCost) || 0,
         employeeAssigned: Array.isArray(formData.employeeAssigned)
           ? formData.employeeAssigned.filter(emp => emp !== "")
           : [formData.employeeAssigned].filter(emp => emp !== ""),
