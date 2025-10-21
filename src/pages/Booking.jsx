@@ -326,7 +326,6 @@ function Booking() {
       setEditBooking(null);
       setSelectedClient(null);
       setTripType('single');
-      setDestinationAddresses([{ address: '', key: Date.now() }]);
       setFormData({
         productName: "",
         quantity: "",
@@ -655,7 +654,7 @@ function Booking() {
       const destinationData = tripType === 'multiple'
         ? {
           customerEstablishmentName: selectedBranches.map(b => b.branch).join(' | '),
-          destinationAddress: selectedBranches[0].address, // First address for compatibility
+          destinationAddress: selectedBranches[0].address,
           destinationAddresses: selectedBranches.map(branch => ({
             branch: branch.branch,
             address: branch.address
@@ -665,10 +664,10 @@ function Booking() {
         }
         : {
           customerEstablishmentName: formData.customerEstablishmentName,
-          destinationAddress: formData.destinationAddress,
+          destinationAddress: selectedBranches[0]?.address || '',
           destinationAddresses: [{
             branch: formData.customerEstablishmentName,
-            address: formData.destinationAddress
+            address: selectedBranches[0]?.address || ''
           }],
           tripType: 'single',
           numberOfStops: 1
