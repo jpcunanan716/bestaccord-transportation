@@ -330,8 +330,8 @@ function Booking() {
 
       setFormData(prev => ({
         ...prev,
-        shipperConsignorName: selectedBranch,
-        originAddress: fullAddress || cleanCityName(client.address?.city || "")
+        customerEstablishmentName: selectedBranch,
+        destinationAddress: fullAddress || cleanCityName(client.address?.city || "")
       }));
     }
   };
@@ -1000,8 +1000,8 @@ function Booking() {
                           <label className="block text-sm font-medium text-gray-700 mb-2">Shipper/Consignor *</label>
                           <input
                             type="text"
-                            name="customerEstablishmentName"
-                            value={formData.customerEstablishmentName}
+                            name="shipperConsignorName"
+                            value={formData.shipperConsignorName}
                             onChange={handleChange}
                             required
                             placeholder="Enter customer name"
@@ -1026,8 +1026,8 @@ function Booking() {
                         <div>
                           <label className="block text-sm font-medium text-gray-700 mb-2">Customer/Establishment (Branch) *</label>
                           <select
-                            name="shipperConsignorName"
-                            value={formData.shipperConsignorName}
+                            name="customerEstablishmentName"
+                            value={formData.customerEstablishmentName}
                             onChange={handleBranchChange}
                             required
                             disabled={!formData.companyName}
