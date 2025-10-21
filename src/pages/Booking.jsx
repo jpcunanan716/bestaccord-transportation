@@ -555,7 +555,7 @@ function Booking() {
       return;
     }
 
-    // Validation for multiple destinations
+    // Trip-specific validation
     if (tripType === 'multiple') {
       const emptyBranches = selectedBranches.filter(branch => !branch.branch.trim());
       if (emptyBranches.length > 0) {
@@ -566,6 +566,16 @@ function Booking() {
       const emptyAddresses = selectedBranches.filter(branch => !branch.address.trim());
       if (emptyAddresses.length > 0) {
         alert('Some selected branches have missing address information.');
+        return;
+      }
+    } else {
+      // Single trip validation
+      if (!formData.customerEstablishmentName || formData.customerEstablishmentName.trim() === '') {
+        alert('Please select a customer/establishment.');
+        return;
+      }
+      if (!formData.destinationAddress || formData.destinationAddress.trim() === '') {
+        alert('Please ensure destination address is populated.');
         return;
       }
     }
@@ -596,9 +606,7 @@ function Booking() {
       deliveryFee: 'Delivery Fee',
       companyName: 'Company Name',
       shipperConsignorName: 'Shipper/Consignor',
-      customerEstablishmentName: 'Customer/Establishment',
       originAddress: 'Origin Address',
-      destinationAddress: 'Destination Address',
       vehicleId: 'Vehicle',
       vehicleType: 'Vehicle Type',
       dateNeeded: 'Date Needed',
