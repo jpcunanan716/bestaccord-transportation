@@ -13,8 +13,7 @@ const bookingSchema = new mongoose.Schema({
     shipperConsignorName: { type: String, required: true },
     customerEstablishmentName: { type: String, required: true },
     originAddress: { type: String, required: true },
-    destinationAddress: { type: String, required: true },
-
+    destinationAddress: [{ type: String, required: true }],
     vehicleId: {
         type: String,
         required: true
@@ -33,24 +32,20 @@ const bookingSchema = new mongoose.Schema({
         default: "Pending"
     },
     isArchived: { type: Boolean, default: false },
-    // Stores base64 image string - using Buffer for better handling of large images
-    proofOfDelivery: { 
-        type: String, 
+    proofOfDelivery: {
+        type: String,
         default: null,
-        // Validate max size (approximately 10MB when base64 encoded)
         validate: {
-            validator: function(v) {
-                if (!v) return true; // null is valid
-                // Base64 string is roughly 1.37x the size of the original
+            validator: function (v) {
+                if (!v) return true;
                 const estimatedSizeMB = (v.length * 0.75) / (1024 * 1024);
                 return estimatedSizeMB <= 10;
             },
             message: 'Proof of delivery image must be less than 10MB'
         }
     }
-}, { 
+}, {
     timestamps: true,
-    // Increase document size limit for base64 images
     strictQuery: false
 });
 

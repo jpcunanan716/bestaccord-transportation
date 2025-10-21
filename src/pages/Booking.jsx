@@ -566,6 +566,7 @@ function Booking() {
         roleOfEmployee: Array.isArray(formData.roleOfEmployee)
           ? formData.roleOfEmployee.filter(role => role !== "")
           : [formData.roleOfEmployee].filter(role => role !== ""),
+        originAddressDetails: originAddressDetails,
       };
 
       if (editBooking) {
@@ -636,6 +637,274 @@ function Booking() {
       }
     }
   }, [formData.originAddress, formData.destinationAddress, formData.vehicleType]);
+
+  // Address Modal States
+  const [showOriginAddressModal, setShowOriginAddressModal] = useState(false);
+  const [originAddressDetails, setOriginAddressDetails] = useState({
+    street: '',
+    barangay: '',
+    city: '',
+    province: '',
+    region: '',
+    fullAddress: ''
+  });
+
+  const [addressFormData, setAddressFormData] = useState({
+    street: '',
+    region: '',
+    province: '',
+    city: '',
+    barangay: ''
+  });
+
+  // Helper function to format address preview
+  const formatAddressPreview = () => {
+    const { street, barangay, city, province, region } = addressFormData;
+
+    if (!street && !barangay && !city && !province && !region) {
+      return "No address selected";
+    }
+
+    const barangayName = barangays.find(b => b.code === barangay)?.name || '';
+    const cityName = cities.find(c => c.code === city)?.name || '';
+    const provinceName = provinces.find(p => p.code === province)?.name || '';
+    const regionName = regions.find(r => r.code === region)?.name || '';
+
+    const parts = [
+      street,
+      barangayName,
+      cityName,
+      provinceName,
+      regionName
+    ].filter(Boolean);
+
+    return parts.join(', ') || "Please complete all address fields";
+  };
+
+  // Check if address form is valid
+  const isAddressFormValid = () => {
+    const { street, region, province, city, barangay } = addressFormData;
+    return street && region && province && city && barangay;
+  };
+
+  // Clear address form
+  const clearAddressForm = () => {
+    setAddressFormData({
+      street: '',
+      region: '',
+      province: '',
+      city: '',
+      barangay: ''
+    });
+  };
+
+  // Save origin address
+  const saveOriginAddress = () => {
+    if (!isAddressFormValid()) {
+      alert('Please complete all address fields');
+      return;
+    }
+
+    const barangayName = barangays.find(b => b.code === addressFormData.barangay)?.name || '';
+    const cityName = cities.find(c => c.code === addressFormData.city)?.name || '';
+    const provinceName = provinces.find(p => p.code === addressFormData.province)?.name || '';
+    const regionName = regions.find(r => r.code === addressFormData.region)?.name || '';
+
+    const fullAddress = [
+      addressFormData.street,
+      barangayName,
+      cityName,
+      provinceName,
+      regionName
+    ].filter(Boolean).join(', ');
+
+    // Update the origin address details
+    setOriginAddressDetails({
+      street: addressFormData.street,
+      barangay: barangayName,
+      city: cityName,
+      province: provinceName,
+      region: regionName,
+      fullAddress: fullAddress
+    });
+
+    // Update the main form data
+    setFormData(prev => ({
+      ...prev,
+      originAddress: fullAddress
+    }));
+
+    // Close the modal
+    setShowOriginAddressModal(false);
+  };
+
+  // Initialize address form when opening modal
+  const openAddressModal = () => {
+    // If we already have origin address details, pre-fill the form
+    if (originAddressDetails.fullAddress) {
+      // This is a simplified version - you might want to implement reverse geocoding
+      // or store the codes along with the address details for better pre-filling
+      setAddressFormData({
+        street: originAddressDetails.street || '',
+        region: '',
+        province: '',
+        city: '',
+        barangay: ''
+      });
+    } else {
+      clearAddressForm();
+    }
+    setShowOriginAddressModal(true);
+  };
+
+  useEffect(() => {
+    if (formData.region === "130000000") {
+      setFormData((prev) => ({ ...prev, province: "Metro Manila" }));
+    }
+  }, [formData.region]);
+
+  // Address dropdown states
+  const [regions, setRegions] = useState([]);
+  const [provinces, setProvinces] = useState([]);
+  const [cities, setCities] = useState([]);
+  const [barangays, setBarangays] = useState([]);
+
+  // Fetch regions on mount
+  useEffect(() => {
+    const fetchRegions = async () => {
+      try {
+        const res = await axios.get("https://psgc.gitlab.io/api/regions/");
+        setRegions(res.data);
+      } catch (err) {
+        console.error("Failed to fetch regions", err);
+      }
+    };
+    fetchRegions();
+  }, []);
+
+  // Fetch provinces when region changes
+  useEffect(() => {
+    if (!formData.region) {
+      setProvinces([]);
+      return;
+    }
+    const fetchProvinces = async () => {
+      try {
+        if (formData.region === "130000000") {
+          const districtsRes = await axios.get("https://psgc.gitlab.io/api/regions/130000000/districts/");
+          const districts = districtsRes.data;
+          let allProvinces = [];
+          for (const district of districts) {
+            try {
+              const provRes = await axios.get(`https://psgc.gitlab.io/api/districts/${district.code}/provinces/`);
+              allProvinces = allProvinces.concat(provRes.data);
+            } catch (err) {
+              if (err.response && err.response.status === 404) {
+                continue;
+              } else {
+                console.error(`Error fetching provinces for district ${district.code}`, err);
+              }
+            }
+          }
+          setProvinces(allProvinces);
+        } else {
+          const res = await axios.get(`https://psgc.gitlab.io/api/regions/${formData.region}/provinces/`);
+          setProvinces(res.data);
+        }
+      } catch (err) {
+        console.error("Failed to fetch provinces", err);
+      }
+    };
+    fetchProvinces();
+  }, [formData.region]);
+
+  // Fetch cities/municipalities when province changes
+  useEffect(() => {
+    if (formData.region === "130000000") {
+      const fetchNcrCities = async () => {
+        try {
+          const districtsRes = await axios.get("https://psgc.gitlab.io/api/regions/130000000/districts/");
+          const districts = districtsRes.data;
+          let allCities = [];
+          for (const district of districts) {
+            let districtHasProvinces = true;
+            let provinces = [];
+            try {
+              const provRes = await axios.get(`https://psgc.gitlab.io/api/districts/${district.code}/provinces/`);
+              provinces = provRes.data;
+            } catch (err) {
+              if (err.response && err.response.status === 404) {
+                districtHasProvinces = false;
+              } else {
+                console.error(`Error fetching provinces for district ${district.code}`, err);
+              }
+            }
+            if (districtHasProvinces && provinces.length > 0) {
+              for (const province of provinces) {
+                try {
+                  const cityRes = await axios.get(`https://psgc.gitlab.io/api/provinces/${province.code}/cities-municipalities/`);
+                  allCities = allCities.concat(cityRes.data);
+                } catch (err) {
+                  if (err.response && err.response.status === 404) {
+                    continue;
+                  } else {
+                    console.error(`Error fetching cities for province ${province.code}`, err);
+                  }
+                }
+              }
+            } else {
+              try {
+                const cityRes = await axios.get(`https://psgc.gitlab.io/api/districts/${district.code}/cities-municipalities/`);
+                allCities = allCities.concat(cityRes.data);
+              } catch (err) {
+                if (err.response && err.response.status === 404) {
+                  continue;
+                } else {
+                  console.error(`Error fetching cities for district ${district.code}`, err);
+                }
+              }
+            }
+          }
+          setCities(allCities);
+        } catch (err) {
+          console.error("Failed to fetch NCR cities/municipalities", err);
+        }
+      };
+      fetchNcrCities();
+      return;
+    }
+    if (!formData.province) {
+      setCities([]);
+      return;
+    }
+    const fetchCities = async () => {
+      try {
+        const res = await axios.get(`https://psgc.gitlab.io/api/provinces/${formData.province}/cities-municipalities/`);
+        setCities(res.data);
+      } catch (err) {
+        console.error("Failed to fetch cities/municipalities", err);
+      }
+    };
+    fetchCities();
+  }, [formData.province, formData.region]);
+
+  // Fetch barangays when city/municipality changes
+  useEffect(() => {
+    if (!formData.city) {
+      setBarangays([]);
+      return;
+    }
+    const fetchBarangays = async () => {
+      try {
+        const res = await axios.get(`https://psgc.gitlab.io/api/cities-municipalities/${formData.city}/barangays/`);
+        setBarangays(res.data);
+      } catch (err) {
+        console.error("Failed to fetch barangays", err);
+      }
+    };
+    fetchBarangays();
+  }, [formData.city]);
+
 
   return (
     <div className="space-y-8">
@@ -1009,15 +1278,38 @@ function Booking() {
                           />
                         </div>
                         <div>
-                          <label className="block text-sm font-medium text-gray-700 mb-2">Origin/From (Auto-populated) *</label>
-
+                          <label className="block text-sm font-medium text-gray-700 mb-2">Origin/From *</label>
+                          <div className="flex gap-2">
+                            <input
+                              type="text"
+                              name="originAddress"
+                              value={formData.originAddress}
+                              readOnly
+                              required
+                              placeholder="Select origin address"
+                              className="w-full px-4 py-2.5 border border-indigo-200 rounded-xl bg-indigo-50/50"
+                            />
+                            <motion.button
+                              whileHover={{ scale: 1.05 }}
+                              whileTap={{ scale: 0.95 }}
+                              type="button"
+                              onClick={openAddressModal}
+                              className="px-4 py-2.5 bg-indigo-600 text-white rounded-xl hover:bg-indigo-700 transition-colors font-medium whitespace-nowrap"
+                            >
+                              Select Address
+                            </motion.button>
+                          </div>
+                          {formData.originAddress && (
+                            <p className="text-xs text-green-600 mt-1">
+                              ✓ Address selected: {formData.originAddress}
+                            </p>
+                          )}
                         </div>
-
                       </div>
 
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
                         <div>
-                          <label className="block text-sm font-medium text-gray-700 mb-2">Customer/Establishment (Branch) *</label>
+                          <label className="block text-sm font-medium text-gray-700 mb-2">Customer/Establishment (Auto-populated) *</label>
                           <select
                             name="customerEstablishmentName"
                             value={formData.customerEstablishmentName}
@@ -1338,6 +1630,224 @@ function Booking() {
                         {editBooking ? "Update Booking" : "Create Booking"}
                       </motion.button>
                     )}
+                  </div>
+                </div>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+      {/* Origin Address Selection Modal */}
+      <AnimatePresence>
+        {showOriginAddressModal && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-60 flex justify-center items-center p-4 bg-black/40 backdrop-blur-sm"
+            onClick={() => setShowOriginAddressModal(false)}
+          >
+            <motion.div
+              initial={{ scale: 0.9, opacity: 0, y: 20 }}
+              animate={{ scale: 1, opacity: 1, y: 0 }}
+              exit={{ scale: 0.9, opacity: 0, y: 20 }}
+              onClick={(e) => e.stopPropagation()}
+              className="bg-white rounded-3xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto border border-indigo-100"
+            >
+              {/* Modal Header */}
+              <div className="sticky top-0 bg-gradient-to-r from-indigo-600 to-purple-600 px-8 py-6 rounded-t-3xl z-10">
+                <div className="flex justify-between items-center">
+                  <div>
+                    <h2 className="text-2xl font-bold text-white">
+                      Select Origin Address
+                    </h2>
+                    <p className="text-indigo-100 text-sm mt-1">
+                      Fill in the complete address details
+                    </p>
+                  </div>
+                  <motion.button
+                    whileHover={{ scale: 1.1 }}
+                    whileTap={{ scale: 0.9 }}
+                    onClick={() => setShowOriginAddressModal(false)}
+                    className="p-2 hover:bg-white/20 rounded-full transition-colors"
+                  >
+                    <X size={24} className="text-white" />
+                  </motion.button>
+                </div>
+              </div>
+
+              {/* Modal Content */}
+              <div className="p-8 space-y-6">
+                {/* Street Address */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Street Address *
+                  </label>
+                  <input
+                    type="text"
+                    value={addressFormData.street}
+                    onChange={(e) => setAddressFormData(prev => ({
+                      ...prev,
+                      street: e.target.value
+                    }))}
+                    placeholder="House number, street name, building"
+                    required
+                    className="w-full px-4 py-2.5 border border-indigo-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-400 focus:border-transparent"
+                  />
+                </div>
+
+                {/* Region */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Region *
+                  </label>
+                  <select
+                    value={addressFormData.region}
+                    onChange={(e) => {
+                      const newRegion = e.target.value;
+                      setAddressFormData(prev => ({
+                        ...prev,
+                        region: newRegion,
+                        province: '',
+                        city: '',
+                        barangay: ''
+                      }));
+                    }}
+                    required
+                    className="w-full px-4 py-2.5 border border-indigo-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-400 focus:border-transparent"
+                  >
+                    <option value="">Select Region</option>
+                    {regions.map((region) => (
+                      <option key={region.code} value={region.code}>
+                        {region.name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                {/* Province */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Province *
+                  </label>
+                  <select
+                    value={addressFormData.province}
+                    onChange={(e) => {
+                      const newProvince = e.target.value;
+                      setAddressFormData(prev => ({
+                        ...prev,
+                        province: newProvince,
+                        city: '',
+                        barangay: ''
+                      }));
+                    }}
+                    required
+                    disabled={!addressFormData.region}
+                    className="w-full px-4 py-2.5 border border-indigo-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-400 focus:border-transparent disabled:bg-gray-100"
+                  >
+                    <option value="">Select Province</option>
+                    {provinces.map((province) => (
+                      <option key={province.code} value={province.code}>
+                        {province.name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                {/* City/Municipality */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    City/Municipality *
+                  </label>
+                  <select
+                    value={addressFormData.city}
+                    onChange={(e) => {
+                      const newCity = e.target.value;
+                      setAddressFormData(prev => ({
+                        ...prev,
+                        city: newCity,
+                        barangay: ''
+                      }));
+                    }}
+                    required
+                    disabled={!addressFormData.province}
+                    className="w-full px-4 py-2.5 border border-indigo-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-400 focus:border-transparent disabled:bg-gray-100"
+                  >
+                    <option value="">Select City/Municipality</option>
+                    {cities.map((city) => (
+                      <option key={city.code} value={city.code}>
+                        {city.name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                {/* Barangay */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Barangay *
+                  </label>
+                  <select
+                    value={addressFormData.barangay}
+                    onChange={(e) => setAddressFormData(prev => ({
+                      ...prev,
+                      barangay: e.target.value
+                    }))}
+                    required
+                    disabled={!addressFormData.city}
+                    className="w-full px-4 py-2.5 border border-indigo-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-400 focus:border-transparent disabled:bg-gray-100"
+                  >
+                    <option value="">Select Barangay</option>
+                    {barangays.map((barangay) => (
+                      <option key={barangay.code} value={barangay.code}>
+                        {barangay.name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                {/* Address Preview */}
+                <div className="p-4 bg-indigo-50 rounded-xl border border-indigo-200">
+                  <h3 className="text-sm font-semibold text-indigo-800 mb-2">Address Preview:</h3>
+                  <p className="text-sm text-indigo-600">
+                    {formatAddressPreview()}
+                  </p>
+                </div>
+              </div>
+
+              {/* Modal Footer */}
+              <div className="sticky bottom-0 bg-gradient-to-r from-gray-50 to-gray-100 px-8 py-6 rounded-b-3xl border-t border-gray-200">
+                <div className="flex justify-between items-center gap-4">
+                  <motion.button
+                    whileHover={{ scale: 1.05 }}
+                    whileTap={{ scale: 0.95 }}
+                    type="button"
+                    onClick={() => setShowOriginAddressModal(false)}
+                    className="px-6 py-3 bg-white border-2 border-gray-300 text-gray-700 rounded-xl font-medium hover:bg-gray-50 transition-all duration-300 shadow-sm"
+                  >
+                    Cancel
+                  </motion.button>
+
+                  <div className="flex gap-3">
+                    <motion.button
+                      whileHover={{ scale: 1.05 }}
+                      whileTap={{ scale: 0.95 }}
+                      type="button"
+                      onClick={clearAddressForm}
+                      className="px-6 py-3 bg-gray-500 text-white rounded-xl font-medium hover:bg-gray-600 transition-all duration-300"
+                    >
+                      Clear
+                    </motion.button>
+                    <motion.button
+                      whileHover={{ scale: 1.05 }}
+                      whileTap={{ scale: 0.95 }}
+                      type="button"
+                      onClick={saveOriginAddress}
+                      disabled={!isAddressFormValid()}
+                      className="px-6 py-3 bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-xl font-medium hover:shadow-lg transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      Use This Address
+                    </motion.button>
                   </div>
                 </div>
               </div>
