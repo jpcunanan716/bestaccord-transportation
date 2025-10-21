@@ -1447,7 +1447,11 @@ function Booking() {
                         >
                           <option value="">Select Vehicle</option>
                           {(() => {
-                            const key = `${formData.originAddress?.toLowerCase()} - ${formData.destinationAddress?.toLowerCase()}`;
+                            // Safely handle address strings to prevent .toLowerCase() errors
+                            const origin = typeof formData.originAddress === 'string' ? formData.originAddress : '';
+                            const destination = typeof formData.destinationAddress === 'string' ? formData.destinationAddress : '';
+
+                            const key = `${origin?.toLowerCase()} - ${destination?.toLowerCase()}`;
                             const allowedVehiclesArr = addressDefaults[key];
                             const allowedVehicleTypes = Array.isArray(allowedVehiclesArr)
                               ? allowedVehiclesArr.map(def => def.vehicleType)

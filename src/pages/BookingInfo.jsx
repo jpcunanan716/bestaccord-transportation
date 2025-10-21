@@ -172,7 +172,7 @@ function BookingInfo() {
                         </div>
                         <div className="flex justify-between border-t pt-3">
                             <span className="text-gray-600">Plate Number:</span>
-                            <span className="font-semibold text-green-600">{booking.plateNumber}</span>
+                            <span className="font-semibold">{booking.plateNumber}</span>
                         </div>
                     </div>
                 </div>
