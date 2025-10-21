@@ -56,8 +56,6 @@ function Booking() {
     vehicleId: "",
     vehicleType: "",
     plateNumber: "",
-    areaLocationCode: "",
-    rateCost: "",
     dateNeeded: "",
     timeNeeded: "",
     employeeAssigned: [],
@@ -227,8 +225,6 @@ function Booking() {
         vehicleId: booking.vehicleId || "",
         vehicleType: booking.vehicleType,
         plateNumber: booking.plateNumber,
-        areaLocationCode: booking.areaLocationCode,
-        rateCost: booking.rateCost,
         dateNeeded: new Date(booking.dateNeeded).toISOString().split('T')[0],
         timeNeeded: booking.timeNeeded,
         employeeAssigned: Array.isArray(booking.employeeAssigned) ? booking.employeeAssigned : [booking.employeeAssigned],
@@ -257,8 +253,6 @@ function Booking() {
         vehicleId: "",
         vehicleType: "",
         plateNumber: "",
-        areaLocationCode: "",
-        rateCost: "",
         dateNeeded: "",
         timeNeeded: "",
         employeeAssigned: [""],
@@ -504,8 +498,6 @@ function Booking() {
       destinationAddress: 'Destination Address',
       vehicleId: 'Vehicle',
       vehicleType: 'Vehicle Type',
-      areaLocationCode: 'Area Code',
-      rateCost: 'Rate Cost',
       dateNeeded: 'Date Needed',
       timeNeeded: 'Time Needed'
     };
@@ -662,27 +654,27 @@ function Booking() {
     }
   };
 
-  useEffect(() => {
-    const key = `${formData.originAddress?.toLowerCase()} - ${formData.destinationAddress?.toLowerCase()}`;
-    const defaultsArr = addressDefaults[key];
-    if (Array.isArray(defaultsArr) && defaultsArr.length > 0) {
-      const selected = defaultsArr.find(def => def.vehicleType === formData.vehicleType);
-      if (selected) {
-        setFormData(prev => ({
-          ...prev,
-          areaLocationCode: selected.areaLocationCode,
-          rateCost: selected.rateCost
-        }));
-      } else {
-        setFormData(prev => ({
-          ...prev,
-          vehicleType: defaultsArr[0].vehicleType,
-          areaLocationCode: defaultsArr[0].areaLocationCode,
-          rateCost: defaultsArr[0].rateCost
-        }));
-      }
-    }
-  }, [formData.originAddress, formData.destinationAddress, formData.vehicleType]);
+  // useEffect(() => {
+  //   const key = `${formData.originAddress?.toLowerCase()} - ${formData.destinationAddress?.toLowerCase()}`;
+  //   const defaultsArr = addressDefaults[key];
+  //   if (Array.isArray(defaultsArr) && defaultsArr.length > 0) {
+  //     const selected = defaultsArr.find(def => def.vehicleType === formData.vehicleType);
+  //     if (selected) {
+  //       setFormData(prev => ({
+  //         ...prev,
+  //         areaLocationCode: selected.areaLocationCode,
+  //         rateCost: selected.rateCost
+  //       }));
+  //     } else {
+  //       setFormData(prev => ({
+  //         ...prev,
+  //         vehicleType: defaultsArr[0].vehicleType,
+  //         areaLocationCode: defaultsArr[0].areaLocationCode,
+  //         rateCost: defaultsArr[0].rateCost
+  //       }));
+  //     }
+  //   }
+  // }, [formData.originAddress, formData.destinationAddress, formData.vehicleType]);
 
   // Address Modal States
   const [showOriginAddressModal, setShowOriginAddressModal] = useState(false);
@@ -1497,31 +1489,6 @@ function Booking() {
                               ));
                           })()}
                         </select>
-                      </div>
-
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <div>
-                          <label className="block text-sm font-medium text-gray-700 mb-2">Area Code</label>
-                          <input
-                            type="text"
-                            name="areaLocationCode"
-                            value={formData.areaLocationCode}
-                            readOnly
-                            placeholder="1"
-                            className="w-full px-4 py-2.5 border border-violet-200 rounded-xl bg-violet-50/50"
-                          />
-                        </div>
-                        <div>
-                          <label className="block text-sm font-medium text-gray-700 mb-2">Rate</label>
-                          <input
-                            type="text"
-                            name="rateCost"
-                            value={formData.rateCost}
-                            readOnly
-                            placeholder="200 PHP"
-                            className="w-full px-4 py-2.5 border border-violet-200 rounded-xl bg-violet-50/50"
-                          />
-                        </div>
                       </div>
                     </div>
                   </div>
