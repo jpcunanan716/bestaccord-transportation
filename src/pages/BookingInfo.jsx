@@ -156,10 +156,6 @@ function BookingInfo() {
                             <span className="text-gray-600 block">Destination Address:</span>
                             <span className="font-semibold">{booking.destinationAddress}</span>
                         </div>
-                        <div className="flex justify-between">
-                            <span className="text-gray-600">Area Location Code:</span>
-                            <span className="font-semibold">{booking.areaLocationCode}</span>
-                        </div>
                     </div>
                 </div>
 
@@ -175,8 +171,8 @@ function BookingInfo() {
                             <span className="font-semibold">{booking.vehicleType}</span>
                         </div>
                         <div className="flex justify-between border-t pt-3">
-                            <span className="text-gray-600">Rate Cost:</span>
-                            <span className="font-semibold text-green-600">{booking.rateCost}</span>
+                            <span className="text-gray-600">Plate Number:</span>
+                            <span className="font-semibold text-green-600">{booking.plateNumber}</span>
                         </div>
                     </div>
                 </div>

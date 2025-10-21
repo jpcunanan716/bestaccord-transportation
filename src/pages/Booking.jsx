@@ -649,28 +649,6 @@ function Booking() {
     }
   };
 
-  // useEffect(() => {
-  //   const key = `${formData.originAddress?.toLowerCase()} - ${formData.destinationAddress?.toLowerCase()}`;
-  //   const defaultsArr = addressDefaults[key];
-  //   if (Array.isArray(defaultsArr) && defaultsArr.length > 0) {
-  //     const selected = defaultsArr.find(def => def.vehicleType === formData.vehicleType);
-  //     if (selected) {
-  //       setFormData(prev => ({
-  //         ...prev,
-  //         areaLocationCode: selected.areaLocationCode,
-  //         rateCost: selected.rateCost
-  //       }));
-  //     } else {
-  //       setFormData(prev => ({
-  //         ...prev,
-  //         vehicleType: defaultsArr[0].vehicleType,
-  //         areaLocationCode: defaultsArr[0].areaLocationCode,
-  //         rateCost: defaultsArr[0].rateCost
-  //       }));
-  //     }
-  //   }
-  // }, [formData.originAddress, formData.destinationAddress, formData.vehicleType]);
-
   // Address Modal States
   const [showOriginAddressModal, setShowOriginAddressModal] = useState(false);
   const [originAddressDetails, setOriginAddressDetails] = useState({
