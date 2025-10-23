@@ -312,152 +312,388 @@ export default function Monitoring() {
     }
   };
 
-  // FIXED: Create map with multiple destination support
-  const createMap = async () => {
-    if (!mapRef.current) return;
+ // IMPROVED: Create map with multiple destination support and fallback geocoding
+const createMap = async () => {
+  if (!mapRef.current) return;
 
-    const L = window.L;
+  const L = window.L;
 
-    // Initialize map centered on Philippines
-    const map = L.map(mapRef.current).setView([14.5995, 120.9842], 6);
+  // Initialize map centered on Philippines
+  const map = L.map(mapRef.current).setView([14.5995, 120.9842], 6);
 
-    // Add OpenStreetMap tiles
-    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-      attribution: '© OpenStreetMap contributors',
-      maxZoom: 19
-    }).addTo(map);
+  // Add OpenStreetMap tiles
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    attribution: '© OpenStreetMap contributors',
+    maxZoom: 19
+  }).addTo(map);
 
-    // Improved geocoding function with delay to respect rate limits
-    const geocodeAddress = async (address) => {
-      try {
-        // Add delay to respect Nominatim rate limits (1 request per second)
-        await new Promise(resolve => setTimeout(resolve, 1000));
-        
-        const response = await fetch(
-          `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(address)}&countrycodes=ph&limit=1`,
-          {
-            headers: {
-              'User-Agent': 'BestAccord-Monitoring-App'
-            }
-          }
-        );
-        const data = await response.json();
-        
-        if (data && data.length > 0) {
-          console.log(`✅ Geocoded "${address}":`, data[0]);
-          return [parseFloat(data[0].lat), parseFloat(data[0].lon)];
-        } else {
-          console.warn(`⚠️ No results for address: "${address}"`);
-          return null;
+  // IMPROVED: Geocoding with fallback strategies
+  const geocodeAddress = async (address, retryLevel = 0) => {
+    try {
+      // Add delay to respect Nominatim rate limits (1 request per second)
+      await new Promise(resolve => setTimeout(resolve, 1100));
+      
+      // Try different search strategies based on retry level
+      let searchQuery = address;
+      
+      if (retryLevel === 0) {
+        // First try: exact address with Philippines
+        searchQuery = `${address}, Philippines`;
+      } else if (retryLevel === 1) {
+        // Second try: extract city/municipality and search broadly
+        const cityMatch = address.match(/City of ([^,]+)|Taguig|Makati|Manila|Quezon City|Pasig|Mandaluyong|Pasay|Parañaque|Las Piñas|Muntinlupa|Caloocan|Malabon|Navotas|Valenzuela|San Juan|Marikina|Pateros/i);
+        if (cityMatch) {
+          const city = cityMatch[1] || cityMatch[0];
+          searchQuery = `${city}, Metro Manila, Philippines`;
         }
-      } catch (error) {
-        console.error(`❌ Geocoding error for "${address}":`, error);
-        return null;
+      } else if (retryLevel === 2) {
+        // Third try: just Metro Manila/NCR
+        if (address.toLowerCase().includes('metro manila') || address.toLowerCase().includes('ncr')) {
+          searchQuery = 'Metro Manila, Philippines';
+        }
       }
+      
+      console.log(`🔍 Geocoding attempt ${retryLevel + 1}: "${searchQuery}"`);
+      
+      const response = await fetch(
+        `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(searchQuery)}&countrycodes=ph&limit=3`,
+        {
+          headers: {
+            'User-Agent': 'BestAccord-Monitoring-App'
+          }
+        }
+      );
+      const data = await response.json();
+      
+      if (data && data.length > 0) {
+        console.log(`✅ Geocoded "${address}":`, data[0]);
+        return {
+          coords: [parseFloat(data[0].lat), parseFloat(data[0].lon)],
+          displayName: data[0].display_name,
+          confidence: retryLevel === 0 ? 'high' : retryLevel === 1 ? 'medium' : 'low'
+        };
+      } else if (retryLevel < 2) {
+        // Retry with different strategy
+        console.warn(`⚠️ No results for "${searchQuery}", trying fallback...`);
+        return await geocodeAddress(address, retryLevel + 1);
+      } else {
+        console.warn(`❌ All geocoding attempts failed for: "${address}"`);
+        // Use hardcoded coordinates for common areas as last resort
+        return getHardcodedCoordinates(address);
+      }
+    } catch (error) {
+      console.error(`❌ Geocoding error for "${address}":`, error);
+      if (retryLevel < 2) {
+        return await geocodeAddress(address, retryLevel + 1);
+      }
+      return getHardcodedCoordinates(address);
+    }
+  };
+
+  // Hardcoded coordinates for common Metro Manila areas as fallback
+  const getHardcodedCoordinates = (address) => {
+    const lowerAddress = address.toLowerCase();
+    
+    // Taguig coordinates (rough center)
+    if (lowerAddress.includes('taguig')) {
+      console.log(`📍 Using hardcoded coordinates for Taguig`);
+      return {
+        coords: [14.5176, 121.0509],
+        displayName: 'Taguig City, Metro Manila',
+        confidence: 'fallback'
+      };
+    }
+    // Makati coordinates
+    if (lowerAddress.includes('makati')) {
+      return {
+        coords: [14.5547, 121.0244],
+        displayName: 'Makati City, Metro Manila',
+        confidence: 'fallback'
+      };
+    }
+    // Manila coordinates
+    if (lowerAddress.includes('manila') && !lowerAddress.includes('metro')) {
+      return {
+        coords: [14.5995, 120.9842],
+        displayName: 'Manila City',
+        confidence: 'fallback'
+      };
+    }
+    // Quezon City coordinates
+    if (lowerAddress.includes('quezon')) {
+      return {
+        coords: [14.6760, 121.0437],
+        displayName: 'Quezon City, Metro Manila',
+        confidence: 'fallback'
+      };
+    }
+    // Pasig coordinates
+    if (lowerAddress.includes('pasig')) {
+      return {
+        coords: [14.5764, 121.0851],
+        displayName: 'Pasig City, Metro Manila',
+        confidence: 'fallback'
+      };
+    }
+    // Mandaluyong coordinates
+    if (lowerAddress.includes('mandaluyong')) {
+      return {
+        coords: [14.5794, 121.0359],
+        displayName: 'Mandaluyong City, Metro Manila',
+        confidence: 'fallback'
+      };
+    }
+    // Pasay coordinates
+    if (lowerAddress.includes('pasay')) {
+      return {
+        coords: [14.5378, 121.0014],
+        displayName: 'Pasay City, Metro Manila',
+        confidence: 'fallback'
+      };
+    }
+    // Parañaque coordinates
+    if (lowerAddress.includes('parañaque') || lowerAddress.includes('paranaque')) {
+      return {
+        coords: [14.4793, 121.0198],
+        displayName: 'Parañaque City, Metro Manila',
+        confidence: 'fallback'
+      };
+    }
+    // Las Piñas coordinates
+    if (lowerAddress.includes('las piñas') || lowerAddress.includes('las pinas')) {
+      return {
+        coords: [14.4453, 120.9831],
+        displayName: 'Las Piñas City, Metro Manila',
+        confidence: 'fallback'
+      };
+    }
+    // Muntinlupa coordinates
+    if (lowerAddress.includes('muntinlupa')) {
+      return {
+        coords: [14.3754, 121.0359],
+        displayName: 'Muntinlupa City, Metro Manila',
+        confidence: 'fallback'
+      };
+    }
+    // Caloocan coordinates
+    if (lowerAddress.includes('caloocan')) {
+      return {
+        coords: [14.6507, 120.9674],
+        displayName: 'Caloocan City, Metro Manila',
+        confidence: 'fallback'
+      };
+    }
+    // Malabon coordinates
+    if (lowerAddress.includes('malabon')) {
+      return {
+        coords: [14.6622, 120.9570],
+        displayName: 'Malabon City, Metro Manila',
+        confidence: 'fallback'
+      };
+    }
+    // Navotas coordinates
+    if (lowerAddress.includes('navotas')) {
+      return {
+        coords: [14.6684, 120.9387],
+        displayName: 'Navotas City, Metro Manila',
+        confidence: 'fallback'
+      };
+    }
+    // Valenzuela coordinates
+    if (lowerAddress.includes('valenzuela')) {
+      return {
+        coords: [14.7001, 120.9828],
+        displayName: 'Valenzuela City, Metro Manila',
+        confidence: 'fallback'
+      };
+    }
+    // San Juan coordinates
+    if (lowerAddress.includes('san juan')) {
+      return {
+        coords: [14.6019, 121.0355],
+        displayName: 'San Juan City, Metro Manila',
+        confidence: 'fallback'
+      };
+    }
+    // Marikina coordinates
+    if (lowerAddress.includes('marikina')) {
+      return {
+        coords: [14.6507, 121.1029],
+        displayName: 'Marikina City, Metro Manila',
+        confidence: 'fallback'
+      };
+    }
+    // Pateros coordinates
+    if (lowerAddress.includes('pateros')) {
+      return {
+        coords: [14.5445, 121.0658],
+        displayName: 'Pateros, Metro Manila',
+        confidence: 'fallback'
+      };
+    }
+    
+    // Default to Metro Manila center if nothing matches
+    console.log(`📍 Using default Metro Manila coordinates`);
+    return {
+      coords: [14.5995, 120.9842],
+      displayName: 'Metro Manila, Philippines',
+      confidence: 'default'
     };
+  };
 
-    // Store all coordinates for bounds
-    const allCoordinates = [];
+  // Store all coordinates for bounds
+  const allCoordinates = [];
+  const markers = [];
 
-    // Add origin marker
-    if (selectedBooking.originAddress) {
-      const originCoords = await geocodeAddress(selectedBooking.originAddress);
-      if (originCoords) {
-        allCoordinates.push(originCoords);
+  // Add origin marker
+  if (selectedBooking.originAddress) {
+    const originResult = await geocodeAddress(selectedBooking.originAddress);
+    if (originResult && originResult.coords) {
+      allCoordinates.push(originResult.coords);
+      
+      // Create custom green marker for origin
+      const originMarker = L.circleMarker(originResult.coords, {
+        radius: 10,
+        fillColor: '#10b981',
+        color: '#ffffff',
+        weight: 3,
+        opacity: 1,
+        fillOpacity: 0.9
+      }).addTo(map);
+
+      // Add confidence indicator to popup
+      const confidenceText = originResult.confidence === 'high' 
+        ? '✓ Exact location' 
+        : originResult.confidence === 'medium' 
+        ? '⚠️ Approximate area' 
+        : originResult.confidence === 'fallback'
+        ? '📍 City center (approximate)'
+        : '📍 General area';
+
+      originMarker.bindPopup(`
+        <div style="min-width: 200px;">
+          <strong style="color: #10b981; font-size: 14px;">📍 Origin</strong><br/>
+          <p style="margin: 8px 0 0 0; font-size: 12px;">${selectedBooking.originAddress}</p>
+          <p style="margin: 4px 0 0 0; font-size: 10px; color: #6b7280;">${confidenceText}</p>
+        </div>
+      `);
+      
+      markers.push({ type: 'origin', marker: originMarker });
+    }
+  }
+
+  // Get all destinations
+  const destinations = getDestinations(selectedBooking);
+  
+  // Add destination markers for each address
+  for (let i = 0; i < destinations.length; i++) {
+    const destAddress = destinations[i];
+    if (destAddress) {
+      const destResult = await geocodeAddress(destAddress);
+      if (destResult && destResult.coords) {
+        allCoordinates.push(destResult.coords);
         
-        // Create custom green marker for origin
-        const originMarker = L.circleMarker(originCoords, {
+        // Different colors for multiple destinations
+        const colors = [
+          { fill: '#ef4444', border: '#dc2626' }, // red
+          { fill: '#f59e0b', border: '#d97706' }, // amber
+          { fill: '#8b5cf6', border: '#7c3aed' }, // purple
+          { fill: '#ec4899', border: '#db2777' }, // pink
+          { fill: '#06b6d4', border: '#0891b2' }  // cyan
+        ];
+        const color = colors[i % colors.length];
+        
+        // Create custom marker for destination
+        const destMarker = L.circleMarker(destResult.coords, {
           radius: 10,
-          fillColor: '#10b981',
+          fillColor: color.fill,
           color: '#ffffff',
           weight: 3,
           opacity: 1,
           fillOpacity: 0.9
         }).addTo(map);
 
-        originMarker.bindPopup(`
+        const stopLabel = destinations.length > 1 ? `Stop ${i + 1}` : 'Destination';
+        
+        // Add confidence indicator
+        const confidenceText = destResult.confidence === 'high' 
+          ? '✓ Exact location' 
+          : destResult.confidence === 'medium' 
+          ? '⚠️ Approximate area' 
+          : destResult.confidence === 'fallback'
+          ? '📍 City center (approximate)'
+          : '📍 General area';
+
+        destMarker.bindPopup(`
           <div style="min-width: 200px;">
-            <strong style="color: #10b981; font-size: 14px;">📍 Origin</strong><br/>
-            <p style="margin: 8px 0 0 0; font-size: 12px;">${selectedBooking.originAddress}</p>
+            <strong style="color: ${color.fill}; font-size: 14px;">📍 ${stopLabel}</strong><br/>
+            <p style="margin: 8px 0 0 0; font-size: 12px;">${destAddress}</p>
+            <p style="margin: 4px 0 0 0; font-size: 10px; color: #6b7280;">${confidenceText}</p>
           </div>
         `);
-      }
-    }
 
-    // Get all destinations
-    const destinations = getDestinations(selectedBooking);
-    
-    // Add destination markers for each address
-    for (let i = 0; i < destinations.length; i++) {
-      const destAddress = destinations[i];
-      if (destAddress) {
-        const destCoords = await geocodeAddress(destAddress);
-        if (destCoords) {
-          allCoordinates.push(destCoords);
-          
-          // Different colors for multiple destinations
-          const colors = [
-            { fill: '#ef4444', border: '#dc2626' }, // red
-            { fill: '#f59e0b', border: '#d97706' }, // amber
-            { fill: '#8b5cf6', border: '#7c3aed' }, // purple
-            { fill: '#ec4899', border: '#db2777' }, // pink
-            { fill: '#06b6d4', border: '#0891b2' }  // cyan
-          ];
-          const color = colors[i % colors.length];
-          
-          // Create custom marker for destination
-          const destMarker = L.circleMarker(destCoords, {
-            radius: 10,
-            fillColor: color.fill,
-            color: '#ffffff',
+        // Draw route line from origin to each destination
+        if (allCoordinates.length > 1) {
+          const originCoords = allCoordinates[0];
+          L.polyline([originCoords, destResult.coords], {
+            color: color.fill,
             weight: 3,
-            opacity: 1,
-            fillOpacity: 0.9
+            opacity: 0.6,
+            dashArray: '10, 10'
           }).addTo(map);
-
-          const stopLabel = destinations.length > 1 ? `Stop ${i + 1}` : 'Destination';
-          destMarker.bindPopup(`
-            <div style="min-width: 200px;">
-              <strong style="color: ${color.fill}; font-size: 14px;">📍 ${stopLabel}</strong><br/>
-              <p style="margin: 8px 0 0 0; font-size: 12px;">${destAddress}</p>
-            </div>
-          `);
-
-          // Draw route line from origin to each destination
-          if (allCoordinates.length > 1) {
-            const originCoords = allCoordinates[0];
-            L.polyline([originCoords, destCoords], {
-              color: color.fill,
-              weight: 3,
-              opacity: 0.6,
-              dashArray: '10, 10'
-            }).addTo(map);
-          }
         }
+        
+        markers.push({ type: 'destination', marker: destMarker, index: i });
       }
     }
+  }
 
-    // Fit map to show all markers
-    if (allCoordinates.length > 0) {
-      const bounds = L.latLngBounds(allCoordinates);
-      map.fitBounds(bounds, { 
-        padding: [50, 50],
-        maxZoom: 15
-      });
-    } else {
-      // Fallback to Philippines center if no coordinates
-      map.setView([14.5995, 120.9842], 6);
-    }
+  // Fit map to show all markers
+  if (allCoordinates.length > 0) {
+    const bounds = L.latLngBounds(allCoordinates);
+    map.fitBounds(bounds, { 
+      padding: [50, 50],
+      maxZoom: 15
+    });
+  } else {
+    // Fallback to Philippines center if no coordinates
+    map.setView([14.5995, 120.9842], 6);
+  }
 
-    mapInstance.current = map;
-    
-    // Force map to resize after a short delay
-    setTimeout(() => {
-      if (mapInstance.current) {
-        mapInstance.current.invalidateSize();
-      }
-    }, 100);
+  // Add a legend to explain marker confidence
+  const legend = L.control({ position: 'bottomright' });
+  legend.onAdd = function() {
+    const div = L.DomUtil.create('div', 'info legend');
+    div.style.backgroundColor = 'white';
+    div.style.padding = '10px';
+    div.style.borderRadius = '8px';
+    div.style.boxShadow = '0 2px 8px rgba(0,0,0,0.2)';
+    div.innerHTML = `
+      <div style="font-size: 11px;">
+        <strong>Location Accuracy</strong><br/>
+        <span style="color: #10b981;">●</span> Origin<br/>
+        <span style="color: #ef4444;">●</span> Destination<br/>
+        <hr style="margin: 5px 0;"/>
+        <div style="font-size: 10px; color: #6b7280;">
+          ✓ Exact match<br/>
+          ⚠️ Approximate<br/>
+          📍 City center
+        </div>
+      </div>
+    `;
+    return div;
   };
+  legend.addTo(map);
+
+  mapInstance.current = map;
+  
+  // Force map to resize after a short delay
+  setTimeout(() => {
+    if (mapInstance.current) {
+      mapInstance.current.invalidateSize();
+    }
+  }, 100);
+};
 
   // Filter bookings
   useEffect(() => {
