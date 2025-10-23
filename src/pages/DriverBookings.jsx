@@ -54,6 +54,13 @@ export default function DriverBookings() {
   const videoRef = useRef(null);
   const canvasRef = useRef(null);
 
+const getDestinations = (booking) => {
+  if (!booking.destinationAddress) return [];
+  return Array.isArray(booking.destinationAddress) 
+    ? booking.destinationAddress 
+    : [booking.destinationAddress];
+};
+
   const statusColors = {
     "Pending": { bg: "bg-yellow-100", text: "text-yellow-800", icon: AlertCircle },
     "Ready to go": { bg: "bg-blue-100", text: "text-blue-800", icon: CheckCircle2 },
@@ -194,114 +201,242 @@ export default function DriverBookings() {
     }
   };
 
-  const createMap = async () => {
-    if (!mapRef.current) return;
+const createMap = async () => {
+  if (!mapRef.current) return;
 
-    const L = window.L;
-    const map = L.map(mapRef.current).setView([14.5995, 120.9842], 10);
+  const L = window.L;
+  const map = L.map(mapRef.current).setView([14.5995, 120.9842], 10);
 
-    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-      attribution: '© OpenStreetMap contributors'
-    }).addTo(map);
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    attribution: '© OpenStreetMap contributors',
+    maxZoom: 19
+  }).addTo(map);
 
-    const geocodeAddress = async (address) => {
-      try {
-        const cleanAddress = address.replace(/,?\s*Philippines\s*,?/gi, '');
-        const query = encodeURIComponent(`${cleanAddress}, Philippines`);
-
-        const geocodingServices = [
-          `https://api.allorigins.win/get?url=${encodeURIComponent(`https://nominatim.openstreetmap.org/search?format=json&q=${query}&limit=1`)}`,
-        ];
-
-        for (const serviceUrl of geocodingServices) {
-          try {
-            const response = await fetch(serviceUrl);
-            if (response.ok) {
-              const data = await response.json();
-              let results = data.contents ? JSON.parse(data.contents) : data;
-
-              if (results && results.length > 0 && results[0].lat && results[0].lon) {
-                return [parseFloat(results[0].lat), parseFloat(results[0].lon)];
-              }
-            }
-          } catch (err) {
-            console.warn('Geocoding service failed, trying next...', err);
-            continue;
+  // IMPROVED: Geocoding with fallback strategies
+  const geocodeAddress = async (address, retryLevel = 0) => {
+    try {
+      await new Promise(resolve => setTimeout(resolve, 1100));
+      
+      let searchQuery = address;
+      
+      if (retryLevel === 0) {
+        searchQuery = `${address}, Philippines`;
+      } else if (retryLevel === 1) {
+        const cityMatch = address.match(/City of ([^,]+)|Taguig|Makati|Manila|Quezon City|Pasig|Mandaluyong|Pasay|Parañaque|Las Piñas|Muntinlupa|Caloocan|Malabon|Navotas|Valenzuela|San Juan|Marikina|Pateros/i);
+        if (cityMatch) {
+          const city = cityMatch[1] || cityMatch[0];
+          searchQuery = `${city}, Metro Manila, Philippines`;
+        }
+      } else if (retryLevel === 2) {
+        if (address.toLowerCase().includes('metro manila') || address.toLowerCase().includes('ncr')) {
+          searchQuery = 'Metro Manila, Philippines';
+        }
+      }
+      
+      console.log(`🔍 Geocoding attempt ${retryLevel + 1}: "${searchQuery}"`);
+      
+      const response = await fetch(
+        `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(searchQuery)}&countrycodes=ph&limit=3`,
+        {
+          headers: {
+            'User-Agent': 'BestAccord-Driver-App'
           }
         }
-
-        const philippinesCities = {
-          'manila': [14.5995, 120.9842],
-          'cebu': [10.3157, 123.8854],
-          'davao': [7.1907, 125.4553],
-          'quezon': [14.6760, 121.0437],
-          'makati': [14.5547, 121.0244],
-          'pasig': [14.5764, 121.0851]
+      );
+      const data = await response.json();
+      
+      if (data && data.length > 0) {
+        console.log(`✅ Geocoded "${address}":`, data[0]);
+        return {
+          coords: [parseFloat(data[0].lat), parseFloat(data[0].lon)],
+          displayName: data[0].display_name,
+          confidence: retryLevel === 0 ? 'high' : retryLevel === 1 ? 'medium' : 'low'
         };
-
-        const cityKey = Object.keys(philippinesCities).find(city =>
-          address.toLowerCase().includes(city)
-        );
-
-        if (cityKey) {
-          return philippinesCities[cityKey];
-        }
-
-        return [14.5995, 120.9842];
-
-      } catch (error) {
-        console.warn('Geocoding error, using default coordinates:', error);
-        return [14.5995, 120.9842];
-      }
-    };
-
-    try {
-      const originCoords = await geocodeAddress(selectedBooking.originAddress);
-      const destCoords = await geocodeAddress(selectedBooking.destinationAddress);
-
-      if (originCoords) {
-        L.circleMarker(originCoords, {
-          radius: 10,
-          fillColor: '#10b981',
-          color: '#059669',
-          weight: 3,
-          opacity: 1,
-          fillOpacity: 0.8
-        }).addTo(map).bindPopup(`<b>📍 Origin:</b><br/>${selectedBooking.originAddress}`);
-      }
-
-      if (destCoords) {
-        L.circleMarker(destCoords, {
-          radius: 10,
-          fillColor: '#ef4444',
-          color: '#dc2626',
-          weight: 3,
-          opacity: 1,
-          fillOpacity: 0.8
-        }).addTo(map).bindPopup(`<b>🎯 Destination:</b><br/>${selectedBooking.destinationAddress}`);
-      }
-
-      if (originCoords && destCoords) {
-        L.polyline([originCoords, destCoords], {
-          color: '#8b5cf6',
-          weight: 4,
-          opacity: 0.8,
-          dashArray: '10, 5'
-        }).addTo(map);
-
-        const bounds = L.latLngBounds([originCoords, destCoords]);
-        map.fitBounds(bounds, { padding: [20, 20] });
-      } else if (destCoords) {
-        map.setView(destCoords, 12);
-      } else if (originCoords) {
-        map.setView(originCoords, 12);
+      } else if (retryLevel < 2) {
+        console.warn(`⚠️ No results for "${searchQuery}", trying fallback...`);
+        return await geocodeAddress(address, retryLevel + 1);
+      } else {
+        console.warn(`❌ All geocoding attempts failed for: "${address}"`);
+        return getHardcodedCoordinates(address);
       }
     } catch (error) {
-      console.error('Error creating map markers:', error);
+      console.error(`❌ Geocoding error for "${address}":`, error);
+      if (retryLevel < 2) {
+        return await geocodeAddress(address, retryLevel + 1);
+      }
+      return getHardcodedCoordinates(address);
+    }
+  };
+
+  // Hardcoded coordinates for common Metro Manila areas as fallback
+  const getHardcodedCoordinates = (address) => {
+    const lowerAddress = address.toLowerCase();
+    
+    if (lowerAddress.includes('taguig')) {
+      return { coords: [14.5176, 121.0509], displayName: 'Taguig City', confidence: 'fallback' };
+    }
+    if (lowerAddress.includes('makati')) {
+      return { coords: [14.5547, 121.0244], displayName: 'Makati City', confidence: 'fallback' };
+    }
+    if (lowerAddress.includes('manila') && !lowerAddress.includes('metro')) {
+      return { coords: [14.5995, 120.9842], displayName: 'Manila City', confidence: 'fallback' };
+    }
+    if (lowerAddress.includes('quezon')) {
+      return { coords: [14.6760, 121.0437], displayName: 'Quezon City', confidence: 'fallback' };
+    }
+    if (lowerAddress.includes('pasig')) {
+      return { coords: [14.5764, 121.0851], displayName: 'Pasig City', confidence: 'fallback' };
+    }
+    if (lowerAddress.includes('mandaluyong')) {
+      return { coords: [14.5794, 121.0359], displayName: 'Mandaluyong City', confidence: 'fallback' };
+    }
+    if (lowerAddress.includes('pasay')) {
+      return { coords: [14.5378, 121.0014], displayName: 'Pasay City', confidence: 'fallback' };
+    }
+    if (lowerAddress.includes('parañaque') || lowerAddress.includes('paranaque')) {
+      return { coords: [14.4793, 121.0198], displayName: 'Parañaque City', confidence: 'fallback' };
+    }
+    if (lowerAddress.includes('las piñas') || lowerAddress.includes('las pinas')) {
+      return { coords: [14.4453, 120.9831], displayName: 'Las Piñas City', confidence: 'fallback' };
+    }
+    if (lowerAddress.includes('muntinlupa')) {
+      return { coords: [14.3754, 121.0359], displayName: 'Muntinlupa City', confidence: 'fallback' };
+    }
+    if (lowerAddress.includes('caloocan')) {
+      return { coords: [14.6507, 120.9674], displayName: 'Caloocan City', confidence: 'fallback' };
+    }
+    if (lowerAddress.includes('malabon')) {
+      return { coords: [14.6622, 120.9570], displayName: 'Malabon City', confidence: 'fallback' };
+    }
+    if (lowerAddress.includes('navotas')) {
+      return { coords: [14.6684, 120.9387], displayName: 'Navotas City', confidence: 'fallback' };
+    }
+    if (lowerAddress.includes('valenzuela')) {
+      return { coords: [14.7001, 120.9828], displayName: 'Valenzuela City', confidence: 'fallback' };
+    }
+    if (lowerAddress.includes('san juan')) {
+      return { coords: [14.6019, 121.0355], displayName: 'San Juan City', confidence: 'fallback' };
+    }
+    if (lowerAddress.includes('marikina')) {
+      return { coords: [14.6507, 121.1029], displayName: 'Marikina City', confidence: 'fallback' };
+    }
+    if (lowerAddress.includes('pateros')) {
+      return { coords: [14.5445, 121.0658], displayName: 'Pateros', confidence: 'fallback' };
+    }
+    
+    console.log(`📍 Using default Metro Manila coordinates`);
+    return { coords: [14.5995, 120.9842], displayName: 'Metro Manila', confidence: 'default' };
+  };
+
+  const allCoordinates = [];
+
+  try {
+    // Add origin marker
+    if (selectedBooking.originAddress) {
+      const originResult = await geocodeAddress(selectedBooking.originAddress);
+      if (originResult && originResult.coords) {
+        allCoordinates.push(originResult.coords);
+        
+        const confidenceText = originResult.confidence === 'high' 
+          ? '✓ Exact location' 
+          : originResult.confidence === 'medium' 
+          ? '⚠️ Approximate area' 
+          : originResult.confidence === 'fallback'
+          ? '📍 City center'
+          : '📍 General area';
+
+        L.circleMarker(originResult.coords, {
+          radius: 10,
+          fillColor: '#10b981',
+          color: '#ffffff',
+          weight: 3,
+          opacity: 1,
+          fillOpacity: 0.9
+        }).addTo(map).bindPopup(`
+          <div style="min-width: 150px;">
+            <strong style="color: #10b981;">📍 Origin</strong><br/>
+            <p style="margin: 4px 0; font-size: 11px;">${selectedBooking.originAddress}</p>
+            <p style="margin: 2px 0 0 0; font-size: 9px; color: #6b7280;">${confidenceText}</p>
+          </div>
+        `);
+      }
     }
 
-    mapInstance.current = map;
-  };
+    // Get all destinations
+    const destinations = getDestinations(selectedBooking);
+    
+    // Add destination markers for each address
+    for (let i = 0; i < destinations.length; i++) {
+      const destAddress = destinations[i];
+      if (destAddress) {
+        const destResult = await geocodeAddress(destAddress);
+        if (destResult && destResult.coords) {
+          allCoordinates.push(destResult.coords);
+          
+          const colors = [
+            { fill: '#ef4444', name: 'red' },
+            { fill: '#f59e0b', name: 'amber' },
+            { fill: '#8b5cf6', name: 'purple' },
+            { fill: '#ec4899', name: 'pink' },
+            { fill: '#06b6d4', name: 'cyan' }
+          ];
+          const color = colors[i % colors.length];
+          
+          const stopLabel = destinations.length > 1 ? `Stop ${i + 1}` : 'Destination';
+          
+          const confidenceText = destResult.confidence === 'high' 
+            ? '✓ Exact location' 
+            : destResult.confidence === 'medium' 
+            ? '⚠️ Approximate area' 
+            : destResult.confidence === 'fallback'
+            ? '📍 City center'
+            : '📍 General area';
+
+          L.circleMarker(destResult.coords, {
+            radius: 10,
+            fillColor: color.fill,
+            color: '#ffffff',
+            weight: 3,
+            opacity: 1,
+            fillOpacity: 0.9
+          }).addTo(map).bindPopup(`
+            <div style="min-width: 150px;">
+              <strong style="color: ${color.fill};">📍 ${stopLabel}</strong><br/>
+              <p style="margin: 4px 0; font-size: 11px;">${destAddress}</p>
+              <p style="margin: 2px 0 0 0; font-size: 9px; color: #6b7280;">${confidenceText}</p>
+            </div>
+          `);
+
+          // Draw route line from origin to each destination
+          if (allCoordinates.length > 1) {
+            const originCoords = allCoordinates[0];
+            L.polyline([originCoords, destResult.coords], {
+              color: color.fill,
+              weight: 3,
+              opacity: 0.7,
+              dashArray: '10, 5'
+            }).addTo(map);
+          }
+        }
+      }
+    }
+
+    // Fit map to show all markers
+    if (allCoordinates.length > 0) {
+      const bounds = L.latLngBounds(allCoordinates);
+      map.fitBounds(bounds, { 
+        padding: [20, 20],
+        maxZoom: 14
+      });
+    } else {
+      map.setView([14.5995, 120.9842], 10);
+    }
+  } catch (error) {
+    console.error('Error creating map markers:', error);
+  }
+
+  mapInstance.current = map;
+};
 
   const startTrip = async () => {
     if (!selectedBooking) return;
@@ -652,13 +787,22 @@ export default function DriverBookings() {
                       <div className="flex items-center gap-2 mb-1">
                         <MapPin className="w-3 h-3 text-green-400 flex-shrink-0" />
                         <span className="text-xs text-purple-300">From:</span>
-                        <span className="font-medium text-xs text-white">{booking.originAddress.length > 30 ? booking.originAddress.substring(0, 30) + '...' : booking.originAddress}</span>
+                        <span className="font-medium text-xs text-white">
+                          {booking.originAddress.length > 30 ? booking.originAddress.substring(0, 30) + '...' : booking.originAddress}
+                        </span>
                       </div>
-                      <div className="flex items-center gap-2">
-                        <MapPin className="w-3 h-3 text-red-400 flex-shrink-0" />
-                        <span className="text-xs text-purple-300">To:</span>
-                        <span className="font-medium text-xs text-white">{booking.destinationAddress.length > 30 ? booking.destinationAddress.substring(0, 30) + '...' : booking.destinationAddress}</span>
-                      </div>
+                      
+                      {getDestinations(booking).map((dest, idx) => (
+                        <div key={idx} className="flex items-center gap-2 mt-1">
+                          <MapPin className="w-3 h-3 text-red-400 flex-shrink-0" />
+                          <span className="text-xs text-purple-300">
+                            {getDestinations(booking).length > 1 ? `To (${idx + 1}):` : 'To:'}
+                          </span>
+                          <span className="font-medium text-xs text-white">
+                            {dest.length > 30 ? dest.substring(0, 30) + '...' : dest}
+                          </span>
+                        </div>
+                      ))}
                     </div>
 
                     {/* Date & Time */}
@@ -825,14 +969,22 @@ export default function DriverBookings() {
                               <p className="text-sm text-gray-600">{selectedBooking.originAddress}</p>
                             </div>
                           </div>
-                          <div className="border-l-2 border-gray-200 ml-1.5 h-4"></div>
-                          <div className="flex items-start gap-3">
-                            <div className="w-3 h-3 bg-red-500 rounded-full mt-1.5 flex-shrink-0"></div>
-                            <div className="flex-1">
-                              <p className="text-sm font-medium text-gray-900">Destination</p>
-                              <p className="text-sm text-gray-600">{selectedBooking.destinationAddress}</p>
-                            </div>
-                          </div>
+                          
+                          {getDestinations(selectedBooking).map((destination, idx) => (
+                            <React.Fragment key={idx}>
+                              <div className="border-l-2 border-gray-200 ml-1.5 h-4"></div>
+                              <div className="flex items-start gap-3">
+                                <div className="w-3 h-3 bg-red-500 rounded-full mt-1.5 flex-shrink-0"></div>
+                                <div className="flex-1">
+                                  <p className="text-sm font-medium text-gray-900">
+                                    {getDestinations(selectedBooking).length > 1 ? `Destination ${idx + 1}` : 'Destination'}
+                                  </p>
+                                  <p className="text-sm text-gray-600">{destination}</p>
+                                </div>
+                              </div>
+                            </React.Fragment>
+                          ))}
+                          
                           <div className="flex items-center gap-4 text-sm text-gray-600 mt-4 bg-gray-50 p-2 rounded">
                             <div className="flex items-center gap-1">
                               <Calendar className="w-3 h-3" />
