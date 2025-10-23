@@ -13,8 +13,7 @@ const bookingSchema = new mongoose.Schema({
     shipperConsignorName: { type: String, required: true },
     customerEstablishmentName: { type: String, required: true },
     originAddress: { type: String, required: true },
-    destinationAddress: [{ type: String, required: true }], // Changed to array
-    // Add new fields for multiple destinations
+    destinationAddress: [{ type: String, required: true }],
     tripType: { 
         type: String, 
         enum: ['single', 'multiple'],
@@ -51,6 +50,13 @@ const bookingSchema = new mongoose.Schema({
             },
             message: 'Proof of delivery image must be less than 10MB'
         }
+    },
+    // Driver's current location tracking
+    driverLocation: {
+        latitude: { type: Number, default: null },
+        longitude: { type: Number, default: null },
+        lastUpdated: { type: Date, default: null },
+        accuracy: { type: Number, default: null } // GPS accuracy in meters
     }
 }, {
     timestamps: true,

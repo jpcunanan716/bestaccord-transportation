@@ -16,6 +16,7 @@ import {
   Camera
 } from "lucide-react";
 import ReceiptGenerator from "../components/InvoiceGenerator";
+import { createTruckDivIcon } from '../components/TruckMarkerIcon';
 
 export default function Monitoring() {
   const [bookings, setBookings] = useState([]);
@@ -313,6 +314,7 @@ export default function Monitoring() {
   };
 
  // IMPROVED: Create map with multiple destination support and fallback geocoding
+
 const createMap = async () => {
   if (!mapRef.current) return;
 
@@ -545,122 +547,230 @@ const createMap = async () => {
   const allCoordinates = [];
   const markers = [];
 
-  // Add origin marker
-  if (selectedBooking.originAddress) {
-    const originResult = await geocodeAddress(selectedBooking.originAddress);
-    if (originResult && originResult.coords) {
-      allCoordinates.push(originResult.coords);
-      
-      // Create custom green marker for origin
-      const originMarker = L.circleMarker(originResult.coords, {
-        radius: 10,
-        fillColor: '#10b981',
-        color: '#ffffff',
-        weight: 3,
-        opacity: 1,
-        fillOpacity: 0.9
-      }).addTo(map);
-
-      // Add confidence indicator to popup
-      const confidenceText = originResult.confidence === 'high' 
-        ? '✓ Exact location' 
-        : originResult.confidence === 'medium' 
-        ? '⚠️ Approximate area' 
-        : originResult.confidence === 'fallback'
-        ? '📍 City center (approximate)'
-        : '📍 General area';
-
-      originMarker.bindPopup(`
-        <div style="min-width: 200px;">
-          <strong style="color: #10b981; font-size: 14px;">📍 Origin</strong><br/>
-          <p style="margin: 8px 0 0 0; font-size: 12px;">${selectedBooking.originAddress}</p>
-          <p style="margin: 4px 0 0 0; font-size: 10px; color: #6b7280;">${confidenceText}</p>
-        </div>
-      `);
-      
-      markers.push({ type: 'origin', marker: originMarker });
-    }
-  }
-
-  // Get all destinations
-  const destinations = getDestinations(selectedBooking);
-  
-  // Add destination markers for each address
-  for (let i = 0; i < destinations.length; i++) {
-    const destAddress = destinations[i];
-    if (destAddress) {
-      const destResult = await geocodeAddress(destAddress);
-      if (destResult && destResult.coords) {
-        allCoordinates.push(destResult.coords);
+  try {
+    // Add origin marker
+    if (selectedBooking.originAddress) {
+      const originResult = await geocodeAddress(selectedBooking.originAddress);
+      if (originResult && originResult.coords) {
+        allCoordinates.push(originResult.coords);
         
-        // Different colors for multiple destinations
-        const colors = [
-          { fill: '#ef4444', border: '#dc2626' }, // red
-          { fill: '#f59e0b', border: '#d97706' }, // amber
-          { fill: '#8b5cf6', border: '#7c3aed' }, // purple
-          { fill: '#ec4899', border: '#db2777' }, // pink
-          { fill: '#06b6d4', border: '#0891b2' }  // cyan
-        ];
-        const color = colors[i % colors.length];
-        
-        // Create custom marker for destination
-        const destMarker = L.circleMarker(destResult.coords, {
+        const confidenceText = originResult.confidence === 'high' 
+          ? '✓ Exact location' 
+          : originResult.confidence === 'medium' 
+          ? '⚠️ Approximate area' 
+          : originResult.confidence === 'fallback'
+          ? '📍 City center (approximate)'
+          : '📍 General area';
+
+        const originMarker = L.circleMarker(originResult.coords, {
           radius: 10,
-          fillColor: color.fill,
+          fillColor: '#10b981',
           color: '#ffffff',
           weight: 3,
           opacity: 1,
           fillOpacity: 0.9
         }).addTo(map);
 
-        const stopLabel = destinations.length > 1 ? `Stop ${i + 1}` : 'Destination';
-        
-        // Add confidence indicator
-        const confidenceText = destResult.confidence === 'high' 
-          ? '✓ Exact location' 
-          : destResult.confidence === 'medium' 
-          ? '⚠️ Approximate area' 
-          : destResult.confidence === 'fallback'
-          ? '📍 City center (approximate)'
-          : '📍 General area';
-
-        destMarker.bindPopup(`
+        originMarker.bindPopup(`
           <div style="min-width: 200px;">
-            <strong style="color: ${color.fill}; font-size: 14px;">📍 ${stopLabel}</strong><br/>
-            <p style="margin: 8px 0 0 0; font-size: 12px;">${destAddress}</p>
+            <strong style="color: #10b981; font-size: 14px;">📍 Origin</strong><br/>
+            <p style="margin: 8px 0 0 0; font-size: 12px;">${selectedBooking.originAddress}</p>
             <p style="margin: 4px 0 0 0; font-size: 10px; color: #6b7280;">${confidenceText}</p>
           </div>
         `);
-
-        // Draw route line from origin to each destination
-        if (allCoordinates.length > 1) {
-          const originCoords = allCoordinates[0];
-          L.polyline([originCoords, destResult.coords], {
-            color: color.fill,
-            weight: 3,
-            opacity: 0.6,
-            dashArray: '10, 10'
-          }).addTo(map);
-        }
         
-        markers.push({ type: 'destination', marker: destMarker, index: i });
+        markers.push({ type: 'origin', marker: originMarker });
       }
     }
+
+    // Get all destinations
+    const destinations = getDestinations(selectedBooking);
+    
+    // Add destination markers for each address
+    for (let i = 0; i < destinations.length; i++) {
+      const destAddress = destinations[i];
+      if (destAddress) {
+        const destResult = await geocodeAddress(destAddress);
+        if (destResult && destResult.coords) {
+          allCoordinates.push(destResult.coords);
+          
+          // Different colors for multiple destinations
+          const colors = [
+            { fill: '#ef4444', border: '#dc2626' }, // red
+            { fill: '#f59e0b', border: '#d97706' }, // amber
+            { fill: '#8b5cf6', border: '#7c3aed' }, // purple
+            { fill: '#ec4899', border: '#db2777' }, // pink
+            { fill: '#06b6d4', border: '#0891b2' }  // cyan
+          ];
+          const color = colors[i % colors.length];
+          
+          // Create custom marker for destination
+          const destMarker = L.circleMarker(destResult.coords, {
+            radius: 10,
+            fillColor: color.fill,
+            color: '#ffffff',
+            weight: 3,
+            opacity: 1,
+            fillOpacity: 0.9
+          }).addTo(map);
+
+          const stopLabel = destinations.length > 1 ? `Stop ${i + 1}` : 'Destination';
+          
+          const confidenceText = destResult.confidence === 'high' 
+            ? '✓ Exact location' 
+            : destResult.confidence === 'medium' 
+            ? '⚠️ Approximate area' 
+            : destResult.confidence === 'fallback'
+            ? '📍 City center (approximate)'
+            : '📍 General area';
+
+          destMarker.bindPopup(`
+            <div style="min-width: 200px;">
+              <strong style="color: ${color.fill}; font-size: 14px;">📍 ${stopLabel}</strong><br/>
+              <p style="margin: 8px 0 0 0; font-size: 12px;">${destAddress}</p>
+              <p style="margin: 4px 0 0 0; font-size: 10px; color: #6b7280;">${confidenceText}</p>
+            </div>
+          `);
+
+          // Draw route line from origin to each destination
+          if (allCoordinates.length > 1) {
+            const originCoords = allCoordinates[0];
+            L.polyline([originCoords, destResult.coords], {
+              color: color.fill,
+              weight: 3,
+              opacity: 0.6,
+              dashArray: '10, 10'
+            }).addTo(map);
+          }
+          
+          markers.push({ type: 'destination', marker: destMarker, index: i });
+        }
+      }
+    }
+
+    // Add driver's current location marker (truck icon) for ADMIN view
+    if (selectedBooking.driverLocation && 
+        selectedBooking.driverLocation.latitude && 
+        selectedBooking.driverLocation.longitude &&
+        (selectedBooking.status === "In Transit" || 
+         selectedBooking.status === "On Trip" ||
+         selectedBooking.status === "Delivered")) {
+      
+      const driverCoords = [
+        selectedBooking.driverLocation.latitude, 
+        selectedBooking.driverLocation.longitude
+      ];
+      
+      allCoordinates.push(driverCoords);
+
+      // Create custom truck icon (orange color for admin visibility)
+      const truckIcon = createTruckDivIcon(L, '#F97316'); // Orange truck for admin
+
+      // Add truck marker
+      const truckMarker = L.marker(driverCoords, { 
+        icon: truckIcon,
+        zIndexOffset: 1000 // Ensure truck appears on top
+      }).addTo(map);
+
+      // Format last updated time
+      const lastUpdated = selectedBooking.driverLocation.lastUpdated 
+        ? new Date(selectedBooking.driverLocation.lastUpdated).toLocaleString()
+        : 'Unknown';
+
+      const accuracy = selectedBooking.driverLocation.accuracy 
+        ? `±${Math.round(selectedBooking.driverLocation.accuracy)}m`
+        : 'Unknown';
+
+      // Get time since last update
+      const getTimeSinceUpdate = () => {
+        if (!selectedBooking.driverLocation.lastUpdated) return 'Unknown';
+        
+        const now = new Date();
+        const lastUpdateTime = new Date(selectedBooking.driverLocation.lastUpdated);
+        const diffMs = now - lastUpdateTime;
+        const diffMins = Math.floor(diffMs / 60000);
+        
+        if (diffMins < 1) return 'Just now';
+        if (diffMins < 60) return `${diffMins} minute${diffMins > 1 ? 's' : ''} ago`;
+        
+        const diffHours = Math.floor(diffMins / 60);
+        return `${diffHours} hour${diffHours > 1 ? 's' : ''} ago`;
+      };
+
+      // Get driver name from booking
+      const driverName = selectedBooking.employeeDetails?.find(emp => emp.role === 'Driver')?.employeeName || 
+                        selectedBooking.employeeDetails?.find(emp => emp.role === 'Driver')?.fullName || 
+                        'Driver';
+
+      truckMarker.bindPopup(`
+        <div style="min-width: 220px;">
+          <strong style="color: #F97316; font-size: 14px;">🚚 ${driverName}'s Location</strong><br/>
+          <p style="margin: 8px 0 4px 0; font-size: 11px;">
+            <strong>Trip:</strong> ${selectedBooking.tripNumber}<br/>
+            <strong>Status:</strong> ${selectedBooking.status}
+          </p>
+          <hr style="margin: 8px 0; border: 0; border-top: 1px solid #e5e7eb;"/>
+          <p style="margin: 4px 0; font-size: 11px;">
+            <strong>Coordinates:</strong><br/>
+            ${driverCoords[0].toFixed(6)}, ${driverCoords[1].toFixed(6)}
+          </p>
+          <p style="margin: 4px 0; font-size: 10px; color: #6b7280;">
+            <strong>Last Updated:</strong> ${getTimeSinceUpdate()}<br/>
+            <span style="font-size: 9px;">${lastUpdated}</span>
+          </p>
+          <p style="margin: 4px 0; font-size: 10px; color: #6b7280;">
+            <strong>GPS Accuracy:</strong> ${accuracy}
+          </p>
+          <p style="margin: 6px 0 0 0; font-size: 9px; color: #059669; background: #d1fae5; padding: 4px 6px; border-radius: 4px;">
+            ✓ Live GPS tracking (updates every 5 min)
+          </p>
+        </div>
+      `);
+
+      // Add accuracy circle around driver location
+      if (selectedBooking.driverLocation.accuracy) {
+        L.circle(driverCoords, {
+          radius: selectedBooking.driverLocation.accuracy,
+          color: '#F97316',
+          fillColor: '#F97316',
+          fillOpacity: 0.1,
+          weight: 1,
+          opacity: 0.3
+        }).addTo(map);
+      }
+
+      // Draw dotted line from driver to next destination
+      if (destinations.length > 0) {
+        const nextDestResult = await geocodeAddress(destinations[0]);
+        if (nextDestResult && nextDestResult.coords) {
+          L.polyline([driverCoords, nextDestResult.coords], {
+            color: '#F97316',
+            weight: 2,
+            opacity: 0.6,
+            dashArray: '5, 10'
+          }).addTo(map);
+        }
+      }
+
+      markers.push({ type: 'driver', marker: truckMarker });
+    }
+
+    // Fit map to show all markers
+    if (allCoordinates.length > 0) {
+      const bounds = L.latLngBounds(allCoordinates);
+      map.fitBounds(bounds, { 
+        padding: [50, 50],
+        maxZoom: 15
+      });
+    } else {
+      // Fallback to Philippines center if no coordinates
+      map.setView([14.5995, 120.9842], 6);
+    }
+  } catch (error) {
+    console.error('Error creating map markers:', error);
   }
 
-  // Fit map to show all markers
-  if (allCoordinates.length > 0) {
-    const bounds = L.latLngBounds(allCoordinates);
-    map.fitBounds(bounds, { 
-      padding: [50, 50],
-      maxZoom: 15
-    });
-  } else {
-    // Fallback to Philippines center if no coordinates
-    map.setView([14.5995, 120.9842], 6);
-  }
-
-  // Add a legend to explain marker confidence
+  // Add a legend to explain markers
   const legend = L.control({ position: 'bottomright' });
   legend.onAdd = function() {
     const div = L.DomUtil.create('div', 'info legend');
@@ -668,11 +778,20 @@ const createMap = async () => {
     div.style.padding = '10px';
     div.style.borderRadius = '8px';
     div.style.boxShadow = '0 2px 8px rgba(0,0,0,0.2)';
-    div.innerHTML = `
+    
+    let legendHtml = `
       <div style="font-size: 11px;">
-        <strong>Location Accuracy</strong><br/>
+        <strong>Map Legend</strong><br/>
         <span style="color: #10b981;">●</span> Origin<br/>
         <span style="color: #ef4444;">●</span> Destination<br/>
+    `;
+    
+    // Only show truck legend if driver location exists
+    if (selectedBooking.driverLocation?.latitude && selectedBooking.driverLocation?.longitude) {
+      legendHtml += `<span style="color: #F97316;">🚚</span> Driver Location<br/>`;
+    }
+    
+    legendHtml += `
         <hr style="margin: 5px 0;"/>
         <div style="font-size: 10px; color: #6b7280;">
           ✓ Exact match<br/>
@@ -681,6 +800,8 @@ const createMap = async () => {
         </div>
       </div>
     `;
+    
+    div.innerHTML = legendHtml;
     return div;
   };
   legend.addTo(map);

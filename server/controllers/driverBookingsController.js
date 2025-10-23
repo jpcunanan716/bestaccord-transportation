@@ -438,3 +438,95 @@ async function updateVehicleAndEmployeeStatus(booking, newStatus) {
     throw error;
   }
 }
+
+/**
+ * PUT /api/driver/bookings/:id/location
+ * Update driver's current location for a booking
+ */
+export const updateDriverLocation = async (req, res) => {
+  try {
+    const driver = req.driver;
+    const bookingId = req.params.id;
+    const { latitude, longitude, accuracy } = req.body;
+
+    console.log("📍 Updating driver location:", {
+      bookingId,
+      driverId: driver.employeeId,
+      latitude,
+      longitude,
+      accuracy
+    });
+
+    // Validate coordinates
+    if (!latitude || !longitude) {
+      return res.status(400).json({
+        success: false,
+        msg: "Latitude and longitude are required"
+      });
+    }
+
+    // Validate latitude range (-90 to 90)
+    if (latitude < -90 || latitude > 90) {
+      return res.status(400).json({
+        success: false,
+        msg: "Invalid latitude. Must be between -90 and 90"
+      });
+    }
+
+    // Validate longitude range (-180 to 180)
+    if (longitude < -180 || longitude > 180) {
+      return res.status(400).json({
+        success: false,
+        msg: "Invalid longitude. Must be between -180 and 180"
+      });
+    }
+
+    // Find the booking and verify the driver is assigned to it
+    const booking = await Booking.findOne({
+      _id: bookingId,
+      employeeAssigned: { $in: [driver.employeeId] }
+    });
+
+    if (!booking) {
+      return res.status(404).json({
+        success: false,
+        msg: "Booking not found or you are not assigned to this booking"
+      });
+    }
+
+    // Only allow location updates for In Transit bookings
+    if (booking.status !== "In Transit") {
+      return res.status(400).json({
+        success: false,
+        msg: "Location can only be updated for trips that are In Transit"
+      });
+    }
+
+    // Update driver location
+    booking.driverLocation = {
+      latitude: parseFloat(latitude),
+      longitude: parseFloat(longitude),
+      lastUpdated: new Date(),
+      accuracy: accuracy ? parseFloat(accuracy) : null
+    };
+
+    await booking.save();
+
+    console.log(`✅ Driver location updated for booking ${booking.reservationId}`);
+
+    res.json({
+      success: true,
+      msg: "Location updated successfully",
+      location: booking.driverLocation
+    });
+
+  } catch (err) {
+    console.error("❌ Error updating driver location:", err);
+    res.status(500).json({
+      success: false,
+      msg: "Server error while updating location",
+      error: err.message
+    });
+  }
+};
+

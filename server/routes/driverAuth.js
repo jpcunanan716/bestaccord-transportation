@@ -1,9 +1,15 @@
-// server/routes/driverAuth.js (Complete version with all existing routes + count)
+// server/routes/driverAuth.js (Updated with location tracking)
 import express from "express";
 import Employee from "../models/Employee.js";
 import jwt from "jsonwebtoken";
 import { driverLogin, getDriverProfile } from "../controllers/driverAuthController.js";
-import { getDriverBookings, getDriverBookingById, updateBookingStatus, getDriverBookingCount } from "../controllers/driverBookingsController.js";
+import { 
+  getDriverBookings, 
+  getDriverBookingById, 
+  updateBookingStatus, 
+  getDriverBookingCount,
+  updateDriverLocation  // 🚚 NEW - Import the location update function
+} from "../controllers/driverBookingsController.js";
 import driverAuth from "../middleware/driverAuth1.js";
 
 const router = express.Router();
@@ -77,5 +83,8 @@ router.get("/bookings/count", driverAuth, getDriverBookingCount);
 router.get("/bookings", driverAuth, getDriverBookings);
 router.get("/bookings/:id", driverAuth, getDriverBookingById);
 router.put("/bookings/:id/status", driverAuth, updateBookingStatus);
+
+// 🚚 NEW: Location tracking route
+router.put("/bookings/:id/location", driverAuth, updateDriverLocation);
 
 export default router;

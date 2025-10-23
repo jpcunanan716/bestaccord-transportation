@@ -27,8 +27,12 @@ import {
 } from "lucide-react";
 import { axiosClient } from "../api/axiosClient";
 import driverloginbg from "../assets/driver_login_bg.png";
+import { createTruckDivIcon } from '../components/TruckMarkerIcon';
 
 export default function DriverBookings() {
+  const [driverLocation, setDriverLocation] = useState(null);
+  const [locationError, setLocationError] = useState(null);
+  const locationIntervalRef = useRef(null);
   const [bookings, setBookings] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -43,6 +47,111 @@ export default function DriverBookings() {
     customer: false,
     team: false
   });
+
+  // Function to get current location with improved error handling
+
+  const getCurrentLocation = () => {
+  return new Promise((resolve, reject) => {
+    if (!navigator.geolocation) {
+      reject(new Error('Geolocation is not supported by your browser'));
+      return;
+    }
+
+    navigator.geolocation.getCurrentPosition(
+      (position) => {
+        resolve({
+          latitude: position.coords.latitude,
+          longitude: position.coords.longitude,
+          accuracy: position.coords.accuracy
+        });
+      },
+      (error) => {
+        let errorMessage = 'Unable to get location';
+        switch (error.code) {
+          case error.PERMISSION_DENIED:
+            errorMessage = 'Location permission denied. Please enable location access.';
+            break;
+          case error.POSITION_UNAVAILABLE:
+            errorMessage = 'Location information unavailable.';
+            break;
+          case error.TIMEOUT:
+            errorMessage = 'Location request timed out.';
+            break;
+        }
+        reject(new Error(errorMessage));
+      },
+      {
+        enableHighAccuracy: true,
+        timeout: 10000,
+        maximumAge: 0
+      }
+    );
+  });
+};
+
+const updateLocationOnServer = async (bookingId, location) => {
+  try {
+    const token = localStorage.getItem("driverToken");
+    
+    const response = await axiosClient.put(
+      `/api/driver/bookings/${bookingId}/location`,
+      {
+        latitude: location.latitude,
+        longitude: location.longitude,
+        accuracy: location.accuracy
+      },
+      {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      }
+    );
+
+    if (response.data.success) {
+      console.log("✅ Location updated on server:", response.data.location);
+      setDriverLocation(location);
+      setLocationError(null);
+    }
+  } catch (err) {
+    console.error("❌ Error updating location:", err);
+    setLocationError(err.response?.data?.msg || "Failed to update location");
+  }
+};
+
+// Start periodic location updates
+const startLocationTracking = async (bookingId) => {
+  console.log("📍 Starting location tracking for booking:", bookingId);
+  
+  // Get initial location
+  try {
+    const location = await getCurrentLocation();
+    await updateLocationOnServer(bookingId, location);
+    
+    // Set up periodic updates every 5 minutes (300000 ms)
+    locationIntervalRef.current = setInterval(async () => {
+      try {
+        const newLocation = await getCurrentLocation();
+        await updateLocationOnServer(bookingId, newLocation);
+      } catch (err) {
+        console.error("❌ Error in periodic location update:", err);
+        setLocationError(err.message);
+      }
+    }, 300000); // 5 minutes = 300000 milliseconds
+    
+  } catch (err) {
+    console.error("❌ Error getting initial location:", err);
+    setLocationError(err.message);
+  }
+};
+
+// Stop location tracking
+const stopLocationTracking = () => {
+  if (locationIntervalRef.current) {
+    clearInterval(locationIntervalRef.current);
+    locationIntervalRef.current = null;
+    console.log("📍 Location tracking stopped");
+  }
+};
   
   // Camera states
   const [showCamera, setShowCamera] = useState(false);
@@ -421,6 +530,68 @@ const createMap = async () => {
       }
     }
 
+    // Add driver's current location marker (truck icon)
+    if (selectedBooking.driverLocation && 
+        selectedBooking.driverLocation.latitude && 
+        selectedBooking.driverLocation.longitude) {
+      
+      const driverCoords = [
+        selectedBooking.driverLocation.latitude, 
+        selectedBooking.driverLocation.longitude
+      ];
+      
+      allCoordinates.push(driverCoords);
+
+      // Create custom truck icon
+      const truckIcon = createTruckDivIcon(L, '#3B82F6'); // Blue truck
+
+      // Add truck marker
+      const truckMarker = L.marker(driverCoords, { 
+        icon: truckIcon,
+        zIndexOffset: 1000 // Ensure truck appears on top
+      }).addTo(map);
+
+      // Format last updated time
+      const lastUpdated = selectedBooking.driverLocation.lastUpdated 
+        ? new Date(selectedBooking.driverLocation.lastUpdated).toLocaleString()
+        : 'Unknown';
+
+      const accuracy = selectedBooking.driverLocation.accuracy 
+        ? `±${Math.round(selectedBooking.driverLocation.accuracy)}m`
+        : 'Unknown';
+
+      truckMarker.bindPopup(`
+        <div style="min-width: 180px;">
+          <strong style="color: #3B82F6; font-size: 14px;">🚚 Your Location</strong><br/>
+          <p style="margin: 8px 0 4px 0; font-size: 11px;">
+            <strong>Coordinates:</strong><br/>
+            ${driverCoords[0].toFixed(6)}, ${driverCoords[1].toFixed(6)}
+          </p>
+          <p style="margin: 4px 0; font-size: 10px; color: #6b7280;">
+            <strong>Last Updated:</strong> ${lastUpdated}
+          </p>
+          <p style="margin: 4px 0; font-size: 10px; color: #6b7280;">
+            <strong>Accuracy:</strong> ${accuracy}
+          </p>
+          <p style="margin: 4px 0 0 0; font-size: 9px; color: #059669;">
+            ✓ Real-time GPS tracking
+          </p>
+        </div>
+      `);
+
+      // Add accuracy circle around driver location
+      if (selectedBooking.driverLocation.accuracy) {
+        L.circle(driverCoords, {
+          radius: selectedBooking.driverLocation.accuracy,
+          color: '#3B82F6',
+          fillColor: '#3B82F6',
+          fillOpacity: 0.1,
+          weight: 1,
+          opacity: 0.3
+        }).addTo(map);
+      }
+    }
+
     // Fit map to show all markers
     if (allCoordinates.length > 0) {
       const bounds = L.latLngBounds(allCoordinates);
@@ -438,47 +609,52 @@ const createMap = async () => {
   mapInstance.current = map;
 };
 
-  const startTrip = async () => {
-    if (!selectedBooking) return;
+const startTrip = async () => {
+  if (!selectedBooking) return;
 
-    setUpdating(true);
-    try {
-      const token = localStorage.getItem("driverToken");
+  setUpdating(true);
+  try {
+    const token = localStorage.getItem("driverToken");
 
-      const response = await axiosClient.put(
-        `/api/driver/bookings/${selectedBooking._id}/status`,
-        { status: "In Transit" },
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        }
+    const response = await axiosClient.put(
+      `/api/driver/bookings/${selectedBooking._id}/status`,
+      { status: "In Transit" },
+      {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      }
+    );
+
+    if (response.data.success) {
+      setBookings(prevBookings =>
+        prevBookings.map(booking =>
+          booking._id === selectedBooking._id
+            ? { ...booking, status: "In Transit" }
+            : booking
+        )
       );
 
-      if (response.data.success) {
-        setBookings(prevBookings =>
-          prevBookings.map(booking =>
-            booking._id === selectedBooking._id
-              ? { ...booking, status: "In Transit" }
-              : booking
-          )
-        );
+      setSelectedBooking(prev => ({
+        ...prev,
+        status: "In Transit"
+      }));
 
-        setSelectedBooking(prev => ({
-          ...prev,
-          status: "In Transit"
-        }));
-
-        console.log("✅ Trip started successfully");
-      }
-    } catch (err) {
-      console.error("❌ Error starting trip:", err);
-      setError("Failed to start trip. Please try again.");
-      setTimeout(() => setError(""), 5000);
-    } finally {
-      setUpdating(false);
+      console.log("✅ Trip started successfully");
+      
+      // 🚚 NEW: Start location tracking when trip begins
+      await startLocationTracking(selectedBooking._id);
+      
+      alert("Trip started! Your location will be tracked and updated every 5 minutes.");
     }
-  };
+  } catch (err) {
+    console.error("❌ Error starting trip:", err);
+    setError("Failed to start trip. Please try again.");
+    setTimeout(() => setError(""), 5000);
+  } finally {
+    setUpdating(false);
+  }
+};
 
   const markAsDelivered = async () => {
     if (!selectedBooking) return;
@@ -522,54 +698,64 @@ const createMap = async () => {
     }
   };
 
-  const markAsCompleted = async () => {
-    if (!selectedBooking || !capturedImage) return;
+const markAsCompleted = async () => {
+  if (!selectedBooking || !capturedImage) return;
 
-    setUpdating(true);
-    try {
-      const token = localStorage.getItem("driverToken");
+  setUpdating(true);
+  try {
+    const token = localStorage.getItem("driverToken");
 
-      const response = await axiosClient.put(
-        `/api/driver/bookings/${selectedBooking._id}/status`,
-        { 
-          status: "Completed",
-          proofOfDelivery: capturedImage
+    const response = await axiosClient.put(
+      `/api/driver/bookings/${selectedBooking._id}/status`,
+      { 
+        status: "Completed",
+        proofOfDelivery: capturedImage
+      },
+      {
+        headers: {
+          Authorization: `Bearer ${token}`,
         },
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        }
+      }
+    );
+
+    if (response.data.success) {
+      setBookings(prevBookings =>
+        prevBookings.map(booking =>
+          booking._id === selectedBooking._id
+            ? { ...booking, status: "Completed" }
+            : booking
+        )
       );
 
-      if (response.data.success) {
-        setBookings(prevBookings =>
-          prevBookings.map(booking =>
-            booking._id === selectedBooking._id
-              ? { ...booking, status: "Completed" }
-              : booking
-          )
-        );
+      setSelectedBooking(prev => ({
+        ...prev,
+        status: "Completed"
+      }));
 
-        setSelectedBooking(prev => ({
-          ...prev,
-          status: "Completed"
-        }));
+      console.log("✅ Trip marked as completed");
+      
+      // 🚚 NEW: Stop location tracking when trip completes
+      stopLocationTracking();
 
-        console.log("✅ Trip marked as completed");
-
-        setTimeout(() => {
-          closeModal();
-        }, 1500);
-      }
-    } catch (err) {
-      console.error("❌ Error marking as completed:", err);
-      setError("Failed to mark as completed. Please try again.");
-      setTimeout(() => setError(""), 5000);
-    } finally {
-      setUpdating(false);
+      setTimeout(() => {
+        closeModal();
+      }, 1500);
     }
+  } catch (err) {
+    console.error("❌ Error marking as completed:", err);
+    setError("Failed to mark as completed. Please try again.");
+    setTimeout(() => setError(""), 5000);
+  } finally {
+    setUpdating(false);
+  }
+};
+
+// Cleanup on component unmount
+useEffect(() => {
+  return () => {
+    stopLocationTracking();
   };
+}, []);
 
   const fetchBookings = async () => {
     try {
