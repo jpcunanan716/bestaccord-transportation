@@ -13,7 +13,17 @@ const bookingSchema = new mongoose.Schema({
     shipperConsignorName: { type: String, required: true },
     customerEstablishmentName: { type: String, required: true },
     originAddress: { type: String, required: true },
-    destinationAddress: [{ type: String, required: true }],
+    destinationAddress: [{ type: String, required: true }], // Changed to array
+    // Add new fields for multiple destinations
+    tripType: { 
+        type: String, 
+        enum: ['single', 'multiple'],
+        default: 'single'
+    },
+    numberOfStops: { 
+        type: Number, 
+        default: 1 
+    },
     vehicleId: {
         type: String,
         required: true
