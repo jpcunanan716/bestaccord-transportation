@@ -548,7 +548,7 @@ function Booking() {
     }
   };
 
-  const handleSubmit = async (e) => {
+const handleSubmit = async (e) => {
     if (e) e.preventDefault();
 
     if (currentStep !== 2) {
@@ -585,18 +585,12 @@ function Booking() {
       return;
     }
 
-    // Extra check for plateNumber //
+    // Extra check for plateNumber
     if (!formData.plateNumber || formData.plateNumber.trim() === '') {
       alert('⚠️ Plate number is missing! Please go back to Step 1 and reselect the vehicle.');
       console.error("Missing plateNumber in formData:", formData);
       return;
     }
-
-    if (!formData.plateNumber || formData.plateNumber.trim() === '') {
-      alert('Plate number is missing. Please go back to Step 1 and reselect the vehicle.');
-      return;
-    }
-
 
     const requiredFields = {
       productName: 'Product Name',
@@ -659,21 +653,19 @@ function Booking() {
     }
 
     try {
-      const destinationData = tripType === 'multiple'
-        ? {
-          customerEstablishmentName: selectedBranches.map(b => b.branch).join(' | '),
-          destinationAddress: selectedBranches[0]?.address || '', // First address for compatibility
-          destinationAddresses: selectedBranches.map(branch => branch.address), // Array of address strings
-          tripType: 'multiple',
-          numberOfStops: selectedBranches.length
-        }
-        : {
-          customerEstablishmentName: formData.customerEstablishmentName,
-          destinationAddress: selectedBranches[0]?.address || formData.destinationAddress || '',
-          destinationAddresses: [selectedBranches[0]?.address || formData.destinationAddress || ''], // Array with single address string
-          tripType: 'single',
-          numberOfStops: 1
-        };
+      // THIS IS THE KEY FIX - properly construct the destinationAddress array
+      const destinationAddresses = tripType === 'multiple'
+        ? selectedBranches.map(branch => branch.address).filter(addr => addr) // Array of all addresses
+        : [selectedBranches[0]?.address || formData.destinationAddress]; // Single address in array
+
+      const destinationData = {
+        customerEstablishmentName: tripType === 'multiple'
+          ? selectedBranches.map(b => b.branch).join(' | ')
+          : formData.customerEstablishmentName,
+        destinationAddress: destinationAddresses, // This is now always an array
+        tripType: tripType,
+        numberOfStops: selectedBranches.length
+      };
 
       const submitData = {
         ...formData,
@@ -694,7 +686,7 @@ function Booking() {
 
       // Debug log to verify the data structure
       console.log('Submitting data:', {
-        destinationAddresses: submitData.destinationAddresses,
+        destinationAddress: submitData.destinationAddress,
         tripType: submitData.tripType,
         numberOfStops: submitData.numberOfStops
       });
