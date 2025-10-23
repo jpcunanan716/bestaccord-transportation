@@ -655,8 +655,12 @@ const handleSubmit = async (e) => {
     try {
       // THIS IS THE KEY FIX - properly construct the destinationAddress array
       const destinationAddresses = tripType === 'multiple'
-        ? selectedBranches.map(branch => branch.address).filter(addr => addr) // Array of all addresses
+        ? selectedBranches.map(branch => branch.address).filter(addr => addr && addr.trim() !== '') // Array of all addresses
         : [selectedBranches[0]?.address || formData.destinationAddress]; // Single address in array
+
+      console.log('🔍 Selected Branches:', selectedBranches);
+      console.log('🔍 Destination Addresses Array:', destinationAddresses);
+      console.log('🔍 Trip Type:', tripType);
 
       const destinationData = {
         customerEstablishmentName: tripType === 'multiple'
@@ -684,12 +688,15 @@ const handleSubmit = async (e) => {
         originAddressDetails: originAddressDetails,
       };
 
-      // Debug log to verify the data structure
-      console.log('Submitting data:', {
+      // Debug log to verify the data structure BEFORE sending
+      console.log('📤 FINAL Submit Data:', {
         destinationAddress: submitData.destinationAddress,
+        destinationAddressLength: submitData.destinationAddress?.length,
         tripType: submitData.tripType,
-        numberOfStops: submitData.numberOfStops
+        numberOfStops: submitData.numberOfStops,
+        customerEstablishmentName: submitData.customerEstablishmentName
       });
+      console.log('📤 COMPLETE Submit Data:', JSON.stringify(submitData, null, 2));
 
       if (editBooking) {
         await axiosClient.put(
