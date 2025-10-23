@@ -34,7 +34,7 @@ export default function Monitoring() {
 
   const baseURL = import.meta.env.VITE_API_BASE_URL;
 
-  // Animation variants
+  // Animation variants (keeping your existing ones)
   const containerVariants = {
     hidden: { opacity: 0, y: 20 },
     visible: {
@@ -178,6 +178,22 @@ export default function Monitoring() {
     { name: "Completed", status: "Completed" }
   ];
 
+  // Helper function to get destinations array
+  const getDestinations = (booking) => {
+    if (!booking.destinationAddress) return [];
+    return Array.isArray(booking.destinationAddress) 
+      ? booking.destinationAddress 
+      : [booking.destinationAddress];
+  };
+
+  // Helper function to format destinations display
+  const formatDestinations = (booking) => {
+    const destinations = getDestinations(booking);
+    if (destinations.length === 0) return 'No destination';
+    if (destinations.length === 1) return destinations[0];
+    return `${destinations.length} destinations`;
+  };
+
   // Add these new functions for receipt generation
   const handleGenerateReceipt = () => {
     if (selectedBooking && selectedBooking.status === "Completed") {
@@ -270,7 +286,7 @@ export default function Monitoring() {
     }
   };
 
-  // Initialize map
+  // FIXED: Initialize map with proper marker handling
   const initializeMap = async () => {
     if (!selectedBooking || !mapRef.current) return;
 
@@ -283,12 +299,12 @@ export default function Monitoring() {
     try {
       // Check if Leaflet is already loaded
       if (window.L) {
-        createMap();
+        await createMap();
       } else {
         // Load Leaflet dynamically
         const leafletScript = document.createElement('script');
         leafletScript.src = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.js';
-        leafletScript.onload = createMap;
+        leafletScript.onload = () => createMap();
         document.head.appendChild(leafletScript);
       }
     } catch (error) {
@@ -296,74 +312,151 @@ export default function Monitoring() {
     }
   };
 
+  // FIXED: Create map with multiple destination support
   const createMap = async () => {
     if (!mapRef.current) return;
 
     const L = window.L;
 
-    // Initialize map
+    // Initialize map centered on Philippines
     const map = L.map(mapRef.current).setView([14.5995, 120.9842], 6);
 
     // Add OpenStreetMap tiles
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-      attribution: '© OpenStreetMap contributors'
+      attribution: '© OpenStreetMap contributors',
+      maxZoom: 19
     }).addTo(map);
 
-    // Geocoding function
+    // Improved geocoding function with delay to respect rate limits
     const geocodeAddress = async (address) => {
       try {
-        const response = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(address + ", Philippines")}`);
+        // Add delay to respect Nominatim rate limits (1 request per second)
+        await new Promise(resolve => setTimeout(resolve, 1000));
+        
+        const response = await fetch(
+          `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(address)}&countrycodes=ph&limit=1`,
+          {
+            headers: {
+              'User-Agent': 'BestAccord-Monitoring-App'
+            }
+          }
+        );
         const data = await response.json();
-        return data[0] ? [parseFloat(data[0].lat), parseFloat(data[0].lon)] : null;
+        
+        if (data && data.length > 0) {
+          console.log(`✅ Geocoded "${address}":`, data[0]);
+          return [parseFloat(data[0].lat), parseFloat(data[0].lon)];
+        } else {
+          console.warn(`⚠️ No results for address: "${address}"`);
+          return null;
+        }
       } catch (error) {
-        console.error('Geocoding error:', error);
+        console.error(`❌ Geocoding error for "${address}":`, error);
         return null;
       }
     };
 
-    // Add markers and route
-    const originCoords = await geocodeAddress(selectedBooking.originAddress);
-    const destCoords = await geocodeAddress(selectedBooking.destinationAddress);
+    // Store all coordinates for bounds
+    const allCoordinates = [];
 
-    if (originCoords) {
-      L.circleMarker(originCoords, {
-        radius: 8,
-        fillColor: '#10b981',
-        color: '#059669',
-        weight: 2,
-        opacity: 1,
-        fillOpacity: 0.8
-      }).addTo(map).bindPopup(`<b>Origin:</b><br/>${selectedBooking.originAddress}`);
+    // Add origin marker
+    if (selectedBooking.originAddress) {
+      const originCoords = await geocodeAddress(selectedBooking.originAddress);
+      if (originCoords) {
+        allCoordinates.push(originCoords);
+        
+        // Create custom green marker for origin
+        const originMarker = L.circleMarker(originCoords, {
+          radius: 10,
+          fillColor: '#10b981',
+          color: '#ffffff',
+          weight: 3,
+          opacity: 1,
+          fillOpacity: 0.9
+        }).addTo(map);
+
+        originMarker.bindPopup(`
+          <div style="min-width: 200px;">
+            <strong style="color: #10b981; font-size: 14px;">📍 Origin</strong><br/>
+            <p style="margin: 8px 0 0 0; font-size: 12px;">${selectedBooking.originAddress}</p>
+          </div>
+        `);
+      }
     }
 
-    if (destCoords) {
-      L.circleMarker(destCoords, {
-        radius: 8,
-        fillColor: '#ef4444',
-        color: '#dc2626',
-        weight: 2,
-        opacity: 1,
-        fillOpacity: 0.8
-      }).addTo(map).bindPopup(`<b>Destination:</b><br/>${selectedBooking.destinationAddress}`);
+    // Get all destinations
+    const destinations = getDestinations(selectedBooking);
+    
+    // Add destination markers for each address
+    for (let i = 0; i < destinations.length; i++) {
+      const destAddress = destinations[i];
+      if (destAddress) {
+        const destCoords = await geocodeAddress(destAddress);
+        if (destCoords) {
+          allCoordinates.push(destCoords);
+          
+          // Different colors for multiple destinations
+          const colors = [
+            { fill: '#ef4444', border: '#dc2626' }, // red
+            { fill: '#f59e0b', border: '#d97706' }, // amber
+            { fill: '#8b5cf6', border: '#7c3aed' }, // purple
+            { fill: '#ec4899', border: '#db2777' }, // pink
+            { fill: '#06b6d4', border: '#0891b2' }  // cyan
+          ];
+          const color = colors[i % colors.length];
+          
+          // Create custom marker for destination
+          const destMarker = L.circleMarker(destCoords, {
+            radius: 10,
+            fillColor: color.fill,
+            color: '#ffffff',
+            weight: 3,
+            opacity: 1,
+            fillOpacity: 0.9
+          }).addTo(map);
+
+          const stopLabel = destinations.length > 1 ? `Stop ${i + 1}` : 'Destination';
+          destMarker.bindPopup(`
+            <div style="min-width: 200px;">
+              <strong style="color: ${color.fill}; font-size: 14px;">📍 ${stopLabel}</strong><br/>
+              <p style="margin: 8px 0 0 0; font-size: 12px;">${destAddress}</p>
+            </div>
+          `);
+
+          // Draw route line from origin to each destination
+          if (allCoordinates.length > 1) {
+            const originCoords = allCoordinates[0];
+            L.polyline([originCoords, destCoords], {
+              color: color.fill,
+              weight: 3,
+              opacity: 0.6,
+              dashArray: '10, 10'
+            }).addTo(map);
+          }
+        }
+      }
     }
 
-    // Draw route line
-    if (originCoords && destCoords) {
-      L.polyline([originCoords, destCoords], {
-        color: '#8b5cf6',
-        weight: 4,
-        opacity: 0.8
-      }).addTo(map);
-
-      const bounds = L.latLngBounds([originCoords, destCoords]);
-      map.fitBounds(bounds, { padding: [50, 50] });
-    } else if (destCoords) {
-      map.setView(destCoords, 12);
-    } else if (originCoords) {
-      map.setView(originCoords, 12);
+    // Fit map to show all markers
+    if (allCoordinates.length > 0) {
+      const bounds = L.latLngBounds(allCoordinates);
+      map.fitBounds(bounds, { 
+        padding: [50, 50],
+        maxZoom: 15
+      });
+    } else {
+      // Fallback to Philippines center if no coordinates
+      map.setView([14.5995, 120.9842], 6);
     }
 
     mapInstance.current = map;
+    
+    // Force map to resize after a short delay
+    setTimeout(() => {
+      if (mapInstance.current) {
+        mapInstance.current.invalidateSize();
+      }
+    }, 100);
   };
 
   // Filter bookings
@@ -371,12 +464,15 @@ export default function Monitoring() {
     let filtered = bookings;
 
     if (searchTerm) {
-      filtered = filtered.filter(booking =>
-        booking.tripNumber?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        booking.reservationId?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        booking.destinationAddress?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        booking.companyName?.toLowerCase().includes(searchTerm.toLowerCase())
-      );
+      filtered = filtered.filter(booking => {
+        const destinations = getDestinations(booking);
+        return (
+          booking.tripNumber?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+          booking.reservationId?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+          booking.companyName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+          destinations.some(dest => dest?.toLowerCase().includes(searchTerm.toLowerCase()))
+        );
+      });
     }
 
     if (statusFilter !== "All") {
@@ -626,6 +722,7 @@ export default function Monitoring() {
                     {filteredBookings.map((booking, index) => {
                       const config = statusConfig[booking.status || "Pending"];
                       const StatusIcon = config.icon;
+                      const destinations = getDestinations(booking);
 
                       return (
                         <motion.tr
@@ -654,13 +751,17 @@ export default function Monitoring() {
                           <td className="px-6 py-4">
                             <div className="text-sm">
                               <div className="flex items-center text-green-600 mb-1">
-                                <MapPin className="w-3 h-3 mr-1" />
+                                <MapPin className="w-3 h-3 mr-1 flex-shrink-0" />
                                 <span className="truncate max-w-[150px]">{booking.originAddress}</span>
                               </div>
-                              <div className="flex items-center text-red-600">
-                                <MapPin className="w-3 h-3 mr-1" />
-                                <span className="truncate max-w-[150px]">{booking.destinationAddress}</span>
-                              </div>
+                              {destinations.map((dest, idx) => (
+                                <div key={idx} className="flex items-center text-red-600 mt-1">
+                                  <MapPin className="w-3 h-3 mr-1 flex-shrink-0" />
+                                  <span className="truncate max-w-[150px]">
+                                    {destinations.length > 1 && `(${idx + 1}) `}{dest}
+                                  </span>
+                                </div>
+                              ))}
                             </div>
                           </td>
 
@@ -911,7 +1012,7 @@ export default function Monitoring() {
                         </div>
                       </motion.div>
 
-                      {/* Route Timeline */}
+                      {/* Route Timeline - FIXED for multiple destinations */}
                       <motion.div
                         className="bg-white rounded-lg border border-gray-200 p-6"
                         initial={{ opacity: 0, y: 20 }}
@@ -932,19 +1033,26 @@ export default function Monitoring() {
                               <p className="text-sm text-gray-600">{selectedBooking.originAddress}</p>
                             </div>
                           </motion.div>
-                          <div className="border-l-2 border-gray-200 ml-1.5 h-6"></div>
-                          <motion.div
-                            className="flex items-start space-x-3"
-                            initial={{ opacity: 0, x: -20 }}
-                            animate={{ opacity: 1, x: 0 }}
-                            transition={{ delay: 0.6 }}
-                          >
-                            <div className="w-3 h-3 bg-red-500 rounded-full mt-2"></div>
-                            <div className="flex-1">
-                              <p className="text-sm font-medium text-gray-900">Destination</p>
-                              <p className="text-sm text-gray-600">{selectedBooking.destinationAddress}</p>
-                            </div>
-                          </motion.div>
+                          
+                          {getDestinations(selectedBooking).map((destination, idx) => (
+                            <React.Fragment key={idx}>
+                              <div className="border-l-2 border-gray-200 ml-1.5 h-6"></div>
+                              <motion.div
+                                className="flex items-start space-x-3"
+                                initial={{ opacity: 0, x: -20 }}
+                                animate={{ opacity: 1, x: 0 }}
+                                transition={{ delay: 0.6 + idx * 0.1 }}
+                              >
+                                <div className="w-3 h-3 bg-red-500 rounded-full mt-2"></div>
+                                <div className="flex-1">
+                                  <p className="text-sm font-medium text-gray-900">
+                                    {getDestinations(selectedBooking).length > 1 ? `Destination ${idx + 1}` : 'Destination'}
+                                  </p>
+                                  <p className="text-sm text-gray-600">{destination}</p>
+                                </div>
+                              </motion.div>
+                            </React.Fragment>
+                          ))}
                         </div>
 
                         {/* Trip Started Info */}
@@ -1055,29 +1163,44 @@ export default function Monitoring() {
                         </div>
                       </motion.div>
 
-                      {/* Location & Rate */}
+                      {/* Location & Rate - FIXED for multiple destinations */}
                       <motion.div
                         className="bg-white rounded-lg border border-gray-200 p-6"
                         initial={{ opacity: 0, y: 20 }}
                         animate={{ opacity: 1, y: 0 }}
                         transition={{ duration: 0.5, delay: 0.7 }}
                       >
-                        <div className="grid grid-cols-2 gap-6">
+                        <div className="space-y-4">
                           <div>
                             <h4 className="text-sm font-medium text-gray-600 mb-2">Origin Location</h4>
                             <p className="text-gray-900">{selectedBooking.originAddress}</p>
                           </div>
                           <div>
-                            <h4 className="text-sm font-medium text-gray-600 mb-2">Destination</h4>
-                            <p className="text-gray-900">{selectedBooking.destinationAddress}</p>
+                            <h4 className="text-sm font-medium text-gray-600 mb-2">
+                              {getDestinations(selectedBooking).length > 1 ? 'Destinations' : 'Destination'}
+                            </h4>
+                            <div className="space-y-2">
+                              {getDestinations(selectedBooking).map((dest, idx) => (
+                                <div key={idx} className="flex items-start">
+                                  {getDestinations(selectedBooking).length > 1 && (
+                                    <span className="inline-block bg-red-100 text-red-800 text-xs font-semibold px-2 py-1 rounded mr-2 mt-0.5">
+                                      {idx + 1}
+                                    </span>
+                                  )}
+                                  <p className="text-gray-900 flex-1">{dest}</p>
+                                </div>
+                              ))}
+                            </div>
                           </div>
-                          <div>
-                            <h4 className="text-sm font-medium text-gray-600 mb-2">Area Code</h4>
-                            <p className="text-gray-900">{selectedBooking.areaLocationCode || '1'}</p>
-                          </div>
-                          <div>
-                            <h4 className="text-sm font-medium text-gray-600 mb-2">Area Rate</h4>
-                            <p className="text-gray-900">₱{selectedBooking.rateCost?.toLocaleString() || '200'}</p>
+                          <div className="grid grid-cols-2 gap-4 pt-4 border-t">
+                            <div>
+                              <h4 className="text-sm font-medium text-gray-600 mb-2">Area Code</h4>
+                              <p className="text-gray-900">{selectedBooking.areaLocationCode || '1'}</p>
+                            </div>
+                            <div>
+                              <h4 className="text-sm font-medium text-gray-600 mb-2">Area Rate</h4>
+                              <p className="text-gray-900">₱{selectedBooking.rateCost?.toLocaleString() || '200'}</p>
+                            </div>
                           </div>
                         </div>
                       </motion.div>
@@ -1171,7 +1294,7 @@ export default function Monitoring() {
                         </div>
                       </motion.div>
 
-                      {/* UPDATED Action Buttons - This is the main change */}
+                      {/* Action Buttons */}
                       <motion.div
                         className="flex space-x-4"
                         initial={{ opacity: 0, y: 20 }}
@@ -1218,7 +1341,7 @@ export default function Monitoring() {
                           </div>
                         )}
 
-                        {/* NEW: Buttons for Completed Status */}
+                        {/* Buttons for Completed Status */}
                         {selectedBooking.status === "Completed" && (
                           <>
                             <motion.button
@@ -1316,7 +1439,13 @@ export default function Monitoring() {
                 <div className="mt-4 grid grid-cols-2 gap-4">
                   <div className="bg-white p-3 rounded-lg border border-gray-200">
                     <p className="text-xs text-gray-600 mb-1">Delivered To</p>
-                    <p className="text-sm font-medium">{selectedBooking.destinationAddress}</p>
+                    <div className="space-y-1">
+                      {getDestinations(selectedBooking).map((dest, idx) => (
+                        <p key={idx} className="text-sm font-medium">
+                          {getDestinations(selectedBooking).length > 1 && `${idx + 1}. `}{dest}
+                        </p>
+                      ))}
+                    </div>
                   </div>
                   <div className="bg-white p-3 rounded-lg border border-gray-200">
                     <p className="text-xs text-gray-600 mb-1">Completed At</p>
