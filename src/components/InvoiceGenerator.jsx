@@ -828,7 +828,7 @@ const InvoiceGenerator = ({ booking, onClose, onInvoiceGenerated }) => {
                 <div className="card-content" style={styles.cardContent}>
                   <p style={{ marginBottom: '4px' }}><span style={{ fontWeight: 'bold' }}>Type:</span> {booking.vehicleType}</p>
                   <p style={{ marginBottom: '4px' }}><span style={{ fontWeight: 'bold' }}>ID:</span> {booking.vehicleId}</p>
-                  <p><span style={{ fontWeight: 'bold' }}>Plate:</span> {booking.vehicle?.plateNumber || 'N/A'}</p>
+                  <p><span style={{ fontWeight: 'bold' }}>Plate:</span> {booking.plateNumber || 'N/A'}</p>
                 </div>
               </div>
               

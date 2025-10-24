@@ -3,7 +3,6 @@ import { useParams, useNavigate } from "react-router-dom";
 import { ArrowLeft, Calendar, Clock, User, Building, Package, Truck, MapPin } from "lucide-react";
 import { axiosClient } from "../api/axiosClient";
 
-
 function BookingInfo() {
     const { id } = useParams();
     const navigate = useNavigate();
@@ -51,6 +50,10 @@ function BookingInfo() {
         );
     }
 
+    // Check if booking has multiple destinations
+    const isMultipleDestinations = Array.isArray(booking.destinationAddress) && booking.destinationAddress.length > 1;
+    const destinations = Array.isArray(booking.destinationAddress) ? booking.destinationAddress : [booking.destinationAddress];
+
     return (
         <div className="p-6">
             {/* Header */}
@@ -68,7 +71,7 @@ function BookingInfo() {
             </div>
 
             {/* Booking Overview Cards */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
                 <div className="bg-gradient-to-r from-blue-500 to-blue-600 text-white p-4 rounded-lg">
                     <h3 className="text-sm font-medium opacity-90">Reservation ID</h3>
                     <p className="text-2xl font-bold font-mono">{booking.reservationId}</p>
@@ -80,6 +83,12 @@ function BookingInfo() {
                 <div className="bg-gradient-to-r from-purple-500 to-purple-950 text-white p-4 rounded-lg">
                     <h3 className="text-sm font-medium opacity-90">Status</h3>
                     <p className="text-2xl font-bold">{booking.status}</p>
+                </div>
+                <div className="bg-gradient-to-r from-green-500 to-green-600 text-white p-4 rounded-lg">
+                    <h3 className="text-sm font-medium opacity-90">Trip Type</h3>
+                    <p className="text-2xl font-bold">
+                        {isMultipleDestinations ? `${destinations.length} Stops` : 'Single Drop'}
+                    </p>
                 </div>
             </div>
 
@@ -141,21 +150,42 @@ function BookingInfo() {
                     </div>
                 </div>
 
-                {/* Route Information */}
-                <div className="bg-white rounded-xl shadow-lg p-6">
+                {/* Route Information - Updated for multiple destinations */}
+                <div className={`bg-white rounded-xl shadow-lg p-6 ${isMultipleDestinations ? 'lg:col-span-2' : ''}`}>
                     <h2 className="text-xl font-semibold text-gray-800 mb-4 flex items-center gap-2">
                         <MapPin className="text-blue-600" size={20} />
                         Route Information
                     </h2>
-                    <div className="space-y-3">
+                    <div className="space-y-4">
                         <div>
-                            <span className="text-gray-600 block">Origin Address:</span>
-                            <span className="font-semibold">{booking.originAddress}</span>
+                            <span className="text-gray-600 block mb-1">Origin Address:</span>
+                            <div className="bg-blue-50 p-3 rounded-lg">
+                                <span className="font-semibold">{booking.originAddress}</span>
+                            </div>
                         </div>
-                        <div>
-                            <span className="text-gray-600 block">Destination Address:</span>
-                            <span className="font-semibold">{booking.destinationAddress}</span>
-                        </div>
+                        
+                        {isMultipleDestinations ? (
+                            <div>
+                                <span className="text-gray-600 block mb-2">Destination Addresses:</span>
+                                <div className="space-y-2">
+                                    {destinations.map((address, index) => (
+                                        <div key={index} className="bg-green-50 p-3 rounded-lg flex items-start gap-3">
+                                            <span className="bg-green-600 text-white text-xs font-bold px-2 py-1 rounded-full min-w-[28px] text-center">
+                                                {index + 1}
+                                            </span>
+                                            <span className="font-semibold flex-1">{address}</span>
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                        ) : (
+                            <div>
+                                <span className="text-gray-600 block mb-1">Destination Address:</span>
+                                <div className="bg-green-50 p-3 rounded-lg">
+                                    <span className="font-semibold">{destinations[0]}</span>
+                                </div>
+                            </div>
+                        )}
                     </div>
                 </div>
 
@@ -210,11 +240,19 @@ function BookingInfo() {
                     <div className="space-y-3">
                         <div className="flex justify-between">
                             <span className="text-gray-600">Employee Assigned:</span>
-                            <span className="font-semibold">{booking.employeeAssigned}</span>
+                            <span className="font-semibold">
+                                {Array.isArray(booking.employeeAssigned) 
+                                    ? booking.employeeAssigned.join(', ') 
+                                    : booking.employeeAssigned}
+                            </span>
                         </div>
                         <div className="flex justify-between">
                             <span className="text-gray-600">Role:</span>
-                            <span className="font-semibold">{booking.roleOfEmployee}</span>
+                            <span className="font-semibold">
+                                {Array.isArray(booking.roleOfEmployee) 
+                                    ? booking.roleOfEmployee.join(', ') 
+                                    : booking.roleOfEmployee}
+                            </span>
                         </div>
                     </div>
                 </div>
