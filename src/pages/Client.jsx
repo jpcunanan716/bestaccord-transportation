@@ -769,9 +769,9 @@ function Client() {
               animate={{ scale: 1, opacity: 1, y: 0 }}
               exit={{ scale: 0.9, opacity: 0, y: 20 }}
               onClick={(e) => e.stopPropagation()}
-              className="bg-white rounded-3xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto border border-purple-100"
+              className="bg-white rounded-3xl shadow-2xl w-full max-w-2xl max-h-[90vh] flex flex-col border border-purple-100"
             >
-              <div className="sticky top-0 bg-gradient-to-r from-purple-600 to-indigo-600 px-8 py-6 rounded-t-3xl z-10">
+              <div className="sticky top-0 bg-gradient-to-r from-purple-600 to-indigo-600 px-8 py-6 rounded-t-3xl z-10 flex-shrink-0">
                 <div className="flex justify-between items-center">
                   <div>
                     <h2 className="text-2xl font-bold text-white">
@@ -792,182 +792,184 @@ function Client() {
                 </div>
               </div>
 
-              <form onSubmit={handleSubmit} className="p-8 space-y-6">
-                <div className="bg-gradient-to-r from-purple-50 to-indigo-50 p-6 rounded-2xl border border-purple-100">
-                  <h3 className="text-lg font-semibold text-gray-900 mb-4">Client Information</h3>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">Client Name *</label>
-                      <input
-                        type="text"
-                        name="clientName"
-                        value={formData.clientName}
-                        onChange={handleChange}
-                        required
-                        className="w-full px-4 py-2.5 border border-purple-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-400 focus:border-transparent"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">Client Branch *</label>
-                      <input
-                        type="text"
-                        name="clientBranch"
-                        value={formData.clientBranch}
-                        onChange={handleChange}
-                        required
-                        className="w-full px-4 py-2.5 border border-purple-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-400 focus:border-transparent"
-                      />
-                    </div>
-                  </div>
-                </div>
-
-                <div className="bg-gradient-to-r from-indigo-50 to-violet-50 p-6 rounded-2xl border border-indigo-100">
-                  <h3 className="text-lg font-semibold text-gray-900 mb-4">Address Information</h3>
-                  <div className="space-y-4">
+              <form onSubmit={handleSubmit} className="flex-1 overflow-y-auto">
+                <div className="p-8 space-y-6">
+                  <div className="bg-gradient-to-r from-purple-50 to-indigo-50 p-6 rounded-2xl border border-purple-100">
+                    <h3 className="text-lg font-semibold text-gray-900 mb-4">Client Information</h3>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">House/Building Number</label>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">Client Name *</label>
                         <input
                           type="text"
-                          name="houseNumber"
-                          value={formData.houseNumber}
+                          name="clientName"
+                          value={formData.clientName}
                           onChange={handleChange}
-                          className="w-full px-4 py-2.5 border border-indigo-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-400 focus:border-transparent"
+                          required
+                          className="w-full px-4 py-2.5 border border-purple-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-400 focus:border-transparent"
                         />
                       </div>
                       <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">Street</label>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">Client Branch *</label>
                         <input
                           type="text"
-                          name="street"
-                          value={formData.street}
+                          name="clientBranch"
+                          value={formData.clientBranch}
                           onChange={handleChange}
-                          className="w-full px-4 py-2.5 border border-indigo-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-400 focus:border-transparent"
+                          required
+                          className="w-full px-4 py-2.5 border border-purple-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-400 focus:border-transparent"
                         />
                       </div>
                     </div>
+                  </div>
 
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">Region *</label>
-                      <select
-                        name="region"
-                        value={formData.region}
-                        onChange={handleChange}
-                        required
-                        className="w-full px-4 py-2.5 border border-indigo-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-400 focus:border-transparent"
-                      >
-                        <option value="">Select Region</option>
-                        {regions.map((r) => (
-                          <option key={r.code} value={r.code}>{r.name}</option>
-                        ))}
-                      </select>
-                    </div>
+                  <div className="bg-gradient-to-r from-indigo-50 to-violet-50 p-6 rounded-2xl border border-indigo-100">
+                    <h3 className="text-lg font-semibold text-gray-900 mb-4">Address Information</h3>
+                    <div className="space-y-4">
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-2">House/Building Number</label>
+                          <input
+                            type="text"
+                            name="houseNumber"
+                            value={formData.houseNumber}
+                            onChange={handleChange}
+                            className="w-full px-4 py-2.5 border border-indigo-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-400 focus:border-transparent"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-2">Street</label>
+                          <input
+                            type="text"
+                            name="street"
+                            value={formData.street}
+                            onChange={handleChange}
+                            className="w-full px-4 py-2.5 border border-indigo-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-400 focus:border-transparent"
+                          />
+                        </div>
+                      </div>
 
-                    {formData.region !== "130000000" ? (
                       <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">Province *</label>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">Region *</label>
                         <select
-                          name="province"
-                          value={formData.province}
+                          name="region"
+                          value={formData.region}
                           onChange={handleChange}
-                          required={!!formData.region}
+                          required
                           className="w-full px-4 py-2.5 border border-indigo-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-400 focus:border-transparent"
-                          disabled={!formData.region}
                         >
-                          <option value="">Select Province</option>
-                          {provinces.map((p) => (
-                            <option key={p.code} value={p.code}>{p.name}</option>
+                          <option value="">Select Region</option>
+                          {regions.map((r) => (
+                            <option key={r.code} value={r.code}>{r.name}</option>
                           ))}
                         </select>
                       </div>
-                    ) : (
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">Province</label>
-                        <div className="w-full px-4 py-2.5 border border-indigo-200 rounded-xl bg-gray-50 text-gray-700">
-                          Metro Manila (National Capital Region)
+
+                      {formData.region !== "130000000" ? (
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-2">Province *</label>
+                          <select
+                            name="province"
+                            value={formData.province}
+                            onChange={handleChange}
+                            required={!!formData.region}
+                            className="w-full px-4 py-2.5 border border-indigo-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-400 focus:border-transparent"
+                            disabled={!formData.region}
+                          >
+                            <option value="">Select Province</option>
+                            {provinces.map((p) => (
+                              <option key={p.code} value={p.code}>{p.name}</option>
+                            ))}
+                          </select>
                         </div>
+                      ) : (
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-2">Province</label>
+                          <div className="w-full px-4 py-2.5 border border-indigo-200 rounded-xl bg-gray-50 text-gray-700">
+                            Metro Manila (National Capital Region)
+                          </div>
+                        </div>
+                      )}
+
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">City/Municipality *</label>
+                        <select
+                          name="city"
+                          value={formData.city}
+                          onChange={handleChange}
+                          required={formData.region === "130000000" || !!formData.province}
+                          className="w-full px-4 py-2.5 border border-indigo-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-400 focus:border-transparent"
+                          disabled={formData.region !== "130000000" && !formData.province}
+                        >
+                          <option value="">Select City/Municipality</option>
+                          {cities.map((c) => (
+                            <option key={c.code} value={c.code}>{c.name}</option>
+                          ))}
+                        </select>
+                      </div>
+
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">Barangay *</label>
+                        <select
+                          name="barangay"
+                          value={formData.barangay}
+                          onChange={handleChange}
+                          required={!!formData.city}
+                          className="w-full px-4 py-2.5 border border-indigo-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-400 focus:border-transparent"
+                          disabled={!formData.city}
+                        >
+                          <option value="">Select Barangay</option>
+                          {barangays.map((b) => (
+                            <option key={b.code} value={b.code}>{b.name}</option>
+                          ))}
+                        </select>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="bg-gradient-to-r from-violet-50 to-purple-50 p-6 rounded-2xl border border-violet-100">
+                    <div className="flex items-center gap-2 mb-2">
+                      <MapPin className="text-purple-600" size={20} />
+                      <h3 className="text-lg font-semibold text-gray-900">Pin Your Location</h3>
+                    </div>
+                    <p className="text-sm text-gray-600 mb-4">
+                      Search your address or click on the map to pin your exact location. You can also drag the marker to adjust.
+                    </p>
+
+                    <div className="mb-4 flex gap-2">
+                      <input
+                        type="text"
+                        value={addressSearch}
+                        onChange={(e) => setAddressSearch(e.target.value)}
+                        onKeyPress={(e) => e.key === 'Enter' && (e.preventDefault(), handleAddressSearch())}
+                        placeholder="Search address (e.g., Quezon City, Metro Manila)..."
+                        className="flex-1 px-4 py-2.5 border border-violet-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-violet-400 focus:border-transparent"
+                      />
+                      <motion.button
+                        whileHover={{ scale: 1.05 }}
+                        whileTap={{ scale: 0.95 }}
+                        type="button"
+                        onClick={handleAddressSearch}
+                        className="px-4 py-2.5 bg-gradient-to-r from-purple-600 to-violet-600 text-white rounded-xl font-medium hover:shadow-lg transition-all duration-300 inline-flex items-center gap-2"
+                      >
+                        <Search size={18} />
+                        Search
+                      </motion.button>
+                    </div>
+
+                    <div id="location-map" className="w-full h-96 rounded-xl shadow-lg border-2 border-violet-200"></div>
+
+                    {markerPosition && (
+                      <div className="mt-3 p-3 bg-white rounded-lg border border-violet-200">
+                        <p className="text-xs text-gray-600">
+                          <strong>Coordinates:</strong> {markerPosition[0].toFixed(6)}, {markerPosition[1].toFixed(6)}
+                        </p>
                       </div>
                     )}
-
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">City/Municipality *</label>
-                      <select
-                        name="city"
-                        value={formData.city}
-                        onChange={handleChange}
-                        required={formData.region === "130000000" || !!formData.province}
-                        className="w-full px-4 py-2.5 border border-indigo-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-400 focus:border-transparent"
-                        disabled={formData.region !== "130000000" && !formData.province}
-                      >
-                        <option value="">Select City/Municipality</option>
-                        {cities.map((c) => (
-                          <option key={c.code} value={c.code}>{c.name}</option>
-                        ))}
-                      </select>
-                    </div>
-
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">Barangay *</label>
-                      <select
-                        name="barangay"
-                        value={formData.barangay}
-                        onChange={handleChange}
-                        required={!!formData.city}
-                        className="w-full px-4 py-2.5 border border-indigo-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-400 focus:border-transparent"
-                        disabled={!formData.city}
-                      >
-                        <option value="">Select Barangay</option>
-                        {barangays.map((b) => (
-                          <option key={b.code} value={b.code}>{b.name}</option>
-                        ))}
-                      </select>
-                    </div>
                   </div>
-                </div>
-
-                <div className="bg-gradient-to-r from-violet-50 to-purple-50 p-6 rounded-2xl border border-violet-100">
-                  <div className="flex items-center gap-2 mb-2">
-                    <MapPin className="text-purple-600" size={20} />
-                    <h3 className="text-lg font-semibold text-gray-900">Pin Your Location</h3>
-                  </div>
-                  <p className="text-sm text-gray-600 mb-4">
-                    Search your address or click on the map to pin your exact location. You can also drag the marker to adjust.
-                  </p>
-
-                  <div className="mb-4 flex gap-2">
-                    <input
-                      type="text"
-                      value={addressSearch}
-                      onChange={(e) => setAddressSearch(e.target.value)}
-                      onKeyPress={(e) => e.key === 'Enter' && (e.preventDefault(), handleAddressSearch())}
-                      placeholder="Search address (e.g., Quezon City, Metro Manila)..."
-                      className="flex-1 px-4 py-2.5 border border-violet-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-violet-400 focus:border-transparent"
-                    />
-                    <motion.button
-                      whileHover={{ scale: 1.05 }}
-                      whileTap={{ scale: 0.95 }}
-                      type="button"
-                      onClick={handleAddressSearch}
-                      className="px-4 py-2.5 bg-gradient-to-r from-purple-600 to-violet-600 text-white rounded-xl font-medium hover:shadow-lg transition-all duration-300 inline-flex items-center gap-2"
-                    >
-                      <Search size={18} />
-                      Search
-                    </motion.button>
-                  </div>
-
-                  <div id="location-map" className="w-full h-96 rounded-xl shadow-lg border-2 border-violet-200"></div>
-
-                  {markerPosition && (
-                    <div className="mt-3 p-3 bg-white rounded-lg border border-violet-200">
-                      <p className="text-xs text-gray-600">
-                        <strong>Coordinates:</strong> {markerPosition[0].toFixed(6)}, {markerPosition[1].toFixed(6)}
-                      </p>
-                    </div>
-                  )}
                 </div>
               </form>
 
-              <div className="sticky bottom-0 bg-gradient-to-r from-gray-50 to-gray-100 px-8 py-6 rounded-b-3xl border-t border-gray-200">
+              <div className="sticky bottom-0 bg-gradient-to-r from-gray-50 to-gray-100 px-8 py-6 rounded-b-3xl border-t border-gray-200 flex-shrink-0">
                 <div className="flex justify-between items-center gap-4">
                   <motion.button
                     whileHover={{ scale: 1.05 }}
