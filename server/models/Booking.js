@@ -29,6 +29,27 @@ const bookingSchema = new mongoose.Schema({
     },
     vehicleType: { type: String, required: true },
     plateNumber: { type: String, required: true },
+    
+    // NEW: Vehicle history tracking
+    vehicleHistory: [{
+        vehicleId: { type: String, required: true },
+        vehicleType: { type: String, required: true },
+        plateNumber: { type: String, required: true },
+        startedAt: { type: Date, required: true },
+        endedAt: { type: Date },
+        reason: { type: String }, // Reason for vehicle change
+        status: { type: String, enum: ['active', 'replaced'], default: 'active' }
+    }],
+    
+    // NEW: Vehicle change request
+    vehicleChangeRequest: {
+        requested: { type: Boolean, default: false },
+        requestedAt: { type: Date },
+        reason: { type: String },
+        status: { type: String, enum: ['pending', 'approved'], default: 'pending' },
+        approvedAt: { type: Date }
+    },
+    
     dateNeeded: { type: Date, required: true },
     timeNeeded: { type: String, required: true },
     employeeAssigned: [{ type: String }],
@@ -51,16 +72,18 @@ const bookingSchema = new mongoose.Schema({
             message: 'Proof of delivery image must be less than 10MB'
         }
     },
-    // Driver's current location tracking
     driverLocation: {
         latitude: { type: Number, default: null },
         longitude: { type: Number, default: null },
         lastUpdated: { type: Date, default: null },
-        accuracy: { type: Number, default: null } // GPS accuracy in meters
+        accuracy: { type: Number, default: null }
     }
 }, {
     timestamps: true,
     strictQuery: false
 });
+
+// Add index for vehicle change requests
+bookingSchema.index({ 'vehicleChangeRequest.requested': 1, 'vehicleChangeRequest.status': 1 });
 
 export default mongoose.model("Booking", bookingSchema);

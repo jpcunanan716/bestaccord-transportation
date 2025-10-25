@@ -32,6 +32,10 @@ export default function Monitoring() {
   const [updating, setUpdating] = useState(false);
   const mapRef = useRef(null);
   const mapInstance = useRef(null);
+  const [showVehicleReplaceModal, setShowVehicleReplaceModal] = useState(false);
+  const [selectedReplacementVehicle, setSelectedReplacementVehicle] = useState('');
+  const [availableVehicles, setAvailableVehicles] = useState([]);
+  const [replacingVehicle, setReplacingVehicle] = useState(false);
 
   const baseURL = import.meta.env.VITE_API_BASE_URL;
 
@@ -178,6 +182,92 @@ export default function Monitoring() {
     { name: "Delivered", status: "Delivered" },
     { name: "Completed", status: "Completed" }
   ];
+
+  // Fetch available vehicles
+const fetchAvailableVehicles = async () => {
+  try {
+    const response = await fetch(`${baseURL}/api/vehicles`);
+    const data = await response.json();
+    const available = data.filter(v => v.status === "Available");
+    setAvailableVehicles(available);
+  } catch (err) {
+    console.error("Error fetching vehicles:", err);
+  }
+};
+
+// Open vehicle replace modal
+const openVehicleReplaceModal = async () => {
+  await fetchAvailableVehicles();
+  setShowVehicleReplaceModal(true);
+  setSelectedReplacementVehicle('');
+};
+
+// Close vehicle replace modal
+const closeVehicleReplaceModal = () => {
+  setShowVehicleReplaceModal(false);
+  setSelectedReplacementVehicle('');
+};
+
+// Approve and replace vehicle
+const approveVehicleChange = async () => {
+  if (!selectedReplacementVehicle) {
+    alert('Please select a replacement vehicle');
+    return;
+  }
+
+  setReplacingVehicle(true);
+  try {
+    const response = await fetch(
+      `${baseURL}/api/bookings/${selectedBooking._id}/approve-vehicle-change`,
+      {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ newVehicleId: selectedReplacementVehicle })
+      }
+    );
+
+    if (!response.ok) throw new Error('Failed to approve vehicle change');
+
+    const data = await response.json();
+    
+    alert(`Vehicle replaced successfully!\nOld: ${data.booking.oldVehicle.plateNumber}\nNew: ${data.booking.newVehicle.plateNumber}`);
+    
+    // Refresh bookings and close modals
+    await fetchBookings();
+    closeVehicleReplaceModal();
+    setShowModal(false);
+    
+  } catch (err) {
+    console.error("Error approving vehicle change:", err);
+    alert("Failed to replace vehicle. Please try again.");
+  } finally {
+    setReplacingVehicle(false);
+  }
+};
+
+// Helper to get vehicle history display
+const getVehicleHistoryDisplay = (booking) => {
+  if (!booking.vehicleHistory || booking.vehicleHistory.length === 0) {
+    return (
+      <p className="text-sm text-gray-600">
+        {booking.vehicleType} - {booking.plateNumber}
+      </p>
+    );
+  }
+
+  return (
+    <div className="space-y-2">
+      {booking.vehicleHistory.map((vh, idx) => (
+        <div key={idx} className={`text-sm ${vh.status === 'active' ? 'text-green-600 font-semibold' : 'text-gray-500'}`}>
+          {vh.status === 'replaced' && '🔄 '}
+          {vh.status === 'active' && '✅ '}
+          {vh.vehicleType} - {vh.plateNumber}
+          {vh.reason && <span className="text-xs ml-2">({vh.reason})</span>}
+        </div>
+      ))}
+    </div>
+  );
+};
 
   // Helper function to get destinations array
   const getDestinations = (booking) => {
@@ -1122,30 +1212,40 @@ const createMap = async () => {
                             </div>
                           </td>
 
-                          <td className="px-6 py-4">
-                            <div>
-                              <motion.span
-                                className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${config.color} mb-2`}
-                                initial={{ scale: 0.8 }}
-                                animate={{ scale: 1 }}
-                                transition={{ delay: index * 0.05 + 0.1 }}
-                              >
-                                <StatusIcon className="w-3 h-3 mr-1" />
-                                {booking.status || "Pending"}
-                              </motion.span>
-                              <div className="w-full bg-gray-200 rounded-full h-2">
-                                <motion.div
-                                  className={`h-2 rounded-full ${config.bgColor}`}
-                                  initial={{ width: 0 }}
-                                  animate={{ width: `${config.progress}%` }}
-                                  transition={{ delay: index * 0.05 + 0.2, duration: 0.5 }}
-                                ></motion.div>
-                              </div>
-                              <div className="text-xs text-gray-500 mt-1">
-                                {config.progress}% Complete
-                              </div>
+                        <td className="px-6 py-4">
+                          <div className="space-y-2">
+                            <motion.span
+                              className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${config.color}`}
+                              initial={{ scale: 0.8 }}
+                              animate={{ scale: 1 }}
+                              transition={{ delay: index * 0.05 + 0.1 }}
+                            >
+                              <StatusIcon className="w-3 h-3 mr-1" />
+                              {booking.status || "Pending"}
+                            </motion.span>
+                            
+                            {/* Vehicle Change Request Indicator */}
+                            {booking.vehicleChangeRequest?.requested && 
+                            booking.vehicleChangeRequest?.status === 'pending' && (
+                              <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-orange-100 text-orange-800 ml-2">
+                                <AlertCircle className="w-3 h-3 mr-1" />
+                                Vehicle Issue
+                              </span>
+                            )}
+                            
+                            <div className="w-full bg-gray-200 rounded-full h-2">
+                              <motion.div
+                                className={`h-2 rounded-full ${config.bgColor}`}
+                                initial={{ width: 0 }}
+                                animate={{ width: `${config.progress}%` }}
+                                transition={{ delay: index * 0.05 + 0.2, duration: 0.5 }}
+                              ></motion.div>
                             </div>
-                          </td>
+                            <div className="text-xs text-gray-500 mt-1">
+                              {config.progress}% Complete
+                            </div>
+                          </div>
+                        </td>
 
                           <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                             <div className="flex items-center mb-1">
@@ -1501,24 +1601,65 @@ const createMap = async () => {
                         </div>
                       </motion.div>
 
-                      {/* Vehicle Information */}
-                      <motion.div
-                        className="bg-white rounded-lg border border-gray-200 p-6"
-                        initial={{ opacity: 0, y: 20 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        transition={{ duration: 0.5, delay: 0.6 }}
-                      >
-                        <div className="grid grid-cols-2 gap-6">
-                          <div>
-                            <h4 className="text-sm font-medium text-gray-600 mb-2">Vehicle Type</h4>
-                            <p className="text-gray-900">{selectedBooking.vehicleType}</p>
+                        {/* Vehicle Information */}
+                        <motion.div
+                          className="bg-white rounded-lg border border-gray-200 p-6"
+                          initial={{ opacity: 0, y: 20 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          transition={{ duration: 0.5, delay: 0.6 }}
+                        >
+                          <div className="flex items-center justify-between mb-4">
+                            <h4 className="text-sm font-medium text-gray-900">Vehicle Information</h4>
+                            
+                            {/* Vehicle Change Request Indicator */}
+                            {selectedBooking.vehicleChangeRequest?.requested && 
+                            selectedBooking.vehicleChangeRequest?.status === 'pending' && (
+                              <span className="px-3 py-1 bg-orange-100 text-orange-800 text-xs font-semibold rounded-full flex items-center gap-1">
+                                <AlertCircle className="w-3 h-3" />
+                                Change Requested
+                              </span>
+                            )}
                           </div>
-                          <div>
-                            <h4 className="text-sm font-medium text-gray-600 mb-2">Vehicle Plate</h4>
-                            <p className="text-gray-900">{selectedBooking.plateNumber}</p>
-                          </div>
-                        </div>
-                      </motion.div>
+
+                          {/* Vehicle History or Current Vehicle */}
+                          {getVehicleHistoryDisplay(selectedBooking)}
+
+                          {/* Vehicle Change Request Details */}
+                          {selectedBooking.vehicleChangeRequest?.requested && (
+                            <div className="mt-4 p-4 bg-orange-50 border border-orange-200 rounded-lg">
+                              <div className="flex items-start justify-between">
+                                <div className="flex-1">
+                                  <p className="text-sm font-semibold text-orange-900">
+                                    Vehicle Change Request
+                                  </p>
+                                  <p className="text-xs text-orange-700 mt-1">
+                                    Reason: {selectedBooking.vehicleChangeRequest.reason}
+                                  </p>
+                                  <p className="text-xs text-orange-600 mt-1">
+                                    Requested: {new Date(selectedBooking.vehicleChangeRequest.requestedAt).toLocaleString()}
+                                  </p>
+                                  
+                                  {selectedBooking.vehicleChangeRequest.status === 'approved' && (
+                                    <p className="text-xs text-green-600 mt-1">
+                                      ✅ Approved: {new Date(selectedBooking.vehicleChangeRequest.approvedAt).toLocaleString()}
+                                    </p>
+                                  )}
+                                </div>
+
+                                {/* Approve Button - Only show if pending */}
+                                {selectedBooking.vehicleChangeRequest.status === 'pending' && (
+                                  <button
+                                    onClick={openVehicleReplaceModal}
+                                    className="ml-4 px-4 py-2 bg-orange-600 text-white text-sm rounded-lg hover:bg-orange-700 transition-colors font-medium whitespace-nowrap"
+                                  >
+                                    Replace Vehicle
+                                  </button>
+                                )}
+                              </div>
+                            </div>
+                          )}
+                        </motion.div>
+
 
                       {/* Location & Rate - FIXED for multiple destinations */}
                       <motion.div
