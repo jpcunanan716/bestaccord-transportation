@@ -913,6 +913,7 @@ function Booking() {
     } else {
       clearAddressForm();
     }
+    setAddressSearch('');
     setShowOriginAddressModal(true);
   };
 
@@ -1062,14 +1063,25 @@ function Booking() {
 
   // Initialize map when modal opens
   useEffect(() => {
-    if (!showModal) return;
+    if (!showOriginAddressModal) {
+      if (mapRef.current) {
+        mapRef.current.remove();
+        mapRef.current = null;
+        markerRef.current = null;
+      }
+      return;
+    }
 
-    // Wait for modal animation to complete
     const timer = setTimeout(() => {
       const mapElement = document.getElementById('location-map');
-      if (!mapElement || mapRef.current) return;
+      if (!mapElement) return;
 
-      // Load Leaflet CSS
+      if (mapRef.current) {
+        mapRef.current.remove();
+        mapRef.current = null;
+        markerRef.current = null;
+      }
+
       if (!document.getElementById('leaflet-css')) {
         const link = document.createElement('link');
         link.id = 'leaflet-css';
@@ -1078,7 +1090,6 @@ function Booking() {
         document.head.appendChild(link);
       }
 
-      // Load Leaflet JS
       if (!window.L) {
         const script = document.createElement('script');
         script.src = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.js';
@@ -1087,10 +1098,10 @@ function Booking() {
       } else {
         initializeMap();
       }
-    }, 300);
+    }, 500);
 
     return () => clearTimeout(timer);
-  }, [showModal, mapCenter]);
+  }, [showOriginAddressModal]);
 
   const initializeMap = () => {
     const mapElement = document.getElementById('location-map');
@@ -1102,6 +1113,10 @@ function Booking() {
     window.L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
       attribution: '© OpenStreetMap contributors'
     }).addTo(map);
+
+    setTimeout(() => {
+      map.invalidateSize();
+    }, 100);
 
     // Add marker if position exists
     if (markerPosition) {
