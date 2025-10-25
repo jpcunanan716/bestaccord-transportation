@@ -8,14 +8,12 @@ import {
   getDriverBookingById, 
   updateBookingStatus, 
   getDriverBookingCount,
-  updateDriverLocation  // 🚚 NEW - Import the location update function
+  updateDriverLocation,
+  requestVehicleChange
 } from "../controllers/driverBookingsController.js";
 import driverAuth from "../middleware/driverAuth1.js";
-import { requestVehicleChange } from '../controllers/driverBookingsController.js';
 
 const router = express.Router();
-
-router.post('/bookings/:id/request-vehicle-change', driverAuth, requestVehicleChange);
 
 // POST /api/driver/driver-login (Original login route)
 router.post("/driver-login", async (req, res) => {
@@ -89,5 +87,6 @@ router.put("/bookings/:id/status", driverAuth, updateBookingStatus);
 
 // 🚚 NEW: Location tracking route
 router.put("/bookings/:id/location", driverAuth, updateDriverLocation);
+router.post('/bookings/:id/request-vehicle-change', driverAuth, requestVehicleChange);
 
 export default router;

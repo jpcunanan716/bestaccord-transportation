@@ -3,6 +3,11 @@ import Booking from "../models/Booking.js";
 import Counter from "../models/Counter.js";
 import Vehicle from "../models/Vehicle.js";
 import Employee from "../models/Employee.js";
+import {
+  getVehicleChangeRequests,
+  approveVehicleChange,
+  rejectVehicleChange
+} from '../controllers/bookingsController.js';
 
 const router = express.Router();
 
@@ -417,6 +422,10 @@ router.delete("/:id", async (req, res) => {
   }
 });
 
+/**
+ * GET /api/bookings/vehicle-change-requests
+ * Get all pending vehicle change requests (Admin)
+ */
 export const getVehicleChangeRequests = async (req, res) => {
   try {
     const bookings = await Booking.find({
@@ -424,6 +433,9 @@ export const getVehicleChangeRequests = async (req, res) => {
       'vehicleChangeRequest.status': 'pending'
     }).sort({ 'vehicleChangeRequest.requestedAt': -1 });
 
+    console.log(`📋 Found ${bookings.length} pending vehicle change requests`);
+
+    // Enhance with employee details
     const enhancedBookings = await Promise.all(bookings.map(async (booking) => {
       const employeeDetails = await Employee.find({
         employeeId: { $in: booking.employeeAssigned }
@@ -442,18 +454,28 @@ export const getVehicleChangeRequests = async (req, res) => {
     });
 
   } catch (err) {
-    console.error("Error:", err);
+    console.error("❌ Error fetching vehicle change requests:", err);
     res.status(500).json({
       success: false,
-      msg: "Server error"
+      msg: "Server error while fetching requests",
+      error: err.message
     });
   }
 };
 
+/**
+ * PUT /api/bookings/:id/approve-vehicle-change
+ * Admin approves vehicle change and replaces vehicle
+ */
 export const approveVehicleChange = async (req, res) => {
   try {
     const bookingId = req.params.id;
-    const { newVehicleId } = req.body;
+    const { newVehicleId, adminNote } = req.body;
+
+    console.log("✅ Approving vehicle change:", {
+      bookingId,
+      newVehicleId
+    });
 
     if (!newVehicleId) {
       return res.status(400).json({
@@ -462,7 +484,9 @@ export const approveVehicleChange = async (req, res) => {
       });
     }
 
+    // Find the booking
     const booking = await Booking.findById(bookingId);
+
     if (!booking) {
       return res.status(404).json({
         success: false,
@@ -470,7 +494,17 @@ export const approveVehicleChange = async (req, res) => {
       });
     }
 
+    if (!booking.vehicleChangeRequest?.requested || 
+        booking.vehicleChangeRequest?.status !== 'pending') {
+      return res.status(400).json({
+        success: false,
+        msg: "No pending vehicle change request found for this booking"
+      });
+    }
+
+    // Find the new vehicle
     const newVehicle = await Vehicle.findOne({ vehicleId: newVehicleId });
+
     if (!newVehicle) {
       return res.status(404).json({
         success: false,
@@ -481,20 +515,21 @@ export const approveVehicleChange = async (req, res) => {
     if (newVehicle.status !== "Available") {
       return res.status(400).json({
         success: false,
-        msg: "Vehicle is not available"
+        msg: "Selected vehicle is not available"
       });
     }
 
+    // Store old vehicle info
     const oldVehicleId = booking.vehicleId;
     const oldVehicleType = booking.vehicleType;
     const oldPlateNumber = booking.plateNumber;
 
-    // Initialize history if needed
+    // Initialize vehicle history if not exists
     if (!booking.vehicleHistory) {
       booking.vehicleHistory = [];
     }
 
-    // Add old vehicle to history (replaced)
+    // Add current vehicle to history (mark as replaced)
     booking.vehicleHistory.push({
       vehicleId: oldVehicleId,
       vehicleType: oldVehicleType,
@@ -505,7 +540,7 @@ export const approveVehicleChange = async (req, res) => {
       status: 'replaced'
     });
 
-    // Add new vehicle to history (active)
+    // Add new vehicle to history (mark as active)
     booking.vehicleHistory.push({
       vehicleId: newVehicle.vehicleId,
       vehicleType: newVehicle.vehicleType,
@@ -515,48 +550,118 @@ export const approveVehicleChange = async (req, res) => {
       status: 'active'
     });
 
-    // Update booking
+    // Update booking with new vehicle
     booking.vehicleId = newVehicle.vehicleId;
     booking.vehicleType = newVehicle.vehicleType;
     booking.plateNumber = newVehicle.plateNumber;
 
+    // Update vehicle change request status
     booking.vehicleChangeRequest.status = 'approved';
     booking.vehicleChangeRequest.approvedAt = new Date();
+    booking.vehicleChangeRequest.approvedBy = adminNote || 'Admin';
 
     await booking.save();
 
-    // Update old vehicle status
+    // Update old vehicle status to "Not Available"
     await Vehicle.findOneAndUpdate(
       { vehicleId: oldVehicleId },
       { status: "Not Available" }
     );
+    console.log(`🚫 Old vehicle ${oldVehicleId} marked as Not Available`);
 
-    // Update new vehicle status
+    // Update new vehicle status to "On Trip"
     await Vehicle.findOneAndUpdate(
       { vehicleId: newVehicle.vehicleId },
       { status: "On Trip" }
     );
+    console.log(`✅ New vehicle ${newVehicle.vehicleId} marked as On Trip`);
+
+    console.log(`✅ Vehicle change approved for booking ${booking.reservationId}`);
 
     res.json({
       success: true,
-      msg: "Vehicle replaced successfully",
+      msg: "Vehicle change approved successfully",
       booking: {
         _id: booking._id,
         reservationId: booking.reservationId,
         tripNumber: booking.tripNumber,
         oldVehicle: { vehicleId: oldVehicleId, vehicleType: oldVehicleType, plateNumber: oldPlateNumber },
         newVehicle: { vehicleId: newVehicle.vehicleId, vehicleType: newVehicle.vehicleType, plateNumber: newVehicle.plateNumber },
-        vehicleHistory: booking.vehicleHistory
+        vehicleHistory: booking.vehicleHistory,
+        vehicleChangeRequest: booking.vehicleChangeRequest
       }
     });
 
   } catch (err) {
-    console.error("Error:", err);
+    console.error("❌ Error approving vehicle change:", err);
     res.status(500).json({
       success: false,
-      msg: "Server error"
+      msg: "Server error while approving vehicle change",
+      error: err.message
     });
   }
 };
+
+/**
+ * PUT /api/bookings/:id/reject-vehicle-change
+ * Admin rejects vehicle change request
+ */
+export const rejectVehicleChange = async (req, res) => {
+  try {
+    const bookingId = req.params.id;
+    const { rejectionReason } = req.body;
+
+    const booking = await Booking.findById(bookingId);
+
+    if (!booking) {
+      return res.status(404).json({
+        success: false,
+        msg: "Booking not found"
+      });
+    }
+
+    if (!booking.vehicleChangeRequest?.requested || 
+        booking.vehicleChangeRequest?.status !== 'pending') {
+      return res.status(400).json({
+        success: false,
+        msg: "No pending vehicle change request found"
+      });
+    }
+
+    booking.vehicleChangeRequest.status = 'rejected';
+    booking.vehicleChangeRequest.rejectionReason = rejectionReason || 'Request denied by admin';
+
+    await booking.save();
+
+    console.log(`❌ Vehicle change request rejected for booking ${booking.reservationId}`);
+
+    res.json({
+      success: true,
+      msg: "Vehicle change request rejected",
+      booking: {
+        _id: booking._id,
+        reservationId: booking.reservationId,
+        vehicleChangeRequest: booking.vehicleChangeRequest
+      }
+    });
+
+  } catch (err) {
+    console.error("❌ Error rejecting vehicle change:", err);
+    res.status(500).json({
+      success: false,
+      msg: "Server error while rejecting request",
+      error: err.message
+    });
+  }
+};
+
+// Get all pending vehicle change requests
+router.get("/vehicle-change-requests", getVehicleChangeRequests);
+
+// Approve vehicle change
+router.put("/:id/approve-vehicle-change", approveVehicleChange);
+
+// Reject vehicle change
+router.put("/:id/reject-vehicle-change", rejectVehicleChange);
 
 export default router;
