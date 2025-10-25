@@ -1,5 +1,9 @@
 import { useState, useEffect, useRef } from "react";
 import { Eye, Pencil, Trash2, Plus, X, MapPin, Search } from "lucide-react";
+import { useNavigate } from "react-router-dom";
+import { axiosClient } from "../api/axiosClient";
+import axios from 'axios';
+
 import { motion, AnimatePresence } from "framer-motion";
 
 function Client() {
@@ -7,6 +11,7 @@ function Client() {
   const [filteredClients, setFilteredClients] = useState([]);
   const [showModal, setShowModal] = useState(false);
   const [editClient, setEditClient] = useState(null);
+  const navigate = useNavigate();
 
   // Pagination states
   const [currentPage, setCurrentPage] = useState(1);
@@ -52,7 +57,7 @@ function Client() {
   const [barangays, setBarangays] = useState([]);
 
   // Map states
-  const [mapCenter, setMapCenter] = useState([14.5995, 120.9842]);
+  const [mapCenter, setMapCenter] = useState([14.5995, 120.9842]); // Default to Manila
   const [markerPosition, setMarkerPosition] = useState(null);
   const [addressSearch, setAddressSearch] = useState("");
   const mapRef = useRef(null);
@@ -62,9 +67,8 @@ function Client() {
   useEffect(() => {
     const fetchRegions = async () => {
       try {
-        const res = await fetch("https://psgc.gitlab.io/api/regions/");
-        const data = await res.json();
-        setRegions(data);
+        const res = await axios.get("https://psgc.gitlab.io/api/regions/");
+        setRegions(res.data);
       } catch (err) {
         console.error("Failed to fetch regions", err);
       }
@@ -81,23 +85,25 @@ function Client() {
     const fetchProvinces = async () => {
       try {
         if (formData.region === "130000000") {
-          const districtsRes = await fetch("https://psgc.gitlab.io/api/regions/130000000/districts/");
-          const districts = await districtsRes.json();
+          const districtsRes = await axios.get("https://psgc.gitlab.io/api/regions/130000000/districts/");
+          const districts = districtsRes.data;
           let allProvinces = [];
           for (const district of districts) {
             try {
-              const provRes = await fetch(`https://psgc.gitlab.io/api/districts/${district.code}/provinces/`);
-              const provData = await provRes.json();
-              allProvinces = allProvinces.concat(provData);
+              const provRes = await axios.get(`https://psgc.gitlab.io/api/districts/${district.code}/provinces/`);
+              allProvinces = allProvinces.concat(provRes.data);
             } catch (err) {
-              continue;
+              if (err.response && err.response.status === 404) {
+                continue;
+              } else {
+                console.error(`Error fetching provinces for district ${district.code}`, err);
+              }
             }
           }
           setProvinces(allProvinces);
         } else {
-          const res = await fetch(`https://psgc.gitlab.io/api/regions/${formData.region}/provinces/`);
-          const data = await res.json();
-          setProvinces(data);
+          const res = await axios.get(`https://psgc.gitlab.io/api/regions/${formData.region}/provinces/`);
+          setProvinces(res.data);
         }
       } catch (err) {
         console.error("Failed to fetch provinces", err);
@@ -111,35 +117,45 @@ function Client() {
     if (formData.region === "130000000") {
       const fetchNcrCities = async () => {
         try {
-          const districtsRes = await fetch("https://psgc.gitlab.io/api/regions/130000000/districts/");
-          const districts = await districtsRes.json();
+          const districtsRes = await axios.get("https://psgc.gitlab.io/api/regions/130000000/districts/");
+          const districts = districtsRes.data;
           let allCities = [];
           for (const district of districts) {
             let districtHasProvinces = true;
             let provinces = [];
             try {
-              const provRes = await fetch(`https://psgc.gitlab.io/api/districts/${district.code}/provinces/`);
-              provinces = await provRes.json();
+              const provRes = await axios.get(`https://psgc.gitlab.io/api/districts/${district.code}/provinces/`);
+              provinces = provRes.data;
             } catch (err) {
-              districtHasProvinces = false;
+              if (err.response && err.response.status === 404) {
+                districtHasProvinces = false;
+              } else {
+                console.error(`Error fetching provinces for district ${district.code}`, err);
+              }
             }
             if (districtHasProvinces && provinces.length > 0) {
               for (const province of provinces) {
                 try {
-                  const cityRes = await fetch(`https://psgc.gitlab.io/api/provinces/${province.code}/cities-municipalities/`);
-                  const cityData = await cityRes.json();
-                  allCities = allCities.concat(cityData);
+                  const cityRes = await axios.get(`https://psgc.gitlab.io/api/provinces/${province.code}/cities-municipalities/`);
+                  allCities = allCities.concat(cityRes.data);
                 } catch (err) {
-                  continue;
+                  if (err.response && err.response.status === 404) {
+                    continue;
+                  } else {
+                    console.error(`Error fetching cities for province ${province.code}`, err);
+                  }
                 }
               }
             } else {
               try {
-                const cityRes = await fetch(`https://psgc.gitlab.io/api/districts/${district.code}/cities-municipalities/`);
-                const cityData = await cityRes.json();
-                allCities = allCities.concat(cityData);
+                const cityRes = await axios.get(`https://psgc.gitlab.io/api/districts/${district.code}/cities-municipalities/`);
+                allCities = allCities.concat(cityRes.data);
               } catch (err) {
-                continue;
+                if (err.response && err.response.status === 404) {
+                  continue;
+                } else {
+                  console.error(`Error fetching cities for district ${district.code}`, err);
+                }
               }
             }
           }
@@ -157,9 +173,8 @@ function Client() {
     }
     const fetchCities = async () => {
       try {
-        const res = await fetch(`https://psgc.gitlab.io/api/provinces/${formData.province}/cities-municipalities/`);
-        const data = await res.json();
-        setCities(data);
+        const res = await axios.get(`https://psgc.gitlab.io/api/provinces/${formData.province}/cities-municipalities/`);
+        setCities(res.data);
       } catch (err) {
         console.error("Failed to fetch cities/municipalities", err);
       }
@@ -175,9 +190,8 @@ function Client() {
     }
     const fetchBarangays = async () => {
       try {
-        const res = await fetch(`https://psgc.gitlab.io/api/cities-municipalities/${formData.city}/barangays/`);
-        const data = await res.json();
-        setBarangays(data);
+        const res = await axios.get(`https://psgc.gitlab.io/api/cities-municipalities/${formData.city}/barangays/`);
+        setBarangays(res.data);
       } catch (err) {
         console.error("Failed to fetch barangays", err);
       }
@@ -185,35 +199,33 @@ function Client() {
     fetchBarangays();
   }, [formData.city]);
 
-  const fetchClients = () => {
-    // Mock data for demonstration
-    const mockClients = [
-      {
-        _id: "1",
-        clientName: "ABC Corporation",
-        clientBranch: "Main Branch",
-        address: {
-          houseNumber: "123",
-          street: "Sample St",
-          barangay: "Sample Barangay",
-          city: "Quezon City",
-          province: "Metro Manila",
-          region: "NCR",
-          latitude: 14.6760,
-          longitude: 121.0437
-        },
-        createdAt: new Date().toISOString(),
-        isArchived: false
-      }
-    ];
-    setClients(mockClients);
-    setFilteredClients(mockClients);
+  const containerRef = useRef(null);
 
-    setUniqueNames([...new Set(mockClients.map((c) => c.clientName))]);
-    setUniqueBranches([...new Set(mockClients.map((c) => c.clientBranch))]);
-    const citiesList = mockClients.map((c) => c.address?.city).filter(Boolean);
-    setUniqueCities([...new Set(citiesList)].sort());
-    setUniqueDates([...new Set(mockClients.map((c) => new Date(c.createdAt).toLocaleDateString()))]);
+  const fetchClients = async () => {
+    try {
+      const res = await axiosClient.get("/api/clients");
+      const activeClients = res.data.filter(client => !client.isArchived);
+      setClients(activeClients);
+      setFilteredClients(activeClients);
+
+      setUniqueNames([...new Set(activeClients.map((c) => c.clientName))]);
+      setUniqueBranches([...new Set(activeClients.map((c) => c.clientBranch))]);
+
+      const cities = activeClients
+        .map((c) => c.address?.city)
+        .filter(Boolean);
+      setUniqueCities([...new Set(cities)].sort());
+
+      setUniqueDates([
+        ...new Set(
+          activeClients.map((c) =>
+            new Date(c.createdAt).toLocaleDateString()
+          )
+        ),
+      ]);
+    } catch (err) {
+      console.error(err);
+    }
   };
 
   useEffect(() => {
@@ -242,10 +254,16 @@ function Client() {
     if (generalSearch) {
       results = results.filter(
         (client) =>
-          client.clientName?.toLowerCase().includes(generalSearch.toLowerCase()) ||
-          client.address?.city?.toLowerCase().includes(generalSearch.toLowerCase()) ||
+          client.clientName
+            ?.toLowerCase()
+            .includes(generalSearch.toLowerCase()) ||
+          client.address?.city
+            ?.toLowerCase()
+            .includes(generalSearch.toLowerCase()) ||
           client.clientBranch?.toLowerCase().includes(generalSearch.toLowerCase()) ||
-          new Date(client.createdAt).toLocaleDateString().includes(generalSearch)
+          new Date(client.createdAt)
+            .toLocaleDateString()
+            .includes(generalSearch)
       );
     }
 
@@ -256,7 +274,10 @@ function Client() {
   // Pagination logic
   const totalPages = Math.ceil(filteredClients.length / itemsPerPage);
   const startIndex = (currentPage - 1) * itemsPerPage;
-  const paginatedClients = filteredClients.slice(startIndex, startIndex + itemsPerPage);
+  const paginatedClients = filteredClients.slice(
+    startIndex,
+    startIndex + itemsPerPage
+  );
 
   // Modal handlers
   const openModal = (client = null) => {
@@ -312,6 +333,7 @@ function Client() {
   useEffect(() => {
     if (!showModal) return;
 
+    // Wait for modal animation to complete
     const timer = setTimeout(() => {
       const mapElement = document.getElementById('location-map');
       if (!mapElement || mapRef.current) return;
@@ -350,6 +372,7 @@ function Client() {
       attribution: '© OpenStreetMap contributors'
     }).addTo(map);
 
+    // Add marker if position exists
     if (markerPosition) {
       const marker = window.L.marker(markerPosition, { draggable: true }).addTo(map);
       markerRef.current = marker;
@@ -365,6 +388,7 @@ function Client() {
       });
     }
 
+    // Add click event to place/move marker
     map.on('click', function (e) {
       const { lat, lng } = e.latlng;
 
@@ -394,15 +418,21 @@ function Client() {
     });
   };
 
+  // Search address function
   const handleAddressSearch = async () => {
     if (!addressSearch.trim()) return;
 
     try {
-      const response = await fetch(`https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(addressSearch + ', Philippines')}&format=json&limit=1`);
-      const data = await response.json();
+      const response = await axios.get('https://nominatim.openstreetmap.org/search', {
+        params: {
+          q: addressSearch + ', Philippines',
+          format: 'json',
+          limit: 1
+        }
+      });
 
-      if (data && data.length > 0) {
-        const { lat, lon } = data[0];
+      if (response.data && response.data.length > 0) {
+        const { lat, lon } = response.data[0];
         const newCenter = [parseFloat(lat), parseFloat(lon)];
 
         setMapCenter(newCenter);
@@ -413,6 +443,7 @@ function Client() {
           longitude: parseFloat(lon)
         }));
 
+        // Update map view
         if (mapRef.current) {
           mapRef.current.setView(newCenter, 15);
 
@@ -442,6 +473,7 @@ function Client() {
     }
   };
 
+  // Cleanup map on modal close
   useEffect(() => {
     if (!showModal && mapRef.current) {
       mapRef.current.remove();
@@ -484,9 +516,16 @@ function Client() {
         ...formData,
         address,
       };
-
-      console.log('Submitting client:', payload);
-      alert(editClient ? 'Client updated successfully!' : 'Client created successfully!');
+      if (editClient) {
+        await axiosClient.put(
+          `/api/clients/${editClient._id}`,
+          payload
+        );
+        alert('Client updated successfully!');
+      } else {
+        await axiosClient.post("/api/clients", payload);
+        alert('Client created successfully!');
+      }
       closeModal();
       fetchClients();
     } catch (err) {
@@ -497,16 +536,25 @@ function Client() {
 
   const handleDelete = async (id) => {
     if (!window.confirm("Are you sure you want to archive this client?")) return;
-    alert('Client archived successfully');
-    fetchClients();
+
+    try {
+      await axiosClient.patch(`/api/clients/${id}/archive`, {
+        isArchived: true
+      });
+      alert('Client archived successfully');
+      fetchClients();
+    } catch (err) {
+      console.error('Error archiving client:', err);
+      alert('Error archiving client. Please try again.');
+    }
   };
 
   const viewClient = (client) => {
-    alert(`Viewing client: ${client.clientName}`);
+    navigate(`/dashboard/client/${client._id}`);
   };
 
   return (
-    <div className="space-y-8 p-8 bg-gradient-to-br from-purple-50 to-indigo-50 min-h-screen">
+    <div className="space-y-8">
       <motion.div
         initial={{ opacity: 0, y: -20 }}
         animate={{ opacity: 1, y: 0 }}
