@@ -32,6 +32,9 @@ import { createTruckDivIcon } from '../components/TruckMarkerIcon';
 export default function DriverBookings() {
   const [driverLocation, setDriverLocation] = useState(null);
   const [locationError, setLocationError] = useState(null);
+  const [showVehicleChangeModal, setShowVehicleChangeModal] = useState(false);
+  const [vehicleChangeReason, setVehicleChangeReason] = useState('');
+  const [submittingVehicleChange, setSubmittingVehicleChange] = useState(false);
   const locationIntervalRef = useRef(null);
   const [bookings, setBookings] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -47,6 +50,77 @@ export default function DriverBookings() {
     customer: false,
     team: false
   });
+
+  // Vehicle issue reasons
+const vehicleIssueReasons = [
+  'Flat Tire',
+  'Engine Problem', 
+  'Accident',
+  'Brake Failure',
+  'Overheating',
+  'Other Issue'
+];
+
+// Open vehicle change modal
+const openVehicleChangeModal = () => {
+  setShowVehicleChangeModal(true);
+  setVehicleChangeReason('');
+};
+
+// Close vehicle change modal
+const closeVehicleChangeModal = () => {
+  setShowVehicleChangeModal(false);
+  setVehicleChangeReason('');
+};
+
+// Submit vehicle change request
+const submitVehicleChangeRequest = async () => {
+  if (!vehicleChangeReason) {
+    alert('Please select a reason for the vehicle change');
+    return;
+  }
+
+  setSubmittingVehicleChange(true);
+  try {
+    const token = localStorage.getItem("driverToken");
+
+    const response = await axiosClient.post(
+      `/api/driver/bookings/${selectedBooking._id}/request-vehicle-change`,
+      { reason: vehicleChangeReason },
+      {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      }
+    );
+
+    if (response.data.success) {
+      alert('Vehicle change request submitted! Admin will review your request.');
+      
+      // Update bookings
+      setBookings(prevBookings =>
+        prevBookings.map(booking =>
+          booking._id === selectedBooking._id
+            ? { ...booking, vehicleChangeRequest: response.data.booking.vehicleChangeRequest }
+            : booking
+        )
+      );
+      
+      setSelectedBooking(prev => ({
+        ...prev,
+        vehicleChangeRequest: response.data.booking.vehicleChangeRequest
+      }));
+      
+      closeVehicleChangeModal();
+    }
+  } catch (err) {
+    console.error("❌ Error:", err);
+    alert(err.response?.data?.msg || "Failed to submit request");
+  } finally {
+    setSubmittingVehicleChange(false);
+  }
+};
+
 
   // Function to get current location with improved error handling
 
@@ -816,6 +890,7 @@ const fetchBookings = async () => {
     });
   };
 
+
   const closeModal = () => {
     setShowModal(false);
     setSelectedBooking(null);
@@ -1290,8 +1365,39 @@ const fetchBookings = async () => {
                         </div>
                       )}
                     </div>
-
                   </div>
+
+                                    {/* Vehicle Change Request - Only for In Transit trips */}
+                  {selectedBooking.status === "In Transit" && (
+                    <>
+                      {/* Show request button if no pending request */}
+                      {!selectedBooking.vehicleChangeRequest?.requested && (
+                        <button
+                          onClick={openVehicleChangeModal}
+                          className="w-full py-3 bg-orange-600 text-white rounded-lg hover:bg-orange-700 transition-colors font-medium flex items-center justify-center gap-2 mb-2"
+                        >
+                          <AlertCircle className="w-4 h-4" />
+                          Request Vehicle Change
+                        </button>
+                      )}
+                      
+                      {/* Show pending status */}
+                      {selectedBooking.vehicleChangeRequest?.requested && 
+                      selectedBooking.vehicleChangeRequest?.status === 'pending' && (
+                        <div className="w-full py-3 bg-yellow-100 text-yellow-800 rounded-lg text-sm text-center font-medium mb-2">
+                          ⏳ Vehicle change request pending
+                        </div>
+                      )}
+                      
+                      {/* Show approved status */}
+                      {selectedBooking.vehicleChangeRequest?.status === 'approved' && (
+                        <div className="w-full py-3 bg-green-100 text-green-800 rounded-lg text-sm text-center font-medium mb-2">
+                          ✅ Vehicle replaced on {new Date(selectedBooking.vehicleChangeRequest.approvedAt).toLocaleDateString()}
+                        </div>
+                      )}
+                    </>
+                  )}
+                  
 
                   {/* Modal Footer - Sticky */}
                   <div className="sticky bottom-0 bg-white/80 border-t border-gray-200/50 p-4 z-10">
@@ -1349,6 +1455,79 @@ const fetchBookings = async () => {
                         ✅ Trip completed successfully!
                       </div>
                     )}
+
+                    {showVehicleChangeModal && (
+  <div
+    className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-black/50"
+    onClick={closeVehicleChangeModal}
+  >
+    <div 
+      className="bg-white rounded-2xl shadow-2xl max-w-md w-full"
+      onClick={(e) => e.stopPropagation()}
+    >
+      <div className="bg-gradient-to-r from-orange-600 to-red-600 px-6 py-4 text-white rounded-t-2xl">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <AlertCircle className="w-6 h-6" />
+            <h3 className="text-lg font-bold">Request Vehicle Change</h3>
+          </div>
+          <button
+            onClick={closeVehicleChangeModal}
+            className="p-2 hover:bg-white/20 rounded-full"
+          >
+            <X className="w-5 h-5" />
+          </button>
+        </div>
+      </div>
+
+      <div className="p-6 space-y-4">
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-2">
+            What's the issue? *
+          </label>
+          <select
+            value={vehicleChangeReason}
+            onChange={(e) => setVehicleChangeReason(e.target.value)}
+            className="w-full px-4 py-3 border rounded-lg"
+          >
+            <option value="">Select issue</option>
+            {vehicleIssueReasons.map((reason) => (
+              <option key={reason} value={reason}>{reason}</option>
+            ))}
+          </select>
+        </div>
+
+        <div className="bg-gray-50 p-4 rounded-lg">
+          <p className="text-xs text-gray-600 mb-1">Current Vehicle</p>
+          <p className="font-medium">{selectedBooking.vehicleType} - {selectedBooking.plateNumber}</p>
+        </div>
+
+        <div className="bg-orange-50 border border-orange-200 rounded-lg p-3">
+          <p className="text-xs text-orange-800">
+            ⚠️ Admin will assign a replacement vehicle if approved.
+          </p>
+        </div>
+      </div>
+
+      <div className="px-6 py-4 bg-gray-50 border-t rounded-b-2xl flex gap-3">
+        <button
+          onClick={closeVehicleChangeModal}
+          disabled={submittingVehicleChange}
+          className="flex-1 px-4 py-2 border rounded-lg"
+        >
+          Cancel
+        </button>
+        <button
+          onClick={submitVehicleChangeRequest}
+          disabled={submittingVehicleChange || !vehicleChangeReason}
+          className="flex-1 px-4 py-2 bg-orange-600 text-white rounded-lg font-medium disabled:opacity-50"
+        >
+          {submittingVehicleChange ? "Submitting..." : "Submit"}
+        </button>
+      </div>
+    </div>
+  </div>
+)}
                   </div>
 
                 </div>
