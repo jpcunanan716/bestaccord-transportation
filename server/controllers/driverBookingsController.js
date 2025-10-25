@@ -4,7 +4,8 @@ import Vehicle from "../models/Vehicle.js";
 
 /**
  * GET /api/driver/bookings/count
- * Returns the count of bookings assigned to the logged-in driver/helper
+ * Returns the count of ACTIVE bookings assigned to the logged-in driver/helper
+ * (excludes completed bookings)
  */
 export const getDriverBookingCount = async (req, res) => {
   try {
@@ -19,12 +20,13 @@ export const getDriverBookingCount = async (req, res) => {
 
     console.log("🔢 Fetching booking count for driver:", driver.employeeId);
 
-    // Count bookings assigned to this driver
+    // Count ONLY active bookings (not completed) assigned to this driver
     const count = await Booking.countDocuments({
-      employeeAssigned: { $in: [driver.employeeId] }
+      employeeAssigned: { $in: [driver.employeeId] },
+      status: { $ne: "Completed" }  // ✨ NEW: Exclude completed bookings
     });
 
-    console.log("📊 Booking count for driver", driver.employeeId, ":", count);
+    console.log("📊 Active booking count for driver", driver.employeeId, ":", count);
 
     res.json({
       success: true,
