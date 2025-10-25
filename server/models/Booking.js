@@ -70,18 +70,16 @@ const bookingSchema = new mongoose.Schema({
             message: 'Proof of delivery image must be less than 10MB'
         }
     },
+    // Driver's current location tracking
     driverLocation: {
         latitude: { type: Number, default: null },
         longitude: { type: Number, default: null },
         lastUpdated: { type: Date, default: null },
-        accuracy: { type: Number, default: null }
+        accuracy: { type: Number, default: null } // GPS accuracy in meters
     }
 }, {
     timestamps: true,
     strictQuery: false
 });
-
-// Add index for vehicle change requests
-bookingSchema.index({ 'vehicleChangeRequest.requested': 1, 'vehicleChangeRequest.status': 1 });
 
 export default mongoose.model("Booking", bookingSchema);

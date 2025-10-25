@@ -2,6 +2,11 @@ import Booking from "../models/Booking.js";
 import Employee from "../models/Employee.js";
 import Vehicle from "../models/Vehicle.js";
 
+/**
+ * GET /api/driver/bookings/count
+ * Returns the count of ACTIVE bookings assigned to the logged-in driver/helper
+ * (excludes completed bookings)
+ */
 export const getDriverBookingCount = async (req, res) => {
   try {
     const driver = req.driver;
@@ -18,7 +23,7 @@ export const getDriverBookingCount = async (req, res) => {
     // Count ONLY active bookings (not completed) assigned to this driver
     const count = await Booking.countDocuments({
       employeeAssigned: { $in: [driver.employeeId] },
-      status: { $ne: "Completed" }  
+      status: { $ne: "Completed" }  // ✨ NEW: Exclude completed bookings
     });
 
     console.log("📊 Active booking count for driver", driver.employeeId, ":", count);
@@ -522,76 +527,6 @@ export const updateDriverLocation = async (req, res) => {
     res.status(500).json({
       success: false,
       msg: "Server error while updating location",
-      error: err.message
-    });
-  }
-};
-
-export const requestVehicleChange = async (req, res) => {
-  try {
-    const driver = req.driver;
-    const bookingId = req.params.id;
-    const { reason } = req.body;
-
-    if (!reason) {
-      return res.status(400).json({
-        success: false,
-        msg: "Reason is required"
-      });
-    }
-
-    const booking = await Booking.findOne({
-      _id: bookingId,
-      employeeAssigned: { $in: [driver.employeeId] }
-    });
-
-    if (!booking) {
-      return res.status(404).json({
-        success: false,
-        msg: "Booking not found"
-      });
-    }
-
-    if (booking.status !== "In Transit") {
-      return res.status(400).json({
-        success: false,
-        msg: "Vehicle change can only be requested for trips that are In Transit"
-      });
-    }
-
-    if (booking.vehicleChangeRequest?.requested && 
-        booking.vehicleChangeRequest?.status === 'pending') {
-      return res.status(400).json({
-        success: false,
-        msg: "There is already a pending vehicle change request"
-      });
-    }
-
-    booking.vehicleChangeRequest = {
-      requested: true,
-      requestedAt: new Date(),
-      reason,
-      status: 'pending'
-    };
-
-    await booking.save();
-
-    res.json({
-      success: true,
-      msg: "Request submitted successfully",
-      booking: {
-        _id: booking._id,
-        reservationId: booking.reservationId,
-        tripNumber: booking.tripNumber,
-        vehicleChangeRequest: booking.vehicleChangeRequest
-      }
-    });
-
-  } catch (err) {
-    console.error("Error:", err);
-    res.status(500).json({
-      success: false,
-      msg: "Server error",
       error: err.message
     });
   }

@@ -11,11 +11,8 @@ import {
   updateDriverLocation  // 🚚 NEW - Import the location update function
 } from "../controllers/driverBookingsController.js";
 import driverAuth from "../middleware/driverAuth1.js";
-import { requestVehicleChange } from '../controllers/driverBookingsController.js';
 
 const router = express.Router();
-
-router.post('/bookings/:id/request-vehicle-change', driverAuth, requestVehicleChange);
 
 // POST /api/driver/driver-login (Original login route)
 router.post("/driver-login", async (req, res) => {
