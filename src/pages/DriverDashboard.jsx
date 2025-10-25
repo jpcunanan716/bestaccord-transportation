@@ -2,10 +2,11 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
-import { Menu, X, User, LogOut, ArrowLeft, Calendar, ClipboardList, } from "lucide-react";
+import { Menu, X, User, LogOut, ArrowLeft, Calendar, ClipboardList, History } from "lucide-react";
 import DriverProfile from "./DriverProfile";
 import DriverBookings from "./DriverBookings";
 import DriverSchedule from "./DriverSchedule";
+import DriverHistory from "./DriverHistory";
 import { useDriverBookingCount } from "../hooks/useDriverBookingCount";
 import logo from "../assets/bestaccord_logo.png";
 import driverloginbg from "../assets/driver_login_bg.png";
@@ -134,6 +135,18 @@ export default function DriverDashboard() {
                   <span>Schedule</span>
                 </motion.button>
 
+                <motion.button
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.4 }}
+                  whileTap={{ scale: 0.95 }}
+                  onClick={() => setActivePage("history")}
+                  className="w-full py-8 bg-white/10 backdrop-blur-2xl border border-white/20 rounded-3xl shadow-2xl text-xl font-semibold flex items-center justify-center space-x-3 text-white hover:bg-white/15 transition-all group"
+                >
+                  <History className="w-7 h-7 group-hover:scale-110 transition-transform" />
+                  <span>History</span>
+                </motion.button>
+
                 {/* Welcome Message */}
                 <motion.div
                   initial={{ opacity: 0 }}
@@ -162,7 +175,6 @@ export default function DriverDashboard() {
             </motion.div>
           )}
 
-          {/* FIXED: Replace placeholder with actual DriverSchedule component */}
           {activePage === "schedule" && (
             <motion.div
               key="schedule"
@@ -173,6 +185,19 @@ export default function DriverDashboard() {
               className="h-full"
             >
               <DriverSchedule />
+            </motion.div>
+          )}
+
+          {activePage === "history" && (
+            <motion.div
+              key="history"
+              initial={{ opacity: 0, y: 30 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -30 }}
+              transition={{ duration: 0.4 }}
+              className="h-full"
+            >
+              <DriverHistory />
             </motion.div>
           )}
 

@@ -642,7 +642,7 @@ const startTrip = async () => {
 
       console.log("✅ Trip started successfully");
       
-      // 🚚 NEW: Start location tracking when trip begins
+      // Start location tracking when trip begins
       await startLocationTracking(selectedBooking._id);
       
       alert("Trip started! Your location will be tracked and updated every 5 minutes.");
@@ -734,7 +734,7 @@ const markAsCompleted = async () => {
 
       console.log("✅ Trip marked as completed");
       
-      // 🚚 NEW: Stop location tracking when trip completes
+      // Stop location tracking when trip completes
       stopLocationTracking();
 
       setTimeout(() => {
@@ -757,43 +757,47 @@ useEffect(() => {
   };
 }, []);
 
-  const fetchBookings = async () => {
-    try {
-      const token = localStorage.getItem("driverToken");
+const fetchBookings = async () => {
+  try {
+    const token = localStorage.getItem("driverToken");
 
-      if (!token) {
-        setError("No driver token found. Please log in again.");
-        setLoading(false);
-        return;
-      }
-
-      const res = await axiosClient.get("/api/driver/bookings", {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      });
-
-      if (res.data.success) {
-        setBookings(res.data.bookings);
-        setDebugInfo(res.data.debug);
-        setError("");
-      } else {
-        setError("Failed to fetch bookings");
-      }
-    } catch (err) {
-      console.error("❌ Frontend DEBUG: Error fetching bookings:", err);
-
-      if (err.response?.status === 401) {
-        setError("Session expired. Please log in again.");
-        localStorage.removeItem("driverToken");
-      } else {
-        setError(err.response?.data?.msg || "Failed to load bookings.");
-      }
-    } finally {
+    if (!token) {
+      setError("No driver token found. Please log in again.");
       setLoading(false);
-      setRefreshing(false);
+      return;
     }
-  };
+
+    const res = await axiosClient.get("/api/driver/bookings", {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    });
+
+    if (res.data.success) {
+      // ✨ NEW: Filter out completed bookings - only show active ones
+      const activeBookings = res.data.bookings.filter(
+        booking => booking.status !== "Completed"
+      );
+      setBookings(activeBookings);
+      setDebugInfo(res.data.debug);
+      setError("");
+    } else {
+      setError("Failed to fetch bookings");
+    }
+  } catch (err) {
+    console.error("❌ Frontend DEBUG: Error fetching bookings:", err);
+
+    if (err.response?.status === 401) {
+      setError("Session expired. Please log in again.");
+      localStorage.removeItem("driverToken");
+    } else {
+      setError(err.response?.data?.msg || "Failed to load bookings.");
+    }
+  } finally {
+    setLoading(false);
+    setRefreshing(false);
+  }
+};
 
   const refreshBookings = async () => {
     setRefreshing(true);
