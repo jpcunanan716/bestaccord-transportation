@@ -11,6 +11,8 @@ const clientSchema = new mongoose.Schema(
       province: { type: String },
       city: { type: String },
       barangay: { type: String },
+      latitude: { type: Number, default: null },
+      longitude: { type: Number, default: null }
     },
     isArchived: { type: Boolean, default: false },
   },
