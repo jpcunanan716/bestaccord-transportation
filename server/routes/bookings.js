@@ -7,9 +7,6 @@ import { getVehicleChangeRequests, approveVehicleChange } from '../controllers/b
 
 const router = express.Router();
 
-router.get("/vehicle-change-requests", getVehicleChangeRequests);
-router.put("/:id/approve-vehicle-change", approveVehicleChange);
-
 // Generate next Reservation ID
 async function getNextReservationID() {
   try {
