@@ -1355,7 +1355,16 @@ function Booking() {
                   className="hover:bg-purple-50/50 transition-colors duration-200"
                 >
                   <td className="px-6 py-4 text-sm text-gray-900">{startIndex + index + 1}</td>
-                  <td className="px-6 py-4 text-sm font-mono text-purple-700 font-semibold">{booking.reservationId}</td>
+                  <td className="px-6 py-4 text-sm font-mono">
+                    <motion.button
+                      onClick={() => viewBooking(booking)}
+                      className="text-purple-700 font-semibold hover:text-purple-900 underline cursor-pointer bg-transparent border-none p-0"
+                      whileHover={{ scale: 1.05 }}
+                      whileTap={{ scale: 0.95 }}
+                    >
+                      {booking.reservationId}
+                    </motion.button>
+                  </td>
                   <td className="px-6 py-4 text-sm font-mono text-indigo-700 font-semibold">{booking.tripNumber}</td>
                   <td className="px-6 py-4 text-sm text-gray-900">{booking.companyName}</td>
                   <td className="px-6 py-4 text-sm text-gray-900">{booking.productName}</td>

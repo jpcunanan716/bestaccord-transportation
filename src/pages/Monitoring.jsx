@@ -1458,16 +1458,6 @@ export default function Monitoring() {
                               ))}
                             </div>
                           </div>
-                          <div className="grid grid-cols-2 gap-4 pt-4 border-t">
-                            <div>
-                              <h4 className="text-sm font-medium text-gray-600 mb-2">Area Code</h4>
-                              <p className="text-gray-900">{selectedBooking.areaLocationCode || '1'}</p>
-                            </div>
-                            <div>
-                              <h4 className="text-sm font-medium text-gray-600 mb-2">Area Rate</h4>
-                              <p className="text-gray-900">₱{selectedBooking.rateCost?.toLocaleString() || '200'}</p>
-                            </div>
-                          </div>
                         </div>
                       </motion.div>
 
