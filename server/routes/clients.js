@@ -26,6 +26,97 @@ router.get("/names", async (req, res) => {
   }
 });
 
+// GET client by address (for fetching coordinates) - NEW ENDPOINT
+router.get("/by-address", async (req, res) => {
+  try {
+    const { address } = req.query;
+
+    if (!address) {
+      return res.status(400).json({ message: 'Address parameter is required' });
+    }
+
+    console.log(`🔍 Searching for client with address: "${address}"`);
+
+    // Build a comprehensive address string for each client and compare
+    const clients = await Client.find({
+      isArchived: false,
+      'address.latitude': { $ne: null },
+      'address.longitude': { $ne: null }
+    });
+
+    // Helper function to build full address string
+    const buildFullAddress = (addressObj) => {
+      if (!addressObj) return '';
+      const parts = [
+        addressObj.houseNumber,
+        addressObj.street,
+        addressObj.barangay,
+        addressObj.city,
+        addressObj.province
+      ].filter(Boolean);
+      return parts.join(', ').toLowerCase();
+    };
+
+    // Search through all clients for best match
+    let bestMatch = null;
+    let highestScore = 0;
+
+    const searchTermLower = address.toLowerCase().trim();
+
+    for (const client of clients) {
+      const fullAddress = buildFullAddress(client.address);
+
+      // Exact match (highest priority)
+      if (fullAddress === searchTermLower) {
+        bestMatch = client;
+        break;
+      }
+
+      // Calculate match score
+      let score = 0;
+
+      // Check if search term is contained in full address
+      if (fullAddress.includes(searchTermLower)) {
+        score += 10;
+      }
+
+      // Check individual fields
+      const fields = ['street', 'barangay', 'city', 'province'];
+      for (const field of fields) {
+        if (client.address[field]) {
+          const fieldValue = client.address[field].toLowerCase();
+          if (fieldValue === searchTermLower) {
+            score += 8;
+          } else if (fieldValue.includes(searchTermLower)) {
+            score += 5;
+          } else if (searchTermLower.includes(fieldValue)) {
+            score += 3;
+          }
+        }
+      }
+
+      // Keep track of best match
+      if (score > highestScore) {
+        highestScore = score;
+        bestMatch = client;
+      }
+    }
+
+    if (!bestMatch) {
+      console.log(`❌ No client found for address: "${address}"`);
+      return res.status(404).json({ message: 'Client not found for this address' });
+    }
+
+    console.log(`✅ Found client: ${bestMatch.clientName} (Score: ${highestScore})`);
+    console.log(`   Coordinates: [${bestMatch.address.latitude}, ${bestMatch.address.longitude}]`);
+
+    res.json(bestMatch);
+  } catch (error) {
+    console.error('Error fetching client by address:', error);
+    res.status(500).json({ message: 'Server error', error: error.message });
+  }
+});
+
 // GET single client
 router.get("/:id", async (req, res) => {
   try {

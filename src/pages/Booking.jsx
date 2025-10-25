@@ -1488,10 +1488,10 @@ function Booking() {
               animate={{ scale: 1, opacity: 1, y: 0 }}
               exit={{ scale: 0.9, opacity: 0, y: 20 }}
               onClick={(e) => e.stopPropagation()}
-              className="bg-white rounded-3xl shadow-2xl w-full max-w-4xl max-h-[90vh] overflow-y-auto border border-purple-100"
+              className="bg-white rounded-3xl shadow-2xl w-full max-w-2xl max-h-[90vh] flex flex-col border border-indigo-100"
             >
               {/* Modal Header */}
-              <div className="sticky top-0 bg-gradient-to-r from-purple-600 to-indigo-600 px-8 py-6 rounded-t-3xl z-10">
+              <div className="sticky top-0 bg-gradient-to-r from-purple-600 to-indigo-600 px-8 py-6 rounded-t-3xl z-10 flex-shrink-0">
                 <div className="flex justify-between items-center">
                   <div>
                     <h2 className="text-2xl font-bold text-white">
@@ -1525,562 +1525,564 @@ function Booking() {
               </div>
 
               {/* Modal Content */}
-              <form onSubmit={(e) => {
-                e.preventDefault();
-                if (currentStep === 2) {
-                  handleSubmit();
-                }
-              }} className="p-8 space-y-6">
-                {currentStep === 1 && (
-                  <div className="space-y-6">
-                    {/* Show Reservation ID and Trip Number only when editing */}
-                    {editBooking && (
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <div>
-                          <label className="block text-sm font-medium text-gray-700 mb-2">Reservation ID</label>
-                          <input
-                            type="text"
-                            value={editBooking.reservationId}
-                            disabled
-                            className="w-full px-4 py-2.5 border border-purple-200 rounded-xl bg-purple-50 font-mono text-purple-600 font-semibold"
-                          />
-                        </div>
-                        <div>
-                          <label className="block text-sm font-medium text-gray-700 mb-2">Trip Number</label>
-                          <input
-                            type="text"
-                            value={editBooking.tripNumber}
-                            disabled
-                            className="w-full px-4 py-2.5 border border-indigo-200 rounded-xl bg-indigo-50 font-mono text-indigo-600 font-semibold"
-                          />
-                        </div>
-                      </div>
-                    )}
-
-                    {/* Customer Details & Shipment Route */}
-                    <div className="bg-gradient-to-r from-indigo-50 to-violet-50 p-6 rounded-2xl border border-indigo-100">
-                      <h3 className="text-lg font-semibold text-gray-900 mb-4">Customer Details & Shipment Route</h3>
-                      <div className="mb-4">
-                        <label className="block text-sm font-medium text-gray-700 mb-2">Select Company *</label>
-                        <select
-                          name="companyName"
-                          value={formData.companyName}
-                          onChange={handleCompanyChange}
-                          required
-                          className="w-full px-4 py-2.5 border border-indigo-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-400 focus:border-transparent"
-                        >
-                          <option value="">Select from existing records</option>
-                          {getUniqueClientNames().map((clientName, index) => (
-                            <option key={index} value={clientName}>
-                              {clientName}
-                            </option>
-                          ))}
-                        </select>
-                      </div>
-
-                      {/* Trip Type Toggle */}
-                      <div className="bg-gradient-to-r from-blue-50 to-cyan-50 p-4 rounded-xl border border-blue-100 mb-4">
-                        <h3 className="text-sm font-medium text-gray-700 mb-3">Trip Type</h3>
-                        <div className="flex gap-4">
-                          <label className="flex items-center cursor-pointer">
+              <div className="flex-1 overflow-y-auto">
+                <form onSubmit={(e) => {
+                  e.preventDefault();
+                  if (currentStep === 2) {
+                    handleSubmit();
+                  }
+                }} className="p-8 space-y-6">
+                  {currentStep === 1 && (
+                    <div className="space-y-6">
+                      {/* Show Reservation ID and Trip Number only when editing */}
+                      {editBooking && (
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                          <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-2">Reservation ID</label>
                             <input
-                              type="radio"
-                              name="tripType"
-                              value="single"
-                              checked={tripType === 'single'}
-                              onChange={(e) => {
-                                setTripType(e.target.value);
-                                // If switching to single, keep only the first branch
-                                if (e.target.value === 'single' && selectedBranches.length > 1) {
-                                  setSelectedBranches([selectedBranches[0]]);
-                                  setFormData(prev => ({
-                                    ...prev,
-                                    customerEstablishmentName: selectedBranches[0].branch,
-                                    destinationAddress: selectedBranches[0].address
-                                  }));
-                                }
-                              }}
-                              className="sr-only"
+                              type="text"
+                              value={editBooking.reservationId}
+                              disabled
+                              className="w-full px-4 py-2.5 border border-purple-200 rounded-xl bg-purple-50 font-mono text-purple-600 font-semibold"
                             />
-                            <div className={`w-6 h-6 rounded-full border-2 mr-2 flex items-center justify-center ${tripType === 'single'
-                              ? 'border-blue-600 bg-blue-600'
-                              : 'border-gray-300'
-                              }`}>
-                              {tripType === 'single' && <div className="w-2 h-2 rounded-full bg-white"></div>}
-                            </div>
-                            <span className="text-sm font-medium">Single Drop Trip</span>
-                          </label>
-
-                          <label className="flex items-center cursor-pointer">
+                          </div>
+                          <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-2">Trip Number</label>
                             <input
-                              type="radio"
-                              name="tripType"
-                              value="multiple"
-                              checked={tripType === 'multiple'}
-                              onChange={(e) => setTripType(e.target.value)}
-                              className="sr-only"
+                              type="text"
+                              value={editBooking.tripNumber}
+                              disabled
+                              className="w-full px-4 py-2.5 border border-indigo-200 rounded-xl bg-indigo-50 font-mono text-indigo-600 font-semibold"
                             />
-                            <div className={`w-6 h-6 rounded-full border-2 mr-2 flex items-center justify-center ${tripType === 'multiple'
-                              ? 'border-blue-600 bg-blue-600'
-                              : 'border-gray-300'
-                              }`}>
-                              {tripType === 'multiple' && <div className="w-2 h-2 rounded-full bg-white"></div>}
-                            </div>
-                            <span className="text-sm font-medium">Multiple Drop Trip</span>
-                          </label>
+                          </div>
                         </div>
-                      </div>
+                      )}
 
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <div>
-                          <label className="block text-sm font-medium text-gray-700 mb-2">Shipper/Consignor *</label>
-                          <input
-                            type="text"
-                            name="shipperConsignorName"
-                            value={formData.shipperConsignorName}
-                            onChange={handleChange}
+                      {/* Customer Details & Shipment Route */}
+                      <div className="bg-gradient-to-r from-indigo-50 to-violet-50 p-6 rounded-2xl border border-indigo-100">
+                        <h3 className="text-lg font-semibold text-gray-900 mb-4">Customer Details & Shipment Route</h3>
+                        <div className="mb-4">
+                          <label className="block text-sm font-medium text-gray-700 mb-2">Select Company *</label>
+                          <select
+                            name="companyName"
+                            value={formData.companyName}
+                            onChange={handleCompanyChange}
                             required
-                            placeholder="Enter Shipper/Consignor Name"
                             className="w-full px-4 py-2.5 border border-indigo-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-400 focus:border-transparent"
-                          />
-                        </div>
-                        <div>
-                          <label className="block text-sm font-medium text-gray-700 mb-2">Origin/From *</label>
-                          <div className="flex gap-2">
-                            <input
-                              type="text"
-                              name="originAddress"
-                              value={formData.originAddress}
-                              readOnly
-                              required
-                              placeholder="Select origin address"
-                              className="w-full px-4 py-2.5 border border-indigo-200 rounded-xl bg-indigo-50/50"
-                            />
-                            <motion.button
-                              whileHover={{ scale: 1.05 }}
-                              whileTap={{ scale: 0.95 }}
-                              type="button"
-                              onClick={openAddressModal}
-                              className="px-4 py-2.5 bg-indigo-600 text-white rounded-xl hover:bg-indigo-700 transition-colors font-medium whitespace-nowrap"
-                            >
-                              Select Address
-                            </motion.button>
-                          </div>
-                          {formData.originAddress && (
-                            <p className="text-xs text-green-600 mt-1">
-                              ✓ Address selected: {formData.originAddress}
-                            </p>
-                          )}
-                        </div>
-                      </div>
-
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
-                        <div>
-                          <label className="block text-sm font-medium text-gray-700 mb-2">
-                            {tripType === 'single' ? 'Customer/Establishment *' : 'Destinations *'}
-                          </label>
-
-                          {tripType === 'single' ? (
-                            // Single destination (original behavior)
-                            <select
-                              name="customerEstablishmentName"
-                              value={formData.customerEstablishmentName}
-                              onChange={handleBranchChange}
-                              required
-                              disabled={!formData.companyName}
-                              className="w-full px-4 py-2.5 border border-indigo-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-400 focus:border-transparent disabled:bg-gray-100"
-                            >
-                              <option value="">Select branch</option>
-                              {formData.companyName && getClientBranches(formData.companyName).map((client, index) => (
-                                <option key={index} value={client.clientBranch}>
-                                  {client.clientBranch}
-                                </option>
-                              ))}
-                            </select>
-                          ) : (
-                            // Multiple destinations - Single column layout
-                            <div className="space-y-3">
-                              {selectedBranches.map((branchData, index) => (
-                                <div key={branchData.key} className="border border-indigo-200 rounded-xl p-4 bg-white">
-                                  <div className="flex items-center justify-between mb-3">
-                                    <span className="text-sm font-medium text-gray-700 bg-indigo-100 px-3 py-1 rounded-full">
-                                      Stop {index + 1}
-                                    </span>
-                                    {selectedBranches.length > 1 && (
-                                      <button
-                                        type="button"
-                                        onClick={() => removeBranch(index)}
-                                        className="text-red-500 hover:text-red-700 text-sm font-medium flex items-center gap-1"
-                                      >
-                                        Remove Stop
-                                      </button>
-                                    )}
-                                  </div>
-
-                                  <div className="space-y-3">
-                                    <div>
-                                      <label className="block text-xs font-medium text-gray-600 mb-1">
-                                        Select Branch *
-                                      </label>
-                                      <select
-                                        value={branchData.branch}
-                                        onChange={(e) => handleMultipleBranchChange(index, e.target.value)}
-                                        required
-                                        disabled={!formData.companyName}
-                                        className="w-full px-4 py-2.5 border border-indigo-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-400 focus:border-transparent disabled:bg-gray-100"
-                                      >
-                                        <option value="">Select branch</option>
-                                        {formData.companyName && getClientBranches(formData.companyName).map((client) => (
-                                          <option
-                                            key={client.clientBranch}
-                                            value={client.clientBranch}
-                                            disabled={selectedBranches.some((b, i) => i !== index && b.branch === client.clientBranch)}
-                                          >
-                                            {client.clientBranch}
-                                            {selectedBranches.some((b, i) => i !== index && b.branch === client.clientBranch) ? ' (Already selected)' : ''}
-                                          </option>
-                                        ))}
-                                      </select>
-                                    </div>
-
-                                    <div>
-                                      <label className="block text-xs font-medium text-gray-600 mb-1">
-                                        Destination Address
-                                      </label>
-                                      <input
-                                        type="text"
-                                        value={branchData.address}
-                                        readOnly
-                                        placeholder="Address will auto-populate when branch is selected"
-                                        className="w-full px-4 py-2.5 border border-indigo-200 rounded-xl bg-indigo-50/50 text-gray-700"
-                                      />
-                                    </div>
-                                  </div>
-                                </div>
-                              ))}
-
-                              <motion.button
-                                whileHover={{ scale: 1.02 }}
-                                whileTap={{ scale: 0.98 }}
-                                type="button"
-                                onClick={addBranch}
-                                disabled={!formData.companyName || !hasAvailableBranches()}
-                                className="w-full px-4 py-3 bg-gradient-to-r from-green-100 to-emerald-100 text-green-700 rounded-xl hover:from-green-200 hover:to-emerald-200 transition-all duration-300 font-medium border border-green-200 disabled:opacity-50 disabled:cursor-not-allowed"
-                              >
-                                + Add Another Destination
-                              </motion.button>
-
-                              {!hasAvailableBranches() && selectedBranches.length > 0 && (
-                                <p className="text-xs text-amber-600 text-center">
-                                  All available branches have been selected
-                                </p>
-                              )}
-                            </div>
-                          )}
+                          >
+                            <option value="">Select from existing records</option>
+                            {getUniqueClientNames().map((clientName, index) => (
+                              <option key={index} value={clientName}>
+                                {clientName}
+                              </option>
+                            ))}
+                          </select>
                         </div>
 
-                        {/* Remove the duplicate right column - it's not needed anymore */}
-                        <div>
-                          <label className="block text-sm font-medium text-gray-700 mb-2">
-                            {tripType === 'single' ? 'Destination/To *' : 'Destinations Preview'}
-                          </label>
-
-                          {tripType === 'single' ? (
-                            // Single destination (original behavior)
-                            <input
-                              type="text"
-                              name="destinationAddress"
-                              value={formData.destinationAddress}
-                              readOnly
-                              placeholder="Select branch first"
-                              className="w-full px-4 py-2.5 border border-indigo-200 rounded-xl bg-indigo-50/50"
-                            />
-                          ) : (
-                            // Multiple destinations preview
-                            <div className="space-y-2 max-h-60 overflow-y-auto p-3 bg-gray-50 rounded-xl border border-indigo-200">
-                              {selectedBranches.map((branchData, index) => (
-                                <div key={branchData.key} className="text-sm">
-                                  <div className="font-medium text-gray-700">Stop {index + 1}: {branchData.branch || 'Not selected'}</div>
-                                  {branchData.address && (
-                                    <div className="text-xs text-gray-500 truncate">{branchData.address}</div>
-                                  )}
-                                </div>
-                              ))}
-                            </div>
-                          )}
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* Type of Order */}
-                    <div className="bg-gradient-to-r from-purple-50 to-indigo-50 p-6 rounded-2xl border border-purple-100">
-                      <h3 className="text-lg font-semibold text-gray-900 mb-4">Type of Order</h3>
-                      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                        <div>
-                          <label className="block text-sm font-medium text-gray-700 mb-2">Product Name *</label>
-                          <input
-                            type="text"
-                            name="productName"
-                            value={formData.productName}
-                            onChange={handleChange}
-                            placeholder="Tasty Boy"
-                            required
-                            className="w-full px-4 py-2.5 border border-purple-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-400 focus:border-transparent"
-                          />
-                        </div>
-                        <div>
-                          <label className="block text-sm font-medium text-gray-700 mb-2">Number of Packages *</label>
-                          <input
-                            type="number"
-                            name="numberOfPackages"
-                            value={formData.numberOfPackages}
-                            onChange={handleChange}
-                            required
-                            min="1"
-                            placeholder="10 box"
-                            className="w-full px-4 py-2.5 border border-purple-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-400 focus:border-transparent"
-                          />
-                        </div>
-                        <div>
-                          <label className="block text-sm font-medium text-gray-700 mb-2">Units per Package *</label>
-                          <input
-                            type="number"
-                            name="unitPerPackage"
-                            value={formData.unitPerPackage}
-                            onChange={handleChange}
-                            required
-                            min="1"
-                            placeholder="200pcs/box"
-                            className="w-full px-4 py-2.5 border border-purple-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-400 focus:border-transparent"
-                          />
-                        </div>
-                      </div>
-                      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-4">
-                        <div>
-                          <label className="block text-sm font-medium text-gray-700 mb-2">Quantity (Auto-calculated) *</label>
-                          <input
-                            type="number"
-                            name="quantity"
-                            value={formData.quantity}
-                            readOnly
-                            placeholder="2000pcs"
-                            className="w-full px-4 py-2.5 border border-purple-200 rounded-xl bg-purple-50/50"
-                          />
-                        </div>
-                        <div>
-                          <label className="block text-sm font-medium text-gray-700 mb-2">Gross Weight *</label>
-                          <input
-                            type="number"
-                            name="grossWeight"
-                            value={formData.grossWeight}
-                            onChange={handleChange}
-                            placeholder="5 tons"
-                            required
-                            min="0.1"
-                            step="0.1"
-                            className="w-full px-4 py-2.5 border border-purple-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-400 focus:border-transparent"
-                          />
-                        </div>
-                        <div>
-                          <label className="block text-sm font-medium text-gray-700 mb-2">Delivery Fee *</label>
-                          <input
-                            type="number"
-                            name="deliveryFee"
-                            value={formData.deliveryFee}
-                            onChange={handleChange}
-                            required
-                            placeholder="10000 PHP"
-                            className="w-full px-4 py-2.5 border border-purple-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-400 focus:border-transparent"
-                          />
-                        </div>
-                      </div>
-                    </div>
-
-
-                    {/* Area Rate & Vehicle Info */}
-                    <div className="bg-gradient-to-r from-violet-50 to-fuchsia-50 p-6 rounded-2xl border border-violet-100">
-                      <h3 className="text-lg font-semibold text-gray-900 mb-4">Area Rate & Vehicle Info</h3>
-
-                      <div className="mb-4">
-                        <label className="block text-sm font-medium text-gray-700 mb-2">Select Vehicle *</label>
-                        <select
-                          name="vehicleId"
-                          value={formData.vehicleId}
-                          onChange={handleVehicleChange}
-                          required
-                          className="w-full px-4 py-2.5 border border-violet-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-violet-400 focus:border-transparent"
-                        >
-                          <option value="">Select Vehicle</option>
-                          {(() => {
-                            // Safely handle address strings to prevent .toLowerCase() errors
-                            const origin = typeof formData.originAddress === 'string' ? formData.originAddress : '';
-                            const destination = typeof formData.destinationAddress === 'string' ? formData.destinationAddress : '';
-
-                            const key = `${origin?.toLowerCase()} - ${destination?.toLowerCase()}`;
-                            const allowedVehiclesArr = addressDefaults[key];
-                            const allowedVehicleTypes = Array.isArray(allowedVehiclesArr)
-                              ? allowedVehiclesArr.map(def => def.vehicleType)
-                              : [];
-
-                            return getAvailableVehicles()
-                              .filter(vehicle => allowedVehicleTypes.length === 0 || allowedVehicleTypes.includes(vehicle.vehicleType))
-                              .map(vehicle => (
-                                <option key={vehicle._id} value={vehicle.vehicleId}>
-                                  {`${vehicle.vehicleId} - ${vehicle.manufacturedBy} ${vehicle.model} (${vehicle.vehicleType}) - ${vehicle.plateNumber}`}
-                                </option>
-                              ));
-                          })()}
-                        </select>
-                      </div>
-                    </div>
-                  </div>
-                )}
-
-                {currentStep === 2 && (
-                  <div className="space-y-6">
-                    {/* Scheduling */}
-                    <div className="bg-gradient-to-r from-purple-50 to-indigo-50 p-6 rounded-2xl border border-purple-100">
-                      <h3 className="text-lg font-semibold text-gray-900 mb-4">Scheduling</h3>
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <div>
-                          <label className="block text-sm font-medium text-gray-700 mb-2">Date *</label>
-                          <input
-                            type="date"
-                            name="dateNeeded"
-                            value={formData.dateNeeded}
-                            onChange={handleChange}
-                            required
-                            className="w-full px-4 py-2.5 border border-purple-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-400 focus:border-transparent"
-                          />
-                        </div>
-                        <div>
-                          <label className="block text-sm font-medium text-gray-700 mb-2">Time *</label>
-                          <input
-                            type="time"
-                            name="timeNeeded"
-                            value={formData.timeNeeded}
-                            onChange={handleChange}
-                            required
-                            className="w-full px-4 py-2.5 border border-purple-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-400 focus:border-transparent"
-                          />
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* Assign Employees & Roles */}
-                    <div className="bg-gradient-to-r from-indigo-50 to-violet-50 p-6 rounded-2xl border border-indigo-100">
-                      <h3 className="text-lg font-semibold text-gray-900 mb-4">Assign Employees & Roles</h3>
-
-                      {formData.employeeAssigned.map((employeeId, index) => (
-                        <div key={index} className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4 p-4 border border-indigo-200 rounded-xl bg-white/50">
-                          <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-2">
-                              {index === 0 ? "Select Driver *" : "Select Helper"}
+                        {/* Trip Type Toggle */}
+                        <div className="bg-gradient-to-r from-blue-50 to-cyan-50 p-4 rounded-xl border border-blue-100 mb-4">
+                          <h3 className="text-sm font-medium text-gray-700 mb-3">Trip Type</h3>
+                          <div className="flex gap-4">
+                            <label className="flex items-center cursor-pointer">
+                              <input
+                                type="radio"
+                                name="tripType"
+                                value="single"
+                                checked={tripType === 'single'}
+                                onChange={(e) => {
+                                  setTripType(e.target.value);
+                                  // If switching to single, keep only the first branch
+                                  if (e.target.value === 'single' && selectedBranches.length > 1) {
+                                    setSelectedBranches([selectedBranches[0]]);
+                                    setFormData(prev => ({
+                                      ...prev,
+                                      customerEstablishmentName: selectedBranches[0].branch,
+                                      destinationAddress: selectedBranches[0].address
+                                    }));
+                                  }
+                                }}
+                                className="sr-only"
+                              />
+                              <div className={`w-6 h-6 rounded-full border-2 mr-2 flex items-center justify-center ${tripType === 'single'
+                                ? 'border-blue-600 bg-blue-600'
+                                : 'border-gray-300'
+                                }`}>
+                                {tripType === 'single' && <div className="w-2 h-2 rounded-full bg-white"></div>}
+                              </div>
+                              <span className="text-sm font-medium">Single Drop Trip</span>
                             </label>
-                            <select
-                              value={employeeId}
-                              onChange={(e) => handleEmployeeChange(index, e.target.value)}
-                              required
-                              className="w-full px-4 py-2.5 border border-indigo-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-400 focus:border-transparent"
-                            >
-                              <option value="">{index === 0 ? "Select Driver" : "Select Helper"}</option>
-                              {getAvailableEmployees(index).map((employee) => (
-                                <option key={employee._id} value={employee.employeeId}>
-                                  {`${employee.employeeId} - ${employee.fullName || employee.name || ''}`.trim()}
-                                </option>
-                              ))}
-                            </select>
-                          </div>
 
+                            <label className="flex items-center cursor-pointer">
+                              <input
+                                type="radio"
+                                name="tripType"
+                                value="multiple"
+                                checked={tripType === 'multiple'}
+                                onChange={(e) => setTripType(e.target.value)}
+                                className="sr-only"
+                              />
+                              <div className={`w-6 h-6 rounded-full border-2 mr-2 flex items-center justify-center ${tripType === 'multiple'
+                                ? 'border-blue-600 bg-blue-600'
+                                : 'border-gray-300'
+                                }`}>
+                                {tripType === 'multiple' && <div className="w-2 h-2 rounded-full bg-white"></div>}
+                              </div>
+                              <span className="text-sm font-medium">Multiple Drop Trip</span>
+                            </label>
+                          </div>
+                        </div>
+
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                           <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-2">Role</label>
+                            <label className="block text-sm font-medium text-gray-700 mb-2">Shipper/Consignor *</label>
                             <input
                               type="text"
-                              value={formData.roleOfEmployee[index] || ""}
-                              readOnly
-                              placeholder="Role"
-                              className="w-full px-4 py-2.5 border border-indigo-200 rounded-xl bg-indigo-50/50"
+                              name="shipperConsignorName"
+                              value={formData.shipperConsignorName}
+                              onChange={handleChange}
+                              required
+                              placeholder="Enter Shipper/Consignor Name"
+                              className="w-full px-4 py-2.5 border border-indigo-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-400 focus:border-transparent"
                             />
                           </div>
-
-                          <div className="flex items-end">
-                            {formData.employeeAssigned.length > 1 && (
+                          <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-2">Origin/From *</label>
+                            <div className="flex gap-2">
+                              <input
+                                type="text"
+                                name="originAddress"
+                                value={formData.originAddress}
+                                readOnly
+                                required
+                                placeholder="Select origin address"
+                                className="w-full px-4 py-2.5 border border-indigo-200 rounded-xl bg-indigo-50/50"
+                              />
                               <motion.button
                                 whileHover={{ scale: 1.05 }}
                                 whileTap={{ scale: 0.95 }}
                                 type="button"
-                                onClick={() => removeEmployee(index)}
-                                className="px-4 py-2.5 bg-red-100 text-red-600 rounded-xl hover:bg-red-200 transition-colors font-medium"
+                                onClick={openAddressModal}
+                                className="px-4 py-2.5 bg-indigo-600 text-white rounded-xl hover:bg-indigo-700 transition-colors font-medium whitespace-nowrap"
                               >
-                                Remove
+                                Select Address
                               </motion.button>
+                            </div>
+                            {formData.originAddress && (
+                              <p className="text-xs text-green-600 mt-1">
+                                ✓ Address selected: {formData.originAddress}
+                              </p>
                             )}
                           </div>
                         </div>
-                      ))}
-                      <motion.button
-                        whileHover={{ scale: 1.02 }}
-                        whileTap={{ scale: 0.98 }}
-                        type="button"
-                        onClick={addEmployee}
-                        className="w-full px-4 py-3 bg-gradient-to-r from-indigo-100 to-violet-100 text-indigo-700 rounded-xl hover:from-indigo-200 hover:to-violet-200 transition-all duration-300 font-medium"
-                      >
-                        + Add Helper
-                      </motion.button>
+
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
+                          <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-2">
+                              {tripType === 'single' ? 'Customer/Establishment *' : 'Destinations *'}
+                            </label>
+
+                            {tripType === 'single' ? (
+                              // Single destination (original behavior)
+                              <select
+                                name="customerEstablishmentName"
+                                value={formData.customerEstablishmentName}
+                                onChange={handleBranchChange}
+                                required
+                                disabled={!formData.companyName}
+                                className="w-full px-4 py-2.5 border border-indigo-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-400 focus:border-transparent disabled:bg-gray-100"
+                              >
+                                <option value="">Select branch</option>
+                                {formData.companyName && getClientBranches(formData.companyName).map((client, index) => (
+                                  <option key={index} value={client.clientBranch}>
+                                    {client.clientBranch}
+                                  </option>
+                                ))}
+                              </select>
+                            ) : (
+                              // Multiple destinations - Single column layout
+                              <div className="space-y-3">
+                                {selectedBranches.map((branchData, index) => (
+                                  <div key={branchData.key} className="border border-indigo-200 rounded-xl p-4 bg-white">
+                                    <div className="flex items-center justify-between mb-3">
+                                      <span className="text-sm font-medium text-gray-700 bg-indigo-100 px-3 py-1 rounded-full">
+                                        Stop {index + 1}
+                                      </span>
+                                      {selectedBranches.length > 1 && (
+                                        <button
+                                          type="button"
+                                          onClick={() => removeBranch(index)}
+                                          className="text-red-500 hover:text-red-700 text-sm font-medium flex items-center gap-1"
+                                        >
+                                          Remove Stop
+                                        </button>
+                                      )}
+                                    </div>
+
+                                    <div className="space-y-3">
+                                      <div>
+                                        <label className="block text-xs font-medium text-gray-600 mb-1">
+                                          Select Branch *
+                                        </label>
+                                        <select
+                                          value={branchData.branch}
+                                          onChange={(e) => handleMultipleBranchChange(index, e.target.value)}
+                                          required
+                                          disabled={!formData.companyName}
+                                          className="w-full px-4 py-2.5 border border-indigo-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-400 focus:border-transparent disabled:bg-gray-100"
+                                        >
+                                          <option value="">Select branch</option>
+                                          {formData.companyName && getClientBranches(formData.companyName).map((client) => (
+                                            <option
+                                              key={client.clientBranch}
+                                              value={client.clientBranch}
+                                              disabled={selectedBranches.some((b, i) => i !== index && b.branch === client.clientBranch)}
+                                            >
+                                              {client.clientBranch}
+                                              {selectedBranches.some((b, i) => i !== index && b.branch === client.clientBranch) ? ' (Already selected)' : ''}
+                                            </option>
+                                          ))}
+                                        </select>
+                                      </div>
+
+                                      <div>
+                                        <label className="block text-xs font-medium text-gray-600 mb-1">
+                                          Destination Address
+                                        </label>
+                                        <input
+                                          type="text"
+                                          value={branchData.address}
+                                          readOnly
+                                          placeholder="Address will auto-populate when branch is selected"
+                                          className="w-full px-4 py-2.5 border border-indigo-200 rounded-xl bg-indigo-50/50 text-gray-700"
+                                        />
+                                      </div>
+                                    </div>
+                                  </div>
+                                ))}
+
+                                <motion.button
+                                  whileHover={{ scale: 1.02 }}
+                                  whileTap={{ scale: 0.98 }}
+                                  type="button"
+                                  onClick={addBranch}
+                                  disabled={!formData.companyName || !hasAvailableBranches()}
+                                  className="w-full px-4 py-3 bg-gradient-to-r from-green-100 to-emerald-100 text-green-700 rounded-xl hover:from-green-200 hover:to-emerald-200 transition-all duration-300 font-medium border border-green-200 disabled:opacity-50 disabled:cursor-not-allowed"
+                                >
+                                  + Add Another Destination
+                                </motion.button>
+
+                                {!hasAvailableBranches() && selectedBranches.length > 0 && (
+                                  <p className="text-xs text-amber-600 text-center">
+                                    All available branches have been selected
+                                  </p>
+                                )}
+                              </div>
+                            )}
+                          </div>
+
+                          {/* Remove the duplicate right column - it's not needed anymore */}
+                          <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-2">
+                              {tripType === 'single' ? 'Destination/To *' : 'Destinations Preview'}
+                            </label>
+
+                            {tripType === 'single' ? (
+                              // Single destination (original behavior)
+                              <input
+                                type="text"
+                                name="destinationAddress"
+                                value={formData.destinationAddress}
+                                readOnly
+                                placeholder="Select branch first"
+                                className="w-full px-4 py-2.5 border border-indigo-200 rounded-xl bg-indigo-50/50"
+                              />
+                            ) : (
+                              // Multiple destinations preview
+                              <div className="space-y-2 max-h-60 overflow-y-auto p-3 bg-gray-50 rounded-xl border border-indigo-200">
+                                {selectedBranches.map((branchData, index) => (
+                                  <div key={branchData.key} className="text-sm">
+                                    <div className="font-medium text-gray-700">Stop {index + 1}: {branchData.branch || 'Not selected'}</div>
+                                    {branchData.address && (
+                                      <div className="text-xs text-gray-500 truncate">{branchData.address}</div>
+                                    )}
+                                  </div>
+                                ))}
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Type of Order */}
+                      <div className="bg-gradient-to-r from-purple-50 to-indigo-50 p-6 rounded-2xl border border-purple-100">
+                        <h3 className="text-lg font-semibold text-gray-900 mb-4">Type of Order</h3>
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                          <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-2">Product Name *</label>
+                            <input
+                              type="text"
+                              name="productName"
+                              value={formData.productName}
+                              onChange={handleChange}
+                              placeholder="Tasty Boy"
+                              required
+                              className="w-full px-4 py-2.5 border border-purple-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-400 focus:border-transparent"
+                            />
+                          </div>
+                          <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-2">Number of Packages *</label>
+                            <input
+                              type="number"
+                              name="numberOfPackages"
+                              value={formData.numberOfPackages}
+                              onChange={handleChange}
+                              required
+                              min="1"
+                              placeholder="10 box"
+                              className="w-full px-4 py-2.5 border border-purple-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-400 focus:border-transparent"
+                            />
+                          </div>
+                          <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-2">Units per Package *</label>
+                            <input
+                              type="number"
+                              name="unitPerPackage"
+                              value={formData.unitPerPackage}
+                              onChange={handleChange}
+                              required
+                              min="1"
+                              placeholder="200pcs/box"
+                              className="w-full px-4 py-2.5 border border-purple-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-400 focus:border-transparent"
+                            />
+                          </div>
+                        </div>
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-4">
+                          <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-2">Quantity (Auto-calculated) *</label>
+                            <input
+                              type="number"
+                              name="quantity"
+                              value={formData.quantity}
+                              readOnly
+                              placeholder="2000pcs"
+                              className="w-full px-4 py-2.5 border border-purple-200 rounded-xl bg-purple-50/50"
+                            />
+                          </div>
+                          <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-2">Gross Weight *</label>
+                            <input
+                              type="number"
+                              name="grossWeight"
+                              value={formData.grossWeight}
+                              onChange={handleChange}
+                              placeholder="5 tons"
+                              required
+                              min="0.1"
+                              step="0.1"
+                              className="w-full px-4 py-2.5 border border-purple-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-400 focus:border-transparent"
+                            />
+                          </div>
+                          <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-2">Delivery Fee *</label>
+                            <input
+                              type="number"
+                              name="deliveryFee"
+                              value={formData.deliveryFee}
+                              onChange={handleChange}
+                              required
+                              placeholder="10000 PHP"
+                              className="w-full px-4 py-2.5 border border-purple-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-400 focus:border-transparent"
+                            />
+                          </div>
+                        </div>
+                      </div>
+
+
+                      {/* Area Rate & Vehicle Info */}
+                      <div className="bg-gradient-to-r from-violet-50 to-fuchsia-50 p-6 rounded-2xl border border-violet-100">
+                        <h3 className="text-lg font-semibold text-gray-900 mb-4">Area Rate & Vehicle Info</h3>
+
+                        <div className="mb-4">
+                          <label className="block text-sm font-medium text-gray-700 mb-2">Select Vehicle *</label>
+                          <select
+                            name="vehicleId"
+                            value={formData.vehicleId}
+                            onChange={handleVehicleChange}
+                            required
+                            className="w-full px-4 py-2.5 border border-violet-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-violet-400 focus:border-transparent"
+                          >
+                            <option value="">Select Vehicle</option>
+                            {(() => {
+                              // Safely handle address strings to prevent .toLowerCase() errors
+                              const origin = typeof formData.originAddress === 'string' ? formData.originAddress : '';
+                              const destination = typeof formData.destinationAddress === 'string' ? formData.destinationAddress : '';
+
+                              const key = `${origin?.toLowerCase()} - ${destination?.toLowerCase()}`;
+                              const allowedVehiclesArr = addressDefaults[key];
+                              const allowedVehicleTypes = Array.isArray(allowedVehiclesArr)
+                                ? allowedVehiclesArr.map(def => def.vehicleType)
+                                : [];
+
+                              return getAvailableVehicles()
+                                .filter(vehicle => allowedVehicleTypes.length === 0 || allowedVehicleTypes.includes(vehicle.vehicleType))
+                                .map(vehicle => (
+                                  <option key={vehicle._id} value={vehicle.vehicleId}>
+                                    {`${vehicle.vehicleId} - ${vehicle.manufacturedBy} ${vehicle.model} (${vehicle.vehicleType}) - ${vehicle.plateNumber}`}
+                                  </option>
+                                ));
+                            })()}
+                          </select>
+                        </div>
+                      </div>
                     </div>
-                  </div>
-                )}
-              </form>
+                  )}
 
-              {/* Modal Footer */}
-              <div className="sticky bottom-0 bg-gradient-to-r from-gray-50 to-gray-100 px-8 py-6 rounded-b-3xl border-t border-gray-200">
-                <div className="flex justify-between items-center gap-4">
-                  <motion.button
-                    whileHover={{ scale: 1.05 }}
-                    whileTap={{ scale: 0.95 }}
-                    type="button"
-                    onClick={closeModal}
-                    className="px-6 py-3 bg-white border-2 border-gray-300 text-gray-700 rounded-xl font-medium hover:bg-gray-50 transition-all duration-300 shadow-sm"
-                  >
-                    Cancel
-                  </motion.button>
+                  {currentStep === 2 && (
+                    <div className="space-y-6">
+                      {/* Scheduling */}
+                      <div className="bg-gradient-to-r from-purple-50 to-indigo-50 p-6 rounded-2xl border border-purple-100">
+                        <h3 className="text-lg font-semibold text-gray-900 mb-4">Scheduling</h3>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                          <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-2">Date *</label>
+                            <input
+                              type="date"
+                              name="dateNeeded"
+                              value={formData.dateNeeded}
+                              onChange={handleChange}
+                              required
+                              className="w-full px-4 py-2.5 border border-purple-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-400 focus:border-transparent"
+                            />
+                          </div>
+                          <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-2">Time *</label>
+                            <input
+                              type="time"
+                              name="timeNeeded"
+                              value={formData.timeNeeded}
+                              onChange={handleChange}
+                              required
+                              className="w-full px-4 py-2.5 border border-purple-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-400 focus:border-transparent"
+                            />
+                          </div>
+                        </div>
+                      </div>
 
-                  <div className="flex gap-3">
-                    {currentStep === 2 && (
-                      <motion.button
-                        whileHover={{ scale: 1.05 }}
-                        whileTap={{ scale: 0.95 }}
-                        type="button"
-                        onClick={prevStep}
-                        className="px-6 py-3 bg-gray-500 text-white rounded-xl font-medium hover:bg-gray-600 transition-all duration-300 shadow-md inline-flex items-center gap-2"
-                      >
-                        <ChevronLeft size={18} />
-                        Back
-                      </motion.button>
-                    )}
+                      {/* Assign Employees & Roles */}
+                      <div className="bg-gradient-to-r from-indigo-50 to-violet-50 p-6 rounded-2xl border border-indigo-100">
+                        <h3 className="text-lg font-semibold text-gray-900 mb-4">Assign Employees & Roles</h3>
 
-                    {currentStep < 2 ? (
-                      <motion.button
-                        whileHover={{ scale: 1.05 }}
-                        whileTap={{ scale: 0.95 }}
-                        type="button"
-                        onClick={nextStep}
-                        className="px-6 py-3 bg-gradient-to-r from-purple-600 to-indigo-600 text-white rounded-xl font-medium hover:shadow-lg transition-all duration-300 inline-flex items-center gap-2"
-                      >
-                        Next
-                        <ChevronRight size={18} />
-                      </motion.button>
-                    ) : (
-                      <motion.button
-                        whileHover={{ scale: 1.05 }}
-                        whileTap={{ scale: 0.95 }}
-                        type="button"
-                        onClick={handleSubmit}
-                        className="px-6 py-3 bg-gradient-to-r from-green-600 to-emerald-600 text-white rounded-xl font-medium hover:shadow-lg transition-all duration-300"
-                      >
-                        {editBooking ? "Update Booking" : "Create Booking"}
-                      </motion.button>
-                    )}
+                        {formData.employeeAssigned.map((employeeId, index) => (
+                          <div key={index} className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4 p-4 border border-indigo-200 rounded-xl bg-white/50">
+                            <div>
+                              <label className="block text-sm font-medium text-gray-700 mb-2">
+                                {index === 0 ? "Select Driver *" : "Select Helper"}
+                              </label>
+                              <select
+                                value={employeeId}
+                                onChange={(e) => handleEmployeeChange(index, e.target.value)}
+                                required
+                                className="w-full px-4 py-2.5 border border-indigo-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-400 focus:border-transparent"
+                              >
+                                <option value="">{index === 0 ? "Select Driver" : "Select Helper"}</option>
+                                {getAvailableEmployees(index).map((employee) => (
+                                  <option key={employee._id} value={employee.employeeId}>
+                                    {`${employee.employeeId} - ${employee.fullName || employee.name || ''}`.trim()}
+                                  </option>
+                                ))}
+                              </select>
+                            </div>
+
+                            <div>
+                              <label className="block text-sm font-medium text-gray-700 mb-2">Role</label>
+                              <input
+                                type="text"
+                                value={formData.roleOfEmployee[index] || ""}
+                                readOnly
+                                placeholder="Role"
+                                className="w-full px-4 py-2.5 border border-indigo-200 rounded-xl bg-indigo-50/50"
+                              />
+                            </div>
+
+                            <div className="flex items-end">
+                              {formData.employeeAssigned.length > 1 && (
+                                <motion.button
+                                  whileHover={{ scale: 1.05 }}
+                                  whileTap={{ scale: 0.95 }}
+                                  type="button"
+                                  onClick={() => removeEmployee(index)}
+                                  className="px-4 py-2.5 bg-red-100 text-red-600 rounded-xl hover:bg-red-200 transition-colors font-medium"
+                                >
+                                  Remove
+                                </motion.button>
+                              )}
+                            </div>
+                          </div>
+                        ))}
+                        <motion.button
+                          whileHover={{ scale: 1.02 }}
+                          whileTap={{ scale: 0.98 }}
+                          type="button"
+                          onClick={addEmployee}
+                          className="w-full px-4 py-3 bg-gradient-to-r from-indigo-100 to-violet-100 text-indigo-700 rounded-xl hover:from-indigo-200 hover:to-violet-200 transition-all duration-300 font-medium"
+                        >
+                          + Add Helper
+                        </motion.button>
+                      </div>
+                    </div>
+                  )}
+                </form>
+
+                {/* Modal Footer */}
+                <div className="sticky bottom-0 bg-gradient-to-r from-gray-50 to-gray-100 px-8 py-6 rounded-b-3xl border-t border-gray-200 flex-shrink-0">
+                  <div className="flex justify-between items-center gap-4">
+                    <motion.button
+                      whileHover={{ scale: 1.05 }}
+                      whileTap={{ scale: 0.95 }}
+                      type="button"
+                      onClick={closeModal}
+                      className="px-6 py-3 bg-white border-2 border-gray-300 text-gray-700 rounded-xl font-medium hover:bg-gray-50 transition-all duration-300 shadow-sm"
+                    >
+                      Cancel
+                    </motion.button>
+
+                    <div className="flex gap-3">
+                      {currentStep === 2 && (
+                        <motion.button
+                          whileHover={{ scale: 1.05 }}
+                          whileTap={{ scale: 0.95 }}
+                          type="button"
+                          onClick={prevStep}
+                          className="px-6 py-3 bg-gray-500 text-white rounded-xl font-medium hover:bg-gray-600 transition-all duration-300 shadow-md inline-flex items-center gap-2"
+                        >
+                          <ChevronLeft size={18} />
+                          Back
+                        </motion.button>
+                      )}
+
+                      {currentStep < 2 ? (
+                        <motion.button
+                          whileHover={{ scale: 1.05 }}
+                          whileTap={{ scale: 0.95 }}
+                          type="button"
+                          onClick={nextStep}
+                          className="px-6 py-3 bg-gradient-to-r from-purple-600 to-indigo-600 text-white rounded-xl font-medium hover:shadow-lg transition-all duration-300 inline-flex items-center gap-2"
+                        >
+                          Next
+                          <ChevronRight size={18} />
+                        </motion.button>
+                      ) : (
+                        <motion.button
+                          whileHover={{ scale: 1.05 }}
+                          whileTap={{ scale: 0.95 }}
+                          type="button"
+                          onClick={handleSubmit}
+                          className="px-6 py-3 bg-gradient-to-r from-green-600 to-emerald-600 text-white rounded-xl font-medium hover:shadow-lg transition-all duration-300"
+                        >
+                          {editBooking ? "Update Booking" : "Create Booking"}
+                        </motion.button>
+                      )}
+                    </div>
                   </div>
                 </div>
               </div>
