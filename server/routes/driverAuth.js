@@ -8,8 +8,7 @@ import {
   getDriverBookingById, 
   updateBookingStatus, 
   getDriverBookingCount,
-  updateDriverLocation,
-  requestVehicleChange
+  updateDriverLocation  // 🚚 NEW - Import the location update function
 } from "../controllers/driverBookingsController.js";
 import driverAuth from "../middleware/driverAuth1.js";
 
@@ -87,6 +86,5 @@ router.put("/bookings/:id/status", driverAuth, updateBookingStatus);
 
 // 🚚 NEW: Location tracking route
 router.put("/bookings/:id/location", driverAuth, updateDriverLocation);
-router.post('/bookings/:id/request-vehicle-change', driverAuth, requestVehicleChange);
 
 export default router;
