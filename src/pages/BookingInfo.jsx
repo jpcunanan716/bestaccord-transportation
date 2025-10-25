@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { ArrowLeft, Calendar, Clock, User, Building, Package, Truck, MapPin } from "lucide-react";
+import { ArrowLeft, Calendar, Clock, User, Building, Package, Truck } from "lucide-react";
 import { axiosClient } from "../api/axiosClient";
 
 function BookingInfo() {
@@ -163,7 +163,7 @@ function BookingInfo() {
                                 <span className="font-semibold">{booking.originAddress}</span>
                             </div>
                         </div>
-                        
+
                         {isMultipleDestinations ? (
                             <div>
                                 <span className="text-gray-600 block mb-2">Destination Addresses:</span>
@@ -241,16 +241,16 @@ function BookingInfo() {
                         <div className="flex justify-between">
                             <span className="text-gray-600">Employee Assigned:</span>
                             <span className="font-semibold">
-                                {Array.isArray(booking.employeeAssigned) 
-                                    ? booking.employeeAssigned.join(', ') 
+                                {Array.isArray(booking.employeeAssigned)
+                                    ? booking.employeeAssigned.join(', ')
                                     : booking.employeeAssigned}
                             </span>
                         </div>
                         <div className="flex justify-between">
                             <span className="text-gray-600">Role:</span>
                             <span className="font-semibold">
-                                {Array.isArray(booking.roleOfEmployee) 
-                                    ? booking.roleOfEmployee.join(', ') 
+                                {Array.isArray(booking.roleOfEmployee)
+                                    ? booking.roleOfEmployee.join(', ')
                                     : booking.roleOfEmployee}
                             </span>
                         </div>

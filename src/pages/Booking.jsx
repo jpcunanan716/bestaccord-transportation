@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from "react";
-import { Eye, Pencil, Trash2, Plus, ChevronLeft, ChevronRight, X } from "lucide-react";
+import { Eye, Pencil, Trash2, Plus, ChevronLeft, ChevronRight, X, MapPin } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { axiosClient } from "../api/axiosClient";
 import axios from 'axios';
@@ -46,6 +46,14 @@ function Booking() {
   const [selectedBranches, setSelectedBranches] = useState([
     { branch: '', address: '', key: Date.now() }
   ]);
+
+  // Map states
+  const [mapCenter, setMapCenter] = useState([14.5995, 120.9842]); // Default to Manila
+  const [markerPosition, setMarkerPosition] = useState(null);
+  const [addressSearch, setAddressSearch] = useState("");
+  const mapRef = useRef(null);
+  const markerRef = useRef(null);
+
 
   const [formData, setFormData] = useState({
     productName: "",
@@ -295,6 +303,13 @@ function Booking() {
         employeeAssigned: Array.isArray(booking.employeeAssigned) ? booking.employeeAssigned : [booking.employeeAssigned],
         roleOfEmployee: Array.isArray(booking.roleOfEmployee) ? booking.roleOfEmployee : [booking.roleOfEmployee],
       });
+      if (lat && lng) {
+        setMapCenter([lat, lng]);
+        setMarkerPosition([lat, lng]);
+      } else {
+        setMapCenter([14.5995, 120.9842]);
+        setMarkerPosition(null);
+      }
 
       const hasMultipleDestinations = Array.isArray(booking.destinationAddresses) && booking.destinationAddresses.length > 1;
 
@@ -346,6 +361,8 @@ function Booking() {
         employeeAssigned: [""],
         roleOfEmployee: [""],
       });
+      setMapCenter([14.5995, 120.9842]);
+      setMarkerPosition(null);
     }
     setShowModal(true);
   };
@@ -653,10 +670,9 @@ function Booking() {
     }
 
     try {
-      // THIS IS THE KEY FIX - properly construct the destinationAddress array
       const destinationAddresses = tripType === 'multiple'
-        ? selectedBranches.map(branch => branch.address).filter(addr => addr && addr.trim() !== '') // Array of all addresses
-        : [selectedBranches[0]?.address || formData.destinationAddress]; // Single address in array
+        ? selectedBranches.map(branch => branch.address).filter(addr => addr && addr.trim() !== '')
+        : [selectedBranches[0]?.address || formData.destinationAddress];
 
       console.log('🔍 Selected Branches:', selectedBranches);
       console.log('🔍 Destination Addresses Array:', destinationAddresses);
@@ -666,7 +682,7 @@ function Booking() {
         customerEstablishmentName: tripType === 'multiple'
           ? selectedBranches.map(b => b.branch).join(' | ')
           : formData.customerEstablishmentName,
-        destinationAddress: destinationAddresses, // This is now always an array
+        destinationAddress: destinationAddresses,
         tripType: tripType,
         numberOfStops: selectedBranches.length
       };
