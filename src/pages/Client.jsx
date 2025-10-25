@@ -482,6 +482,7 @@ function Client() {
     }
   }, [showModal]);
 
+  // Form handlers
   const handleChange = (e) => {
     const { name, value } = e.target;
     if (name === "region") {

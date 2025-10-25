@@ -14,14 +14,16 @@ const bookingSchema = new mongoose.Schema({
     customerEstablishmentName: { type: String, required: true },
     originAddress: { type: String, required: true },
     destinationAddress: [{ type: String, required: true }],
-    tripType: { 
-        type: String, 
+    latitude: { type: Number, default: null },
+    longitude: { type: Number, default: null },
+    tripType: {
+        type: String,
         enum: ['single', 'multiple'],
         default: 'single'
     },
-    numberOfStops: { 
-        type: Number, 
-        default: 1 
+    numberOfStops: {
+        type: Number,
+        default: 1
     },
     vehicleId: {
         type: String,
@@ -29,8 +31,6 @@ const bookingSchema = new mongoose.Schema({
     },
     vehicleType: { type: String, required: true },
     plateNumber: { type: String, required: true },
-    
-    // NEW: Vehicle history tracking
     vehicleHistory: [{
         vehicleId: { type: String, required: true },
         vehicleType: { type: String, required: true },
@@ -40,8 +40,6 @@ const bookingSchema = new mongoose.Schema({
         reason: { type: String }, // Reason for vehicle change
         status: { type: String, enum: ['active', 'replaced'], default: 'active' }
     }],
-    
-    // NEW: Vehicle change request
     vehicleChangeRequest: {
         requested: { type: Boolean, default: false },
         requestedAt: { type: Date },
@@ -49,7 +47,7 @@ const bookingSchema = new mongoose.Schema({
         status: { type: String, enum: ['pending', 'approved'], default: 'pending' },
         approvedAt: { type: Date }
     },
-    
+
     dateNeeded: { type: Date, required: true },
     timeNeeded: { type: String, required: true },
     employeeAssigned: [{ type: String }],
