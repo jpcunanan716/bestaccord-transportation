@@ -2251,7 +2251,7 @@ function Booking() {
               </div>
 
               {/* Location Pinning with Map */}
-              <div className="bg-gradient-to-r from-violet-50 to-purple-50 p-6 rounded-2xl border border-violet-100">
+              <div className="bg-gradient-to-r from-violet-50 to-purple-50 p-6 rounded-2xl border border-violet-100 mb-6">
                 <div className="flex items-center gap-2 mb-2">
                   <MapPin className="text-purple-600" size={20} />
                   <h3 className="text-lg font-semibold text-gray-900">Pin Your Location</h3>
@@ -2281,7 +2281,14 @@ function Booking() {
                   </motion.button>
                 </div>
 
-                <div id="location-map" className="w-full h-96 rounded-xl shadow-lg border-2 border-violet-200"></div>
+                {/* FIXED: Wrapped map in container with proper height constraints */}
+                <div className="relative overflow-hidden rounded-xl">
+                  <div
+                    id="location-map"
+                    className="w-full rounded-xl shadow-lg border-2 border-violet-200"
+                    style={{ height: '384px', minHeight: '384px', maxHeight: '384px' }}
+                  ></div>
+                </div>
 
                 {markerPosition && (
                   <div className="mt-3 p-3 bg-white rounded-lg border border-violet-200">

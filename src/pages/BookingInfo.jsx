@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { ArrowLeft, Calendar, Clock, User, Building, Package, Truck } from "lucide-react";
+import { ArrowLeft, Calendar, Clock, User, Building, Package, Truck, MapPin } from "lucide-react";
 import { axiosClient } from "../api/axiosClient";
 
 function BookingInfo() {
