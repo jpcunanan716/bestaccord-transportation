@@ -548,7 +548,7 @@ function Booking() {
     }
   };
 
-const handleSubmit = async (e) => {
+  const handleSubmit = async (e) => {
     if (e) e.preventDefault();
 
     if (currentStep !== 2) {
@@ -1467,7 +1467,7 @@ const handleSubmit = async (e) => {
                             value={formData.shipperConsignorName}
                             onChange={handleChange}
                             required
-                            placeholder="Enter customer name"
+                            placeholder="Enter Shipper/Consignor Name"
                             className="w-full px-4 py-2.5 border border-indigo-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-400 focus:border-transparent"
                           />
                         </div>

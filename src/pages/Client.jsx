@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from "react";
-import { Eye, Pencil, Trash2, Plus, X } from "lucide-react";
+import { Eye, Pencil, Trash2, Plus, X, MapPin, Search } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { axiosClient } from "../api/axiosClient";
 import axios from 'axios';
@@ -40,6 +40,8 @@ function Client() {
     province: "",
     city: "",
     barangay: "",
+    latitude: null,
+    longitude: null,
   });
 
   useEffect(() => {
@@ -53,6 +55,13 @@ function Client() {
   const [provinces, setProvinces] = useState([]);
   const [cities, setCities] = useState([]);
   const [barangays, setBarangays] = useState([]);
+
+  // Map states
+  const [mapCenter, setMapCenter] = useState([14.5995, 120.9842]); // Default to Manila
+  const [markerPosition, setMarkerPosition] = useState(null);
+  const [addressSearch, setAddressSearch] = useState("");
+  const mapRef = useRef(null);
+  const markerRef = useRef(null);
 
   // Fetch regions on mount
   useEffect(() => {
@@ -274,6 +283,8 @@ function Client() {
   const openModal = (client = null) => {
     if (client) {
       setEditClient(client);
+      const lat = client.address?.latitude || null;
+      const lng = client.address?.longitude || null;
       setFormData({
         clientName: client.clientName || "",
         clientBranch: client.clientBranch || "",
@@ -284,7 +295,16 @@ function Client() {
         province: client.province || "",
         city: client.city || "",
         barangay: client.barangay || "",
+        latitude: lat,
+        longitude: lng,
       });
+      if (lat && lng) {
+        setMapCenter([lat, lng]);
+        setMarkerPosition([lat, lng]);
+      } else {
+        setMapCenter([14.5995, 120.9842]);
+        setMarkerPosition(null);
+      }
     } else {
       setEditClient(null);
       setFormData({
@@ -297,12 +317,170 @@ function Client() {
         province: "",
         city: "",
         barangay: "",
+        latitude: null,
+        longitude: null,
       });
+      setMapCenter([14.5995, 120.9842]);
+      setMarkerPosition(null);
     }
+    setAddressSearch("");
     setShowModal(true);
   };
 
   const closeModal = () => setShowModal(false);
+
+  // Initialize map when modal opens
+  useEffect(() => {
+    if (!showModal) return;
+
+    // Wait for modal animation to complete
+    const timer = setTimeout(() => {
+      const mapElement = document.getElementById('location-map');
+      if (!mapElement || mapRef.current) return;
+
+      // Load Leaflet CSS
+      if (!document.getElementById('leaflet-css')) {
+        const link = document.createElement('link');
+        link.id = 'leaflet-css';
+        link.rel = 'stylesheet';
+        link.href = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.css';
+        document.head.appendChild(link);
+      }
+
+      // Load Leaflet JS
+      if (!window.L) {
+        const script = document.createElement('script');
+        script.src = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.js';
+        script.onload = initializeMap;
+        document.body.appendChild(script);
+      } else {
+        initializeMap();
+      }
+    }, 300);
+
+    return () => clearTimeout(timer);
+  }, [showModal, mapCenter]);
+
+  const initializeMap = () => {
+    const mapElement = document.getElementById('location-map');
+    if (!mapElement || mapRef.current) return;
+
+    const map = window.L.map('location-map').setView(mapCenter, 13);
+    mapRef.current = map;
+
+    window.L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      attribution: '© OpenStreetMap contributors'
+    }).addTo(map);
+
+    // Add marker if position exists
+    if (markerPosition) {
+      const marker = window.L.marker(markerPosition, { draggable: true }).addTo(map);
+      markerRef.current = marker;
+
+      marker.on('dragend', function (e) {
+        const pos = e.target.getLatLng();
+        setMarkerPosition([pos.lat, pos.lng]);
+        setFormData(prev => ({
+          ...prev,
+          latitude: pos.lat,
+          longitude: pos.lng
+        }));
+      });
+    }
+
+    // Add click event to place/move marker
+    map.on('click', function (e) {
+      const { lat, lng } = e.latlng;
+
+      if (markerRef.current) {
+        markerRef.current.setLatLng([lat, lng]);
+      } else {
+        const marker = window.L.marker([lat, lng], { draggable: true }).addTo(map);
+        markerRef.current = marker;
+
+        marker.on('dragend', function (e) {
+          const pos = e.target.getLatLng();
+          setMarkerPosition([pos.lat, pos.lng]);
+          setFormData(prev => ({
+            ...prev,
+            latitude: pos.lat,
+            longitude: pos.lng
+          }));
+        });
+      }
+
+      setMarkerPosition([lat, lng]);
+      setFormData(prev => ({
+        ...prev,
+        latitude: lat,
+        longitude: lng
+      }));
+    });
+  };
+
+  // Search address function
+  const handleAddressSearch = async () => {
+    if (!addressSearch.trim()) return;
+
+    try {
+      const response = await axios.get('https://nominatim.openstreetmap.org/search', {
+        params: {
+          q: addressSearch + ', Philippines',
+          format: 'json',
+          limit: 1
+        }
+      });
+
+      if (response.data && response.data.length > 0) {
+        const { lat, lon } = response.data[0];
+        const newCenter = [parseFloat(lat), parseFloat(lon)];
+
+        setMapCenter(newCenter);
+        setMarkerPosition(newCenter);
+        setFormData(prev => ({
+          ...prev,
+          latitude: parseFloat(lat),
+          longitude: parseFloat(lon)
+        }));
+
+        // Update map view
+        if (mapRef.current) {
+          mapRef.current.setView(newCenter, 15);
+
+          if (markerRef.current) {
+            markerRef.current.setLatLng(newCenter);
+          } else {
+            const marker = window.L.marker(newCenter, { draggable: true }).addTo(mapRef.current);
+            markerRef.current = marker;
+
+            marker.on('dragend', function (e) {
+              const pos = e.target.getLatLng();
+              setMarkerPosition([pos.lat, pos.lng]);
+              setFormData(prev => ({
+                ...prev,
+                latitude: pos.lat,
+                longitude: pos.lng
+              }));
+            });
+          }
+        }
+      } else {
+        alert('Address not found. Please try a different search.');
+      }
+    } catch (err) {
+      console.error('Error searching address:', err);
+      alert('Failed to search address. Please try again.');
+    }
+  };
+
+  // Cleanup map on modal close
+  useEffect(() => {
+    if (!showModal && mapRef.current) {
+      mapRef.current.remove();
+      mapRef.current = null;
+      markerRef.current = null;
+    }
+  }, [showModal]);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -331,6 +509,8 @@ function Client() {
         province: formData.region === "130000000" ? "Metro Manila" : getName(provinces, formData.province),
         city: getName(cities, formData.city),
         barangay: getName(barangays, formData.barangay),
+        latitude: formData.latitude,
+        longitude: formData.longitude,
       };
       const payload = {
         ...formData,
@@ -743,6 +923,47 @@ function Client() {
                       </select>
                     </div>
                   </div>
+                </div>
+
+                <div className="bg-gradient-to-r from-violet-50 to-purple-50 p-6 rounded-2xl border border-violet-100">
+                  <div className="flex items-center gap-2 mb-2">
+                    <MapPin className="text-purple-600" size={20} />
+                    <h3 className="text-lg font-semibold text-gray-900">Pin Your Location</h3>
+                  </div>
+                  <p className="text-sm text-gray-600 mb-4">
+                    Search your address or click on the map to pin your exact location. You can also drag the marker to adjust.
+                  </p>
+
+                  <div className="mb-4 flex gap-2">
+                    <input
+                      type="text"
+                      value={addressSearch}
+                      onChange={(e) => setAddressSearch(e.target.value)}
+                      onKeyPress={(e) => e.key === 'Enter' && (e.preventDefault(), handleAddressSearch())}
+                      placeholder="Search address (e.g., Quezon City, Metro Manila)..."
+                      className="flex-1 px-4 py-2.5 border border-violet-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-violet-400 focus:border-transparent"
+                    />
+                    <motion.button
+                      whileHover={{ scale: 1.05 }}
+                      whileTap={{ scale: 0.95 }}
+                      type="button"
+                      onClick={handleAddressSearch}
+                      className="px-4 py-2.5 bg-gradient-to-r from-purple-600 to-violet-600 text-white rounded-xl font-medium hover:shadow-lg transition-all duration-300 inline-flex items-center gap-2"
+                    >
+                      <Search size={18} />
+                      Search
+                    </motion.button>
+                  </div>
+
+                  <div id="location-map" className="w-full h-96 rounded-xl shadow-lg border-2 border-violet-200"></div>
+
+                  {markerPosition && (
+                    <div className="mt-3 p-3 bg-white rounded-lg border border-violet-200">
+                      <p className="text-xs text-gray-600">
+                        <strong>Coordinates:</strong> {markerPosition[0].toFixed(6)}, {markerPosition[1].toFixed(6)}
+                      </p>
+                    </div>
+                  )}
                 </div>
               </form>
 
