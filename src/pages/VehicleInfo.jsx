@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { X, Calendar } from "lucide-react";
 
@@ -8,10 +8,12 @@ function VehicleInfo() {
     const [vehicles, setVehicles] = useState([]);
     const [currentIndex, setCurrentIndex] = useState(-1);
     const [bookings, setBookings] = useState([]);
-    const [filteredBookings, setFilteredBookings] = useState([]);
     const [showModal, setShowModal] = useState(false);
     const [isLoadingBookings, setIsLoadingBookings] = useState(false);
-    const [selectedMonth, setSelectedMonth] = useState("");
+    const [selectedDateRange, setSelectedDateRange] = useState({
+        start: "",
+        end: ""
+    });
     const navigate = useNavigate();
 
     const baseURL = import.meta.env.VITE_API_BASE_URL;
@@ -41,27 +43,36 @@ function VehicleInfo() {
         }
     }, [vehicles, id]);
 
-    // Filter bookings based on selected month
-    useEffect(() => {
-        if (!selectedMonth) {
-            setFilteredBookings(bookings);
-            return;
+    // Filter bookings based on date range using useMemo for better performance
+    const filteredBookings = useMemo(() => {
+        if (!selectedDateRange.start && !selectedDateRange.end) {
+            return bookings;
         }
 
-        const [year, month] = selectedMonth.split("-");
-        const filtered = bookings.filter((booking) => {
+        return bookings.filter((booking) => {
             const bookingDate = booking.tripDate || booking.dateNeeded || booking.dateBooked || booking.createdAt;
             if (!bookingDate) return false;
 
-            const date = new Date(bookingDate);
-            const bookingYear = date.getFullYear();
-            const bookingMonth = String(date.getMonth() + 1).padStart(2, "0");
+            const bookingDateObj = new Date(bookingDate);
+            const startDate = selectedDateRange.start ? new Date(selectedDateRange.start) : null;
+            const endDate = selectedDateRange.end ? new Date(selectedDateRange.end) : null;
 
-            return bookingYear === parseInt(year) && bookingMonth === month;
+            // Set time to beginning of day for start date and end of day for end date
+            if (startDate) startDate.setHours(0, 0, 0, 0);
+            if (endDate) endDate.setHours(23, 59, 59, 999);
+            bookingDateObj.setHours(0, 0, 0, 0);
+
+            if (startDate && endDate) {
+                return bookingDateObj >= startDate && bookingDateObj <= endDate;
+            } else if (startDate) {
+                return bookingDateObj >= startDate;
+            } else if (endDate) {
+                return bookingDateObj <= endDate;
+            }
+
+            return true;
         });
-
-        setFilteredBookings(filtered);
-    }, [bookings, selectedMonth]);
+    }, [bookings, selectedDateRange]);
 
     // Fetch bookings for the vehicle
     const fetchBookingHistory = async () => {
@@ -72,7 +83,6 @@ function VehicleInfo() {
             const res = await fetch(`${baseURL}/api/vehicles/${id}/bookings`);
             const data = await res.json();
             setBookings(data);
-            setFilteredBookings(data);
             setShowModal(true);
         } catch (err) {
             console.error("Error fetching bookings:", err);
@@ -82,7 +92,10 @@ function VehicleInfo() {
     };
 
     const clearFilter = () => {
-        setSelectedMonth("");
+        setSelectedDateRange({
+            start: "",
+            end: ""
+        });
     };
 
     if (!vehicle) return <p className="text-center py-6 text-gray-500">Loading...</p>;
@@ -206,19 +219,36 @@ function VehicleInfo() {
                                 <h3 className="text-2xl font-bold text-gray-800">Vehicle History</h3>
                                 <p className="text-sm text-gray-600 mt-1">
                                     Vehicle: {vehicle.vehicleType} • Total Bookings: {bookings.length}
-                                    {selectedMonth && ` • Filtered: ${filteredBookings.length}`}
+                                    {(selectedDateRange.start || selectedDateRange.end) && ` • Filtered: ${filteredBookings.length}`}
                                 </p>
                             </div>
                             <div className="flex items-center gap-3">
                                 <div className="flex items-center gap-2">
                                     <Calendar className="w-5 h-5 text-gray-600" />
-                                    <input
-                                        type="month"
-                                        value={selectedMonth}
-                                        onChange={(e) => setSelectedMonth(e.target.value)}
-                                        className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
-                                    />
-                                    {selectedMonth && (
+                                    <div className="flex items-center gap-2">
+                                        <input
+                                            type="date"
+                                            value={selectedDateRange.start}
+                                            onChange={(e) => setSelectedDateRange(prev => ({
+                                                ...prev,
+                                                start: e.target.value
+                                            }))}
+                                            className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm w-40"
+                                            placeholder="Start date"
+                                        />
+                                        <span className="text-gray-500">to</span>
+                                        <input
+                                            type="date"
+                                            value={selectedDateRange.end}
+                                            onChange={(e) => setSelectedDateRange(prev => ({
+                                                ...prev,
+                                                end: e.target.value
+                                            }))}
+                                            className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm w-40"
+                                            placeholder="End date"
+                                        />
+                                    </div>
+                                    {(selectedDateRange.start || selectedDateRange.end) && (
                                         <button
                                             onClick={clearFilter}
                                             className="px-3 py-1.5 text-sm bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition"
@@ -241,8 +271,8 @@ function VehicleInfo() {
                             {filteredBookings.length === 0 ? (
                                 <div className="text-center py-12">
                                     <p className="text-gray-500 text-lg">
-                                        {selectedMonth
-                                            ? "No bookings found for the selected month."
+                                        {selectedDateRange.start || selectedDateRange.end
+                                            ? "No bookings found for the selected date range."
                                             : "No booking history found for this vehicle."}
                                     </p>
                                 </div>
@@ -257,31 +287,40 @@ function VehicleInfo() {
                                                 <th className="px-4 py-3">Plate Number</th>
                                                 <th className="px-4 py-3">Origin Address</th>
                                                 <th className="px-4 py-3">Destination Address</th>
+                                                <th className="px-4 py-3">Date</th>
                                             </tr>
                                         </thead>
                                         <tbody className="divide-y divide-gray-200">
-                                            {filteredBookings.map((booking) => (
-                                                <tr key={booking._id} className="hover:bg-gray-50">
-                                                    <td className="px-4 py-3 font-medium text-purple-600">
-                                                        {booking.tripNumber || "N/A"}
-                                                    </td>
-                                                    <td className="px-4 py-3">
-                                                        {booking.companyName}
-                                                    </td>
-                                                    <td className="px-4 py-3">
-                                                        {booking.vehicleInfo?.vehicleType || 'N/A'}
-                                                    </td>
-                                                    <td className="px-4 py-3">
-                                                        {booking.vehicleInfo?.plateNumber || 'N/A'}
-                                                    </td>
-                                                    <td className="px-4 py-3">
-                                                        {booking.originAddress}
-                                                    </td>
-                                                    <td className="px-4 py-3">
-                                                        {booking.destinationAddress}
-                                                    </td>
-                                                </tr>
-                                            ))}
+                                            {filteredBookings.map((booking) => {
+                                                const bookingDate = booking.tripDate || booking.dateNeeded || booking.dateBooked || booking.createdAt;
+                                                return (
+                                                    <tr key={booking._id} className="hover:bg-gray-50">
+                                                        <td className="px-4 py-3 font-medium text-purple-600">
+                                                            {booking.tripNumber || "N/A"}
+                                                        </td>
+                                                        <td className="px-4 py-3">
+                                                            {booking.companyName}
+                                                        </td>
+                                                        <td className="px-4 py-3">
+                                                            {booking.vehicleInfo?.vehicleType || 'N/A'}
+                                                        </td>
+                                                        <td className="px-4 py-3">
+                                                            {booking.vehicleInfo?.plateNumber || 'N/A'}
+                                                        </td>
+                                                        <td className="px-4 py-3">
+                                                            {booking.originAddress}
+                                                        </td>
+                                                        <td className="px-4 py-3">
+                                                            {booking.destinationAddress}
+                                                        </td>
+                                                        <td className="px-4 py-3">
+                                                            {bookingDate
+                                                                ? new Date(bookingDate).toLocaleDateString()
+                                                                : 'N/A'}
+                                                        </td>
+                                                    </tr>
+                                                );
+                                            })}
                                         </tbody>
                                     </table>
                                 </div>
