@@ -527,3 +527,73 @@ export const updateDriverLocation = async (req, res) => {
   }
 };
 
+export const requestVehicleChange = async (req, res) => {
+  try {
+    const driver = req.driver;
+    const bookingId = req.params.id;
+    const { reason } = req.body;
+
+    if (!reason) {
+      return res.status(400).json({
+        success: false,
+        msg: "Reason is required"
+      });
+    }
+
+    const booking = await Booking.findOne({
+      _id: bookingId,
+      employeeAssigned: { $in: [driver.employeeId] }
+    });
+
+    if (!booking) {
+      return res.status(404).json({
+        success: false,
+        msg: "Booking not found"
+      });
+    }
+
+    if (booking.status !== "In Transit") {
+      return res.status(400).json({
+        success: false,
+        msg: "Vehicle change can only be requested for trips that are In Transit"
+      });
+    }
+
+    if (booking.vehicleChangeRequest?.requested && 
+        booking.vehicleChangeRequest?.status === 'pending') {
+      return res.status(400).json({
+        success: false,
+        msg: "There is already a pending vehicle change request"
+      });
+    }
+
+    booking.vehicleChangeRequest = {
+      requested: true,
+      requestedAt: new Date(),
+      reason,
+      status: 'pending'
+    };
+
+    await booking.save();
+
+    res.json({
+      success: true,
+      msg: "Request submitted successfully",
+      booking: {
+        _id: booking._id,
+        reservationId: booking.reservationId,
+        tripNumber: booking.tripNumber,
+        vehicleChangeRequest: booking.vehicleChangeRequest
+      }
+    });
+
+  } catch (err) {
+    console.error("Error:", err);
+    res.status(500).json({
+      success: false,
+      msg: "Server error",
+      error: err.message
+    });
+  }
+};
+
