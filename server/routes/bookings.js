@@ -3,7 +3,6 @@ import Booking from "../models/Booking.js";
 import Counter from "../models/Counter.js";
 import Vehicle from "../models/Vehicle.js";
 import Employee from "../models/Employee.js";
-import { getVehicleChangeRequests, approveVehicleChange } from '../controllers/bookingsController.js';
 
 const router = express.Router();
 
