@@ -40,7 +40,6 @@ function Booking() {
   const [uniqueCompanyNames, setUniqueCompanyNames] = useState([]);
   const [uniqueProductNames, setUniqueProductNames] = useState([]);
   const [uniqueVehicleTypes, setUniqueVehicleTypes] = useState([]);
-  const [uniqueStatuses, setUniqueStatuses] = useState([]);
   const [uniqueDates, setUniqueDates] = useState([]);
 
   // Trip type state
@@ -1256,11 +1255,11 @@ function Booking() {
         className="bg-white/80 backdrop-blur-sm rounded-2xl shadow-sm border border-purple-100 p-6"
       >
         <h3 className="text-lg font-semibold text-gray-900 mb-4">Filters</h3>
-        <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-6 gap-4">
+        <div className="flex gap-3 overflow-x-auto pb-2">
           <select
             value={searchReservationId}
             onChange={(e) => setSearchReservationId(e.target.value)}
-            className="px-4 py-2.5 border border-purple-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-400 focus:border-transparent bg-white/50 text-sm"
+            className="px-4 py-2.5 border border-purple-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-400 focus:border-transparent bg-white/50 text-sm whitespace-nowrap min-w-[160px]"
           >
             <option value="">All Reservations</option>
             {uniqueReservationIds.map((id, i) => (
@@ -1271,7 +1270,7 @@ function Booking() {
           <select
             value={searchCompanyName}
             onChange={(e) => setSearchCompanyName(e.target.value)}
-            className="px-4 py-2.5 border border-purple-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-400 focus:border-transparent bg-white/50 text-sm"
+            className="px-4 py-2.5 border border-purple-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-400 focus:border-transparent bg-white/50 text-sm whitespace-nowrap min-w-[160px]"
           >
             <option value="">All Companies</option>
             {uniqueCompanyNames.map((company, i) => (
@@ -1282,7 +1281,7 @@ function Booking() {
           <select
             value={searchProductName}
             onChange={(e) => setSearchProductName(e.target.value)}
-            className="px-4 py-2.5 border border-purple-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-400 focus:border-transparent bg-white/50 text-sm"
+            className="px-4 py-2.5 border border-purple-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-400 focus:border-transparent bg-white/50 text-sm whitespace-nowrap min-w-[160px]"
           >
             <option value="">All Products</option>
             {uniqueProductNames.map((product, i) => (
@@ -1293,7 +1292,7 @@ function Booking() {
           <select
             value={searchVehicleType}
             onChange={(e) => setSearchVehicleType(e.target.value)}
-            className="px-4 py-2.5 border border-purple-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-400 focus:border-transparent bg-white/50 text-sm"
+            className="px-4 py-2.5 border border-purple-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-400 focus:border-transparent bg-white/50 text-sm whitespace-nowrap min-w-[160px]"
           >
             <option value="">All Vehicle Types</option>
             {uniqueVehicleTypes.map((vehicle, i) => (
@@ -1304,7 +1303,7 @@ function Booking() {
           <select
             value={searchStatus}
             onChange={(e) => setSearchStatus(e.target.value)}
-            className="px-4 py-2.5 border border-purple-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-400 focus:border-transparent bg-white/50 text-sm"
+            className="px-4 py-2.5 border border-purple-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-400 focus:border-transparent bg-white/50 text-sm whitespace-nowrap min-w-[140px]"
           >
             <option value="">All Statuses</option>
             {uniqueStatuses.map((status, i) => (
@@ -1315,7 +1314,7 @@ function Booking() {
           <select
             value={searchDate}
             onChange={(e) => setSearchDate(e.target.value)}
-            className="px-4 py-2.5 border border-purple-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-400 focus:border-transparent bg-white/50 text-sm"
+            className="px-4 py-2.5 border border-purple-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-400 focus:border-transparent bg-white/50 text-sm whitespace-nowrap min-w-[140px]"
           >
             <option value="">All Dates</option>
             {uniqueDates.map((date, i) => (
@@ -1328,7 +1327,7 @@ function Booking() {
             placeholder="Search anything..."
             value={generalSearch}
             onChange={(e) => setGeneralSearch(e.target.value)}
-            className="px-4 py-2.5 border border-purple-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-400 focus:border-transparent bg-white/50 text-sm"
+            className="px-4 py-2.5 border border-purple-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-400 focus:border-transparent bg-white/50 text-sm whitespace-nowrap min-w-[200px]"
           />
         </div>
       </motion.div>
@@ -1554,7 +1553,6 @@ function Booking() {
                 }} className="p-8 space-y-6">
                   {currentStep === 1 && (
                     <div className="space-y-6">
-                      {/* Show Reservation ID and Trip Number only when editing */}
                       {editBooking && (
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                           <div>
@@ -1611,7 +1609,6 @@ function Booking() {
                                 checked={tripType === 'single'}
                                 onChange={(e) => {
                                   setTripType(e.target.value);
-                                  // If switching to single, keep only the first branch
                                   if (e.target.value === 'single' && selectedBranches.length > 1) {
                                     setSelectedBranches([selectedBranches[0]]);
                                     setFormData(prev => ({
@@ -1702,7 +1699,6 @@ function Booking() {
                             </label>
 
                             {tripType === 'single' ? (
-                              // Single destination (original behavior)
                               <select
                                 name="customerEstablishmentName"
                                 value={formData.customerEstablishmentName}
@@ -1719,7 +1715,6 @@ function Booking() {
                                 ))}
                               </select>
                             ) : (
-                              // Multiple destinations - Single column layout
                               <div className="space-y-3">
                                 {selectedBranches.map((branchData, index) => (
                                   <div key={branchData.key} className="border border-indigo-200 rounded-xl p-4 bg-white">
@@ -1800,7 +1795,6 @@ function Booking() {
                             )}
                           </div>
 
-                          {/* Remove the duplicate right column - it's not needed anymore */}
                           <div>
                             <label className="block text-sm font-medium text-gray-700 mb-2">
                               {tripType === 'single' ? 'Destination/To *' : 'Destinations Preview'}
