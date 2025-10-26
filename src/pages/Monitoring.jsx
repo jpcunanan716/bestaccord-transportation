@@ -1781,7 +1781,7 @@ export default function Monitoring() {
                             </motion.button>
 
                             {/* Show Proof button only if proof exists */}
-                            {selectedBooking.proofOfDelivery && (
+                            {/* {selectedBooking.proofOfDelivery && (
                               <motion.button
                                 onClick={openProofModal}
                                 className="flex-1 px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors flex items-center justify-center space-x-2"
@@ -1791,7 +1791,7 @@ export default function Monitoring() {
                                 <Camera className="w-4 h-4" />
                                 <span>View Proof</span>
                               </motion.button>
-                            )}
+                            )} */}
                           </>
                         )}
                       </motion.div>
