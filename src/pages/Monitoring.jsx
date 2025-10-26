@@ -26,6 +26,8 @@ export default function Monitoring() {
   const [showModal, setShowModal] = useState(false);
   const [showReceiptGenerator, setShowReceiptGenerator] = useState(false);
   const [showProofModal, setShowProofModal] = useState(false);
+  const [showDestProofModal, setShowDestProofModal] = useState(false);
+  const [selectedDestProof, setSelectedDestProof] = useState(null);
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("All");
   const [error, setError] = useState("");
@@ -1251,6 +1253,7 @@ export default function Monitoring() {
                           </div>
                         </div>
                       </motion.div>
+                       </motion.div>
 
                       {/* Map Container */}
                       <motion.div
@@ -1278,75 +1281,242 @@ export default function Monitoring() {
                         </div>
                       </motion.div>
 
-                      {/* Route Timeline - FIXED for multiple destinations */}
-                      <motion.div
-                        className="bg-white rounded-lg border border-gray-200 p-6"
-                        initial={{ opacity: 0, y: 20 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        transition={{ duration: 0.3, delay: 0.2 }}
-                      >
-                        <h3 className="font-semibold text-gray-900 mb-4">Route Timeline</h3>
-                        <div className="space-y-4">
-                          <motion.div
-                            className="flex items-start space-x-3"
-                            initial={{ opacity: 0, x: -20 }}
-                            animate={{ opacity: 1, x: 0 }}
-                            transition={{ delay: 0.5 }}
-                          >
-                            <div className="w-3 h-3 bg-green-500 rounded-full mt-2"></div>
-                            <div className="flex-1">
-                              <p className="text-sm font-medium text-gray-900">Origin Location</p>
-                              <p className="text-sm text-gray-600">{selectedBooking.originAddress}</p>
-                            </div>
-                          </motion.div>
-
-                          {getDestinations(selectedBooking).map((destination, idx) => (
-                            <React.Fragment key={idx}>
-                              <div className="border-l-2 border-gray-200 ml-1.5 h-6"></div>
-                              <motion.div
-                                className="flex items-start space-x-3"
-                                initial={{ opacity: 0, x: -20 }}
-                                animate={{ opacity: 1, x: 0 }}
-                                transition={{ delay: 0.6 + idx * 0.1 }}
-                              >
-                                <div className="w-3 h-3 bg-red-500 rounded-full mt-2"></div>
-                                <div className="flex-1">
-                                  <p className="text-sm font-medium text-gray-900">
-                                    {getDestinations(selectedBooking).length > 1 ? `Destination ${idx + 1}` : 'Destination'}
-                                  </p>
-                                  <p className="text-sm text-gray-600">{destination}</p>
-                                </div>
-                              </motion.div>
-                            </React.Fragment>
-                          ))}
-                        </div>
-
-                        {/* Trip Started Info */}
+                        {/* Route Timeline - FUNCTIONAL */}
                         <motion.div
-                          className="mt-6 pt-4 border-t border-gray-200"
-                          initial={{ opacity: 0, y: 10 }}
+                          className="bg-white rounded-lg border border-gray-200 p-6"
+                          initial={{ opacity: 0, y: 20 }}
                           animate={{ opacity: 1, y: 0 }}
-                          transition={{ delay: 0.7 }}
+                          transition={{ duration: 0.3, delay: 0.2 }}
                         >
-                          <div className="flex items-center space-x-2">
-                            <div className="w-3 h-3 bg-blue-600 rounded-full"></div>
-                            <div>
-                              <p className="text-sm font-medium text-gray-900">Trip Started</p>
-                              <p className="text-sm text-gray-600">
-                                {new Date(selectedBooking.dateNeeded).toLocaleDateString('en-US', {
-                                  month: 'long',
-                                  day: 'numeric',
-                                  year: 'numeric'
-                                })} at {selectedBooking.timeNeeded}
-                              </p>
-                              <p className="text-xs text-gray-500 mt-1">
-                                Bestaccord is preparing to ship the packages.
-                              </p>
-                            </div>
+                          {/* Header with Stats */}
+                          <div className="flex items-center justify-between mb-6">
+                            <h3 className="font-semibold text-gray-900 text-lg">Route Timeline</h3>
+                            {selectedBooking.destinationDeliveries?.length > 1 && (() => {
+                              const delivered = selectedBooking.destinationDeliveries.filter(d => d.status === 'delivered').length;
+                              const total = selectedBooking.destinationDeliveries.length;
+                              const pending = total - delivered;
+                              return (
+                                <div className="flex items-center gap-2 text-sm">
+                                  <span className="px-2 py-1 bg-green-100 text-green-800 rounded-full font-medium">
+                                    {delivered} Delivered
+                                  </span>
+                                  <span className="px-2 py-1 bg-gray-100 text-gray-800 rounded-full font-medium">
+                                    {pending} Pending
+                                  </span>
+                                </div>
+                              );
+                            })()}
                           </div>
+
+                          {/* Timeline */}
+                          <div className="space-y-6">
+                            {/* Trip Started */}
+                            <div className="flex items-start space-x-4">
+                              <div className="relative flex flex-col items-center">
+                                <div className="w-10 h-10 bg-blue-600 rounded-full flex items-center justify-center z-10">
+                                  <Package className="w-5 h-5 text-white" />
+                                </div>
+                                <div className="w-0.5 h-full bg-blue-200 absolute top-10"></div>
+                              </div>
+                              <div className="flex-1 pb-8">
+                                <div className="flex items-center justify-between mb-1">
+                                  <p className="text-sm font-semibold text-gray-900">Trip Started</p>
+                                  <span className="text-xs text-gray-500">
+                                    {new Date(selectedBooking.createdAt).toLocaleString('en-US', {
+                                      month: 'short',
+                                      day: 'numeric',
+                                      hour: '2-digit',
+                                      minute: '2-digit'
+                                    })}
+                                  </span>
+                                </div>
+                                <p className="text-sm text-gray-600">
+                                  {new Date(selectedBooking.dateNeeded).toLocaleDateString('en-US', {
+                                    month: 'long',
+                                    day: 'numeric',
+                                    year: 'numeric'
+                                  })} at {selectedBooking.timeNeeded}
+                                </p>
+                              </div>
+                            </div>
+
+                            {/* Origin */}
+                            <div className="flex items-start space-x-4">
+                              <div className="relative flex flex-col items-center">
+                                <div className="w-10 h-10 bg-green-500 rounded-full flex items-center justify-center z-10">
+                                  <MapPin className="w-5 h-5 text-white" />
+                                </div>
+                                <div className="w-0.5 h-full bg-gray-200 absolute top-10"></div>
+                              </div>
+                              <div className="flex-1 pb-8">
+                                <p className="text-sm font-semibold text-gray-900">Picked up from Origin</p>
+                                <p className="text-sm text-gray-600">{selectedBooking.originAddress}</p>
+                              </div>
+                            </div>
+
+                              {/* FUNCTIONAL Destinations */}
+                              {selectedBooking.destinationDeliveries && selectedBooking.destinationDeliveries.length > 0 ? (
+                                selectedBooking.destinationDeliveries.map((dest, index) => {
+                                  const isLast = index === selectedBooking.destinationDeliveries.length - 1;
+                                  const isDelivered = dest.status === 'delivered';
+                                  const hasMultiple = selectedBooking.destinationDeliveries.length > 1;
+                                  
+                                  return (
+                                    <div key={index} className="flex items-start space-x-4">
+                                      <div className="relative flex flex-col items-center">
+                                        <div className={`w-10 h-10 rounded-full flex items-center justify-center z-10 ${
+                                          isDelivered ? 'bg-green-500' : 'bg-gray-300'
+                                        }`}>
+                                          {isDelivered ? (
+                                            <CheckCircle className="w-5 h-5 text-white" />
+                                          ) : (
+                                            <Clock className="w-5 h-5 text-white" />
+                                          )}
+                                        </div>
+                                        {!isLast && (
+                                          <div className={`w-0.5 h-full absolute top-10 ${
+                                            isDelivered ? 'bg-green-200' : 'bg-gray-200'
+                                          }`}></div>
+                                        )}
+                                      </div>
+                                      <div className="flex-1 pb-8">
+                                        <div className="flex items-center justify-between mb-1">
+                                          <p className="text-sm font-semibold text-gray-900">
+                                            {hasMultiple ? `Destination ${index + 1}` : 'Destination'}
+                                            {isDelivered && (
+                                              <span className="ml-2 text-xs bg-green-100 text-green-800 px-2 py-1 rounded-full font-medium">
+                                                ✓ Delivered
+                                              </span>
+                                            )}
+                                          </p>
+                                          {isDelivered && dest.deliveredAt && (
+                                            <span className="text-xs text-gray-500">
+                                              {new Date(dest.deliveredAt).toLocaleString('en-US', {
+                                                month: 'short',
+                                                day: 'numeric',
+                                                hour: '2-digit',
+                                                minute: '2-digit'
+                                              })}
+                                            </span>
+                                          )}
+                                        </div>
+                                        <p className="text-sm text-gray-600">{dest.destinationAddress}</p>
+                                        
+                                        {/* Delivery Details */}
+                                        {isDelivered ? (
+                                          <div className="mt-2 space-y-1">
+                                            <p className="text-xs text-green-600 font-medium">
+                                              ✓ Package delivered successfully
+                                            </p>
+                                            {dest.notes && (
+                                              <p className="text-xs text-gray-600 italic">
+                                                Note: {dest.notes}
+                                              </p>
+                                            )}
+                                            {dest.proofOfDelivery && (
+                                              <button 
+                                                onClick={() => {
+                                                  setSelectedDestProof({
+                                                    image: dest.proofOfDelivery,
+                                                    address: dest.destinationAddress,
+                                                    deliveredAt: dest.deliveredAt,
+                                                    index: index + 1,
+                                                    notes: dest.notes
+                                                  });
+                                                  setShowDestProofModal(true);
+                                                }}
+                                                className="text-xs text-indigo-600 hover:text-indigo-800 flex items-center gap-1 mt-1 hover:underline"
+                                              >
+                                                <Camera className="w-3 h-3" />
+                                                View delivery proof
+                                              </button>
+                                            )}
+                                          </div>
+                                        ) : (
+                                          <p className="text-xs text-gray-500 mt-1">
+                                            {selectedBooking.status === 'In Transit' 
+                                              ? 'Awaiting delivery...' 
+                                              : 'Pending delivery'}
+                                          </p>
+                                        )}
+                                      </div>
+                                    </div>
+                                );
+                              })
+                            ) : (
+                              // Fallback for old bookings
+                              <div className="flex items-start space-x-4">
+                                <div className="relative flex flex-col items-center">
+                                  <div className={`w-10 h-10 rounded-full flex items-center justify-center z-10 ${
+                                    selectedBooking.status === 'Delivered' || selectedBooking.status === 'Completed'
+                                      ? 'bg-green-500' : 'bg-gray-300'
+                                  }`}>
+                                    {selectedBooking.status === 'Delivered' || selectedBooking.status === 'Completed' ? (
+                                      <CheckCircle className="w-5 h-5 text-white" />
+                                    ) : (
+                                      <Clock className="w-5 h-5 text-white" />
+                                    )}
+                                  </div>
+                                </div>
+                                <div className="flex-1 pb-8">
+                                  <p className="text-sm font-semibold text-gray-900">Destination</p>
+                                  <p className="text-sm text-gray-600">
+                                    {Array.isArray(selectedBooking.destinationAddress) 
+                                      ? selectedBooking.destinationAddress.join(', ') 
+                                      : selectedBooking.destinationAddress}
+                                  </p>
+                                </div>
+                              </div>
+                            )}
+
+                            {/* Completed Status */}
+                            {selectedBooking.status === 'Completed' && (
+                              <div className="flex items-start space-x-4">
+                                <div className="relative flex flex-col items-center">
+                                  <div className="w-10 h-10 bg-purple-600 rounded-full flex items-center justify-center z-10">
+                                    <FileText className="w-5 h-5 text-white" />
+                                  </div>
+                                </div>
+                                <div className="flex-1">
+                                  <div className="flex items-center justify-between mb-1">
+                                    <p className="text-sm font-semibold text-gray-900">Trip Completed</p>
+                                    <span className="text-xs text-gray-500">
+                                      {new Date(selectedBooking.updatedAt).toLocaleString('en-US', {
+                                        month: 'short',
+                                        day: 'numeric',
+                                        hour: '2-digit',
+                                        minute: '2-digit'
+                                      })}
+                                    </span>
+                                  </div>
+                                  <p className="text-xs text-gray-500">All deliveries completed successfully</p>
+                                </div>
+                              </div>
+                            )}
+                          </div>
+
+                          {/* Progress Summary */}
+                          {selectedBooking.destinationDeliveries?.length > 1 && selectedBooking.status === 'In Transit' && (() => {
+                            const delivered = selectedBooking.destinationDeliveries.filter(d => d.status === 'delivered').length;
+                            const total = selectedBooking.destinationDeliveries.length;
+                            return (
+                              <div className="mt-6 pt-4 border-t border-gray-200">
+                                <div className="flex items-center justify-between text-sm mb-2">
+                                  <span className="text-gray-600">Delivery Progress</span>
+                                  <span className="font-semibold text-gray-900">
+                                    {delivered} of {total} destinations
+                                  </span>
+                                </div>
+                                <div className="w-full bg-gray-200 rounded-full h-2">
+                                  <div 
+                                    className="bg-green-500 h-2 rounded-full transition-all duration-500"
+                                    style={{ width: `${(delivered / total) * 100}%` }}
+                                  ></div>
+                                </div>
+                              </div>
+                            );
+                          })()}
                         </motion.div>
-                      </motion.div>
-                    </motion.div>
 
                     {/* Right Column - All the details */}
                     <motion.div
@@ -1611,7 +1781,7 @@ export default function Monitoring() {
                             </motion.button>
 
                             {/* Show Proof button only if proof exists */}
-                            {selectedBooking.proofOfDelivery && (
+                            {/* {selectedBooking.proofOfDelivery && (
                               <motion.button
                                 onClick={openProofModal}
                                 className="flex-1 px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors flex items-center justify-center space-x-2"
@@ -1621,7 +1791,7 @@ export default function Monitoring() {
                                 <Camera className="w-4 h-4" />
                                 <span>View Proof</span>
                               </motion.button>
-                            )}
+                            )} */}
                           </>
                         )}
                       </motion.div>
@@ -1728,6 +1898,95 @@ export default function Monitoring() {
           </motion.div>
         )}
       </AnimatePresence>
-    </>
+
+      {/* Individual Destination Proof Modal */}
+        <AnimatePresence>
+          {showDestProofModal && selectedDestProof && (
+            <motion.div
+              className="fixed inset-0 z-[70] flex items-center justify-center p-4"
+              style={{ backgroundColor: 'rgba(0, 0, 0, 0.7)', backdropFilter: 'blur(8px)' }}
+              variants={backdropVariants}
+              initial="hidden"
+              animate="visible"
+              exit="exit"
+              onClick={() => setShowDestProofModal(false)}
+            >
+              <motion.div
+                className="bg-white rounded-lg shadow-2xl max-w-4xl w-full max-h-[90vh] overflow-hidden"
+                variants={modalVariants}
+                initial="hidden"
+                animate="visible"
+                exit="exit"
+                onClick={(e) => e.stopPropagation()}
+              >
+                {/* Modal Header */}
+                <div className="flex items-center justify-between px-6 py-4 bg-gradient-to-r from-green-600 to-emerald-600 text-white">
+                  <div className="flex items-center gap-3">
+                    <Camera className="w-6 h-6" />
+                    <div>
+                      <h3 className="text-lg font-bold">Delivery Proof - Stop {selectedDestProof.index}</h3>
+                      <p className="text-sm text-green-100">Trip: {selectedBooking.tripNumber}</p>
+                    </div>
+                  </div>
+                  <button
+                    onClick={() => setShowDestProofModal(false)}
+                    className="p-2 text-white hover:bg-white/20 transition-colors rounded-lg"
+                  >
+                    <X className="w-5 h-5" />
+                  </button>
+                </div>
+
+                {/* Proof Image */}
+                <div className="p-6 bg-gray-50">
+                  <div className="bg-white rounded-lg overflow-hidden shadow-lg">
+                    <img
+                      src={selectedDestProof.image}
+                      alt={`Proof of Delivery - Stop ${selectedDestProof.index}`}
+                      className="w-full h-auto max-h-[70vh] object-contain"
+                    />
+                  </div>
+
+                  {/* Delivery Info */}
+                  <div className="mt-4 grid grid-cols-1 gap-4">
+                    <div className="bg-white p-4 rounded-lg border border-gray-200">
+                      <p className="text-xs text-gray-600 mb-1">Delivered To</p>
+                      <p className="text-sm font-medium">{selectedDestProof.address}</p>
+                    </div>
+                    
+                    {selectedDestProof.deliveredAt && (
+                      <div className="bg-white p-4 rounded-lg border border-gray-200">
+                        <p className="text-xs text-gray-600 mb-1">Delivery Time</p>
+                        <p className="text-sm font-medium">
+                          {new Date(selectedDestProof.deliveredAt).toLocaleString()}
+                        </p>
+                      </div>
+                    )}
+
+                    {selectedDestProof.notes && (
+                      <div className="bg-white p-4 rounded-lg border border-gray-200">
+                        <p className="text-xs text-gray-600 mb-1">Delivery Notes</p>
+                        <p className="text-sm font-medium">{selectedDestProof.notes}</p>
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                {/* Footer */}
+                <div className="px-6 py-4 bg-gray-50 border-t flex justify-between items-center">
+                  <p className="text-sm text-gray-600">
+                    Photo taken by driver upon delivery at this stop
+                  </p>
+                  <button
+                    onClick={() => setShowDestProofModal(false)}
+                    className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
+                  >
+                    Close
+                  </button>
+                </div>
+              </motion.div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+            </>
   );
 }
