@@ -347,7 +347,17 @@ function Employee() {
                   className="hover:bg-purple-50/50 transition-colors duration-200"
                 >
                   <td className="px-6 py-4 text-sm text-gray-900">{startIndex + index + 1}</td>
-                  <td className="px-6 py-4 text-sm font-mono text-purple-700 font-semibold">{getDisplayID(index, emp)}</td>
+                  <td className="px-6 py-4 text-sm font-mono text-purple-700 font-semibold"></td>
+                  <td className="px-6 py-4 text-sm font-mono">
+                    <motion.button
+                      onClick={() => viewEmployee(emp)}
+                      className="text-purple-700 font-semibold hover:text-purple-900 underline cursor-pointer bg-transparent border-none p-0"
+                      whileHover={{ scale: 1.05 }}
+                      whileTap={{ scale: 0.95 }}
+                    >
+                      {getDisplayID(index, emp)}
+                    </motion.button>
+                  </td>
                   <td className="px-6 py-4 text-sm text-gray-900">{emp.fullName}</td>
                   <td className="px-6 py-4 text-sm text-gray-900">{emp.role}</td>
                   <td className="px-6 py-4 text-sm text-gray-900">{emp.mobileNumber}</td>

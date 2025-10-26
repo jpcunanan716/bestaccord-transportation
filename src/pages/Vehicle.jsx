@@ -358,7 +358,16 @@ export default function Vehicle() {
                   className="hover:bg-purple-50/50 transition-colors duration-200"
                 >
                   <td className="px-6 py-4 text-sm text-gray-900">{startIndex + index + 1}</td>
-                  <td className="px-6 py-4 text-sm font-mono text-purple-700 font-semibold">{getDisplayID(startIndex + index, v)}</td>
+                  <td className="px-6 py-4 text-sm font-mono">
+                    <motion.button
+                      onClick={() => viewVehicle(v)}
+                      className="text-purple-700 font-semibold hover:text-purple-900 underline cursor-pointer bg-transparent border-none p-0"
+                      whileHover={{ scale: 1.05 }}
+                      whileTap={{ scale: 0.95 }}
+                    >
+                      {getDisplayID(startIndex + index, v)}
+                    </motion.button>
+                  </td>
                   <td className="px-6 py-4 text-sm text-gray-900">{v.manufacturedBy} {v.model}</td>
                   <td className="px-6 py-4 text-sm text-gray-900">{v.vehicleType === "6-Wheeler" ? 6 : 4}</td>
                   <td className="px-6 py-4 text-sm text-gray-900">{v.plateNumber}</td>
