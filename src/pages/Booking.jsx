@@ -33,6 +33,7 @@ function Booking() {
   const [searchVehicleType, setSearchVehicleType] = useState("");
   const [searchDate, setSearchDate] = useState("");
   const [generalSearch, setGeneralSearch] = useState("");
+  const [searchStatus, setSearchStatus] = useState("");
 
   // Unique filter values
   const [uniqueReservationIds, setUniqueReservationIds] = useState([]);
@@ -173,6 +174,7 @@ function Booking() {
       setUniqueCompanyNames([...new Set(activeBookings.map((b) => b.companyName))]);
       setUniqueProductNames([...new Set(activeBookings.map((b) => b.productName))]);
       setUniqueVehicleTypes([...new Set(activeBookings.map((b) => b.vehicleType))]);
+      setUniqueStatuses([...new Set(activeBookings.map((b) => (b.status || "Pending")))]);
       setUniqueDates([
         ...new Set(
           activeBookings.map((b) =>
@@ -236,6 +238,9 @@ function Booking() {
     if (searchVehicleType) {
       results = results.filter((booking) => booking.vehicleType === searchVehicleType);
     }
+    if (searchStatus) {
+      results = results.filter((booking) => (booking.status || "Pending") === searchStatus);
+    }
     if (searchDate) {
       results = results.filter(
         (booking) =>
@@ -243,32 +248,26 @@ function Booking() {
       );
     }
     if (generalSearch) {
-      results = results.filter(
-        (booking) =>
-          booking.reservationId
-            ?.toLowerCase()
-            .includes(generalSearch.toLowerCase()) ||
-          booking.tripNumber
-            ?.toLowerCase()
-            .includes(generalSearch.toLowerCase()) ||
-          booking.companyName
-            ?.toLowerCase()
-            .includes(generalSearch.toLowerCase()) ||
-          booking.productName
-            ?.toLowerCase()
-            .includes(generalSearch.toLowerCase()) ||
-          booking.vehicleType
-            ?.toLowerCase()
-            .includes(generalSearch.toLowerCase()) ||
-          booking.employeeAssigned
-            ?.toLowerCase()
-            .includes(generalSearch.toLowerCase())
-      );
+      const q = generalSearch.toLowerCase();
+      results = results.filter((booking) => {
+        const empStr = Array.isArray(booking.employeeAssigned)
+          ? booking.employeeAssigned.join(' ') // join array into string
+          : (booking.employeeAssigned || '').toString();
+
+        return (
+          booking.reservationId?.toLowerCase().includes(q) ||
+          booking.tripNumber?.toLowerCase().includes(q) ||
+          booking.companyName?.toLowerCase().includes(q) ||
+          booking.productName?.toLowerCase().includes(q) ||
+          booking.vehicleType?.toLowerCase().includes(q) ||
+          empStr.toLowerCase().includes(q)
+        );
+      });
     }
 
     setFilteredBookings(results);
     setCurrentPage(1);
-  }, [searchReservationId, searchCompanyName, searchProductName, searchVehicleType, searchDate, generalSearch, bookings]);
+  }, [searchReservationId, searchCompanyName, searchProductName, searchVehicleType, searchDate, generalSearch, searchStatus, bookings]);
 
   // Pagination logic
   const totalPages = Math.ceil(filteredBookings.length / itemsPerPage);
@@ -1298,6 +1297,17 @@ function Booking() {
             <option value="">All Vehicle Types</option>
             {uniqueVehicleTypes.map((vehicle, i) => (
               <option key={i} value={vehicle}>{vehicle}</option>
+            ))}
+          </select>
+
+          <select
+            value={searchStatus}
+            onChange={(e) => setSearchStatus(e.target.value)}
+            className="px-4 py-2.5 border border-purple-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-400 focus:border-transparent bg-white/50 text-sm"
+          >
+            <option value="">All Statuses</option>
+            {uniqueStatuses.map((status, i) => (
+              <option key={i} value={status}>{status}</option>
             ))}
           </select>
 

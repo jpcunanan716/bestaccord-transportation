@@ -98,6 +98,11 @@ function VehicleInfo() {
         });
     };
 
+    // Navgiate to booking details
+    const handleTripClick = (bookingId) => {
+        navigate(`/dashboard/booking/${bookingId}`);
+    };
+
     if (!vehicle) return <p className="text-center py-6 text-gray-500">Loading...</p>;
 
     // Handlers for pagination
@@ -295,8 +300,17 @@ function VehicleInfo() {
                                                 const bookingDate = booking.tripDate || booking.dateNeeded || booking.dateBooked || booking.createdAt;
                                                 return (
                                                     <tr key={booking._id} className="hover:bg-gray-50">
-                                                        <td className="px-4 py-3 font-medium text-purple-600">
-                                                            {booking.tripNumber || "N/A"}
+                                                        <td className="px-4 py-3 font-medium">
+                                                            {booking._id ? (
+                                                                <button
+                                                                    onClick={() => handleTripClick(booking._id)}
+                                                                    className="text-purple-600 hover:text-purple-800 hover:underline transition cursor-pointer"
+                                                                >
+                                                                    {booking.tripNumber || "N/A"}
+                                                                </button>
+                                                            ) : (
+                                                                <span className="text-gray-500">{booking.tripNumber || "N/A"}</span>
+                                                            )}
                                                         </td>
                                                         <td className="px-4 py-3">
                                                             {booking.companyName}

@@ -347,7 +347,6 @@ function Employee() {
                   className="hover:bg-purple-50/50 transition-colors duration-200"
                 >
                   <td className="px-6 py-4 text-sm text-gray-900">{startIndex + index + 1}</td>
-                  <td className="px-6 py-4 text-sm font-mono text-purple-700 font-semibold"></td>
                   <td className="px-6 py-4 text-sm font-mono">
                     <motion.button
                       onClick={() => viewEmployee(emp)}

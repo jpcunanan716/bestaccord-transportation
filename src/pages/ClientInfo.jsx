@@ -97,6 +97,11 @@ function ClientInfo() {
         });
     };
 
+    // Navigate to booking details
+    const handleReservationClick = (bookingId) => {
+        navigate(`/dashboard/booking/${bookingId}`);
+    };
+
     if (!client) return <p className="text-center py-6 text-gray-500">Loading...</p>;
 
     const handlePrev = () => {
@@ -270,8 +275,17 @@ function ClientInfo() {
                                         <tbody className="divide-y divide-gray-200">
                                             {filteredBookings.map((booking) => (
                                                 <tr key={booking._id} className="hover:bg-gray-50">
-                                                    <td className="px-4 py-3 font-medium text-blue-600">
-                                                        {booking.reservationId || "N/A"}
+                                                    <td className="px-4 py-3 font-medium">
+                                                        {booking._id ? (
+                                                            <button
+                                                                onClick={() => handleReservationClick(booking._id)}
+                                                                className="text-blue-600 hover:text-blue-800 hover:underline transition cursor-pointer"
+                                                            >
+                                                                {booking.reservationId || "N/A"}
+                                                            </button>
+                                                        ) : (
+                                                            <span className="text-gray-500">{booking.reservationId || "N/A"}</span>
+                                                        )}
                                                     </td>
                                                     <td className="px-4 py-3 font-medium text-purple-600">
                                                         {booking.tripNumber || "N/A"}
