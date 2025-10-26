@@ -40,6 +40,7 @@ function Booking() {
   const [uniqueCompanyNames, setUniqueCompanyNames] = useState([]);
   const [uniqueProductNames, setUniqueProductNames] = useState([]);
   const [uniqueVehicleTypes, setUniqueVehicleTypes] = useState([]);
+  const [uniqueStatuses, setUniqueStatuses] = useState([]);
   const [uniqueDates, setUniqueDates] = useState([]);
 
   // Trip type state
