@@ -23,7 +23,7 @@ export const getDriverBookingCount = async (req, res) => {
     // Count ONLY active bookings (not completed) assigned to this driver
     const count = await Booking.countDocuments({
       employeeAssigned: { $in: [driver.employeeId] },
-      status: { $ne: "Completed" }  // ✨ NEW: Exclude completed bookings
+      status: { $ne: "Completed" }
     });
 
     console.log("📊 Active booking count for driver", driver.employeeId, ":", count);
@@ -50,7 +50,6 @@ export const getDriverBookingCount = async (req, res) => {
  */
 export const getDriverBookings = async (req, res) => {
   try {
-    // req.driver is set by the driverAuth middleware
     const driver = req.driver;
 
     console.log("🔍 DEBUG: Driver from middleware:", {
@@ -67,11 +66,9 @@ export const getDriverBookings = async (req, res) => {
 
     console.log("🔍 Fetching bookings for driver:", driver.employeeId);
 
-    // First, let's get ALL bookings to see what's in the database
     const allBookings = await Booking.find({});
     console.log("📋 DEBUG: Total bookings in database:", allBookings.length);
 
-    // Log the employeeAssigned field for each booking
     allBookings.forEach((booking, index) => {
       console.log(`📋 DEBUG: Booking ${index + 1}:`, {
         reservationId: booking.reservationId,
@@ -81,35 +78,29 @@ export const getDriverBookings = async (req, res) => {
       });
     });
 
-    // Try multiple query approaches
     console.log("🔍 Searching for driver employeeId:", driver.employeeId);
 
-    // Query 1: Direct array search
     const bookings1 = await Booking.find({
       employeeAssigned: { $in: [driver.employeeId] }
     });
     console.log("📋 Query 1 ($in array) - Found bookings:", bookings1.length);
 
-    // Query 2: Direct element match
     const bookings2 = await Booking.find({
       employeeAssigned: driver.employeeId
     });
     console.log("📋 Query 2 (direct match) - Found bookings:", bookings2.length);
 
-    // Query 3: String contains (in case there are formatting issues)
     const bookings3 = await Booking.find({
       employeeAssigned: { $regex: driver.employeeId, $options: 'i' }
     });
     console.log("📋 Query 3 (regex) - Found bookings:", bookings3.length);
 
-    // Use the query that returns the most results
     let bookings = bookings1.length > 0 ? bookings1 :
       bookings2.length > 0 ? bookings2 :
         bookings3.length > 0 ? bookings3 : [];
 
     console.log("📋 Final bookings selected:", bookings.length);
 
-    // If still no bookings, let's check if the driver exists in any booking
     if (bookings.length === 0) {
       console.log("🔍 No bookings found. Checking if driver ID exists in any booking...");
 
@@ -124,16 +115,13 @@ export const getDriverBookings = async (req, res) => {
       bookings = bookingsWithDriver;
     }
 
-    // Sort by date, newest first
     bookings = bookings.sort((a, b) => new Date(b.dateNeeded) - new Date(a.dateNeeded));
 
     console.log("📋 Found bookings for driver:", bookings.length);
 
-    // Enhance bookings with additional details
     const enhancedBookings = await Promise.all(bookings.map(async (booking) => {
       console.log("🔧 Processing booking:", booking.reservationId);
 
-      // Get all assigned employees details
       let employeeDetails = [];
       if (Array.isArray(booking.employeeAssigned)) {
         employeeDetails = await Employee.find({
@@ -141,7 +129,6 @@ export const getDriverBookings = async (req, res) => {
         }).select('employeeId fullName role');
         console.log("👥 Employee details found:", employeeDetails.length);
       } else if (booking.employeeAssigned) {
-        // Handle single employee assignment
         const emp = await Employee.findOne({ employeeId: booking.employeeAssigned });
         if (emp) {
           employeeDetails = [{
@@ -153,7 +140,6 @@ export const getDriverBookings = async (req, res) => {
         console.log("👤 Single employee details found:", employeeDetails.length);
       }
 
-      // Get vehicle details (if available)
       let vehicleDetails = null;
       try {
         vehicleDetails = await Vehicle.findOne({ vehicleType: booking.vehicleType });
@@ -210,7 +196,6 @@ export const getDriverBookingById = async (req, res) => {
 
     console.log("🔍 DEBUG: Getting booking details for:", bookingId, "by driver:", driver.employeeId);
 
-    // Find the booking and verify the driver is assigned to it
     const booking = await Booking.findOne({
       _id: bookingId,
       employeeAssigned: { $in: [driver.employeeId] }
@@ -226,12 +211,10 @@ export const getDriverBookingById = async (req, res) => {
 
     console.log("✅ DEBUG: Booking found:", booking.reservationId);
 
-    // Get employee details
     const employeeDetails = await Employee.find({
       employeeId: { $in: booking.employeeAssigned }
     }).select('employeeId fullName role');
 
-    // Get vehicle details
     let vehicleDetails = null;
     try {
       vehicleDetails = await Vehicle.findOne({ vehicleType: booking.vehicleType });
@@ -287,7 +270,6 @@ export const updateBookingStatus = async (req, res) => {
       proofSize: proofOfDelivery ? `${(proofOfDelivery.length / 1024).toFixed(2)} KB` : 'N/A'
     });
 
-    // Validate status
     const allowedStatuses = ["Pending", "In Transit", "Delivered", "Completed"];
     if (!allowedStatuses.includes(status)) {
       return res.status(400).json({
@@ -296,7 +278,6 @@ export const updateBookingStatus = async (req, res) => {
       });
     }
 
-    // Validate proof of delivery for completed status
     if (status === "Completed" && !proofOfDelivery) {
       return res.status(400).json({
         success: false,
@@ -304,7 +285,6 @@ export const updateBookingStatus = async (req, res) => {
       });
     }
 
-    // Validate proof of delivery format
     if (proofOfDelivery) {
       if (!proofOfDelivery.startsWith('data:image/')) {
         return res.status(400).json({
@@ -313,7 +293,6 @@ export const updateBookingStatus = async (req, res) => {
         });
       }
 
-      // Check image size (limit to 10MB base64 - increased for mobile compatibility)
       const sizeInMB = (proofOfDelivery.length * 0.75) / (1024 * 1024);
       console.log(`📸 Proof of delivery size: ${sizeInMB.toFixed(2)} MB`);
       
@@ -326,7 +305,6 @@ export const updateBookingStatus = async (req, res) => {
       }
     }
 
-    // Find the booking first
     const booking = await Booking.findOne({
       _id: bookingId,
       employeeAssigned: { $in: [driver.employeeId] }
@@ -339,11 +317,9 @@ export const updateBookingStatus = async (req, res) => {
       });
     }
 
-    // Update booking status
     booking.status = status;
     booking.updatedAt = new Date();
     
-    // If proof of delivery is provided, save it
     if (proofOfDelivery) {
       booking.proofOfDelivery = proofOfDelivery;
       console.log("📸 Proof of delivery image saved successfully");
@@ -351,13 +327,11 @@ export const updateBookingStatus = async (req, res) => {
 
     await booking.save();
 
-    // If status is being set to "Completed", update vehicle and employee status
     if (status === "Completed") {
       try {
         await updateVehicleAndEmployeeStatus(booking, "Available");
       } catch (error) {
         console.error("Failed to update vehicle/employee status:", error);
-        // Continue with booking update even if vehicle/employee updates fail
       }
     }
 
@@ -384,7 +358,6 @@ export const updateBookingStatus = async (req, res) => {
       stack: err.stack
     });
     
-    // Handle specific MongoDB errors
     if (err.name === 'DocumentNotFoundError') {
       return res.status(404).json({
         success: false,
@@ -399,7 +372,6 @@ export const updateBookingStatus = async (req, res) => {
       });
     }
 
-    // Handle document size errors
     if (err.message && err.message.includes('document is too large')) {
       return res.status(413).json({
         success: false,
@@ -415,10 +387,8 @@ export const updateBookingStatus = async (req, res) => {
   }
 };
 
-// Helper function to update vehicle and employee status
 async function updateVehicleAndEmployeeStatus(booking, newStatus) {
   try {
-    // Update vehicle status
     if (booking.vehicleType) {
       const vehicle = await Vehicle.findOneAndUpdate(
         { vehicleType: booking.vehicleType },
@@ -427,7 +397,6 @@ async function updateVehicleAndEmployeeStatus(booking, newStatus) {
       console.log(`✅ Vehicle ${booking.vehicleType} status updated to ${newStatus}`);
     }
 
-    // Update employees status
     if (Array.isArray(booking.employeeAssigned) && booking.employeeAssigned.length > 0) {
       const result = await Employee.updateMany(
         { employeeId: { $in: booking.employeeAssigned } },
@@ -459,7 +428,6 @@ export const updateDriverLocation = async (req, res) => {
       accuracy
     });
 
-    // Validate coordinates
     if (!latitude || !longitude) {
       return res.status(400).json({
         success: false,
@@ -467,7 +435,6 @@ export const updateDriverLocation = async (req, res) => {
       });
     }
 
-    // Validate latitude range (-90 to 90)
     if (latitude < -90 || latitude > 90) {
       return res.status(400).json({
         success: false,
@@ -475,7 +442,6 @@ export const updateDriverLocation = async (req, res) => {
       });
     }
 
-    // Validate longitude range (-180 to 180)
     if (longitude < -180 || longitude > 180) {
       return res.status(400).json({
         success: false,
@@ -483,7 +449,6 @@ export const updateDriverLocation = async (req, res) => {
       });
     }
 
-    // Find the booking and verify the driver is assigned to it
     const booking = await Booking.findOne({
       _id: bookingId,
       employeeAssigned: { $in: [driver.employeeId] }
@@ -496,7 +461,6 @@ export const updateDriverLocation = async (req, res) => {
       });
     }
 
-    // Only allow location updates for In Transit bookings
     if (booking.status !== "In Transit") {
       return res.status(400).json({
         success: false,
@@ -504,7 +468,6 @@ export const updateDriverLocation = async (req, res) => {
       });
     }
 
-    // Update driver location
     booking.driverLocation = {
       latitude: parseFloat(latitude),
       longitude: parseFloat(longitude),
@@ -532,3 +495,142 @@ export const updateDriverLocation = async (req, res) => {
   }
 };
 
+/**
+ * ✨ NEW: PUT /api/driver/bookings/:id/deliver-destination
+ * Mark a specific destination as delivered
+ */
+export const markDestinationDelivered = async (req, res) => {
+  try {
+    const driver = req.driver;
+    const bookingId = req.params.id;
+    const { destinationIndex, proofOfDelivery, notes } = req.body;
+
+    console.log("📦 Marking destination as delivered:", {
+      bookingId,
+      driverId: driver.employeeId,
+      destinationIndex,
+      hasProof: !!proofOfDelivery
+    });
+
+    if (destinationIndex === undefined || destinationIndex === null) {
+      return res.status(400).json({
+        success: false,
+        msg: "Destination index is required"
+      });
+    }
+
+    if (proofOfDelivery) {
+      if (!proofOfDelivery.startsWith('data:image/')) {
+        return res.status(400).json({
+          success: false,
+          msg: "Invalid proof of delivery format. Must be a base64 image."
+        });
+      }
+
+      const sizeInMB = (proofOfDelivery.length * 0.75) / (1024 * 1024);
+      if (sizeInMB > 10) {
+        return res.status(413).json({
+          success: false,
+          msg: `Image too large (${sizeInMB.toFixed(2)} MB). Maximum 10MB allowed.`
+        });
+      }
+    }
+
+    const booking = await Booking.findOne({
+      _id: bookingId,
+      employeeAssigned: { $in: [driver.employeeId] }
+    });
+
+    if (!booking) {
+      return res.status(404).json({
+        success: false,
+        msg: "Booking not found or you are not assigned to this booking"
+      });
+    }
+
+    if (booking.status !== "In Transit") {
+      return res.status(400).json({
+        success: false,
+        msg: "Can only mark destinations as delivered when trip is In Transit"
+      });
+    }
+
+    if (!booking.destinationDeliveries || booking.destinationDeliveries.length === 0) {
+      booking.destinationDeliveries = booking.destinationAddress.map((address, index) => ({
+        destinationAddress: address,
+        destinationIndex: index,
+        status: 'pending',
+        deliveredAt: null,
+        deliveredBy: null,
+        proofOfDelivery: null,
+        notes: null
+      }));
+    }
+
+    const destinationToUpdate = booking.destinationDeliveries.find(
+      d => d.destinationIndex === destinationIndex
+    );
+
+    if (!destinationToUpdate) {
+      return res.status(404).json({
+        success: false,
+        msg: "Destination not found"
+      });
+    }
+
+    if (destinationToUpdate.status === 'delivered') {
+      return res.status(400).json({
+        success: false,
+        msg: "This destination has already been marked as delivered"
+      });
+    }
+
+    destinationToUpdate.status = 'delivered';
+    destinationToUpdate.deliveredAt = new Date();
+    destinationToUpdate.deliveredBy = driver.employeeId;
+    if (proofOfDelivery) {
+      destinationToUpdate.proofOfDelivery = proofOfDelivery;
+    }
+    if (notes) {
+      destinationToUpdate.notes = notes;
+    }
+
+    const allDelivered = booking.destinationDeliveries.every(
+      d => d.status === 'delivered'
+    );
+
+    if (allDelivered) {
+      booking.status = "Delivered";
+      console.log("✅ All destinations delivered - updating booking status to Delivered");
+    }
+
+    booking.updatedAt = new Date();
+    await booking.save();
+
+    console.log(`✅ Destination ${destinationIndex} marked as delivered for booking ${booking.reservationId}`);
+
+    res.json({
+      success: true,
+      msg: allDelivered 
+        ? "All destinations delivered! Package ready to be completed." 
+        : "Destination marked as delivered successfully",
+      booking: {
+        _id: booking._id,
+        reservationId: booking.reservationId,
+        tripNumber: booking.tripNumber,
+        status: booking.status,
+        destinationDeliveries: booking.destinationDeliveries,
+        allDelivered: allDelivered,
+        updatedAt: booking.updatedAt
+      }
+    });
+
+  } catch (err) {
+    console.error("❌ Error marking destination as delivered:", err);
+    res.status(500).json({
+      success: false,
+      msg: "Server error while updating destination status",
+      error: err.message
+    });
+  }
+};

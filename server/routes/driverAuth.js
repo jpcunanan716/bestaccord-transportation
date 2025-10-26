@@ -1,4 +1,4 @@
-// server/routes/driverAuth.js (Updated with location tracking)
+// server/routes/driverAuth.js (Updated with location tracking and destination delivery)
 import express from "express";
 import Employee from "../models/Employee.js";
 import jwt from "jsonwebtoken";
@@ -8,7 +8,8 @@ import {
   getDriverBookingById, 
   updateBookingStatus, 
   getDriverBookingCount,
-  updateDriverLocation  // 🚚 NEW - Import the location update function
+  updateDriverLocation,
+  markDestinationDelivered  // ✨ NEW - Import the destination delivery function
 } from "../controllers/driverBookingsController.js";
 import driverAuth from "../middleware/driverAuth1.js";
 
@@ -84,7 +85,10 @@ router.get("/bookings", driverAuth, getDriverBookings);
 router.get("/bookings/:id", driverAuth, getDriverBookingById);
 router.put("/bookings/:id/status", driverAuth, updateBookingStatus);
 
-// 🚚 NEW: Location tracking route
+// 🚚 Location tracking route
 router.put("/bookings/:id/location", driverAuth, updateDriverLocation);
+
+// ✨ NEW: Mark individual destination as delivered
+router.put("/bookings/:id/deliver-destination", driverAuth, markDestinationDelivered);
 
 export default router;
